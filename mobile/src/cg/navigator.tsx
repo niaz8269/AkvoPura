@@ -18,7 +18,6 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { colors, fontSizes, spacing } from '../theme';
 import { useAuth } from '../auth/AuthContext';
-import { CGSalesmanProvider } from './state';
 import { CGTodayScreen } from './screens/CGTodayScreen';
 import { CGDeliveryScreen } from './screens/CGDeliveryScreen';
 import { CGCollectionScreen } from './screens/CGCollectionScreen';
@@ -95,26 +94,24 @@ function Tabs() {
 
 export function CGSalesmanNavigator() {
   return (
-    <CGSalesmanProvider>
-      <Stack.Navigator
-        screenOptions={{
-          headerStyle: { backgroundColor: colors.surface },
-          headerTitleStyle: { color: colors.primaryDark, fontWeight: '800' },
-          headerTintColor: colors.primaryDark,
-        }}
-      >
-        <Stack.Screen
-          name="Tabs"
-          component={Tabs}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="CustomerDetail"
-          component={CGCustomerDetailScreen}
-          options={{ title: 'Customer' }}
-        />
-      </Stack.Navigator>
-    </CGSalesmanProvider>
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: colors.surface },
+        headerTitleStyle: { color: colors.primaryDark, fontWeight: '800' },
+        headerTintColor: colors.primaryDark,
+      }}
+    >
+      <Stack.Screen
+        name="Tabs"
+        component={Tabs}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="CustomerDetail"
+        component={CGCustomerDetailScreen}
+        options={{ title: 'Customer' }}
+      />
+    </Stack.Navigator>
   );
 }
 

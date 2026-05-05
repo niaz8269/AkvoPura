@@ -18,7 +18,6 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { colors, fontSizes, spacing } from '../theme';
 import { useAuth } from '../auth/AuthContext';
-import { PetsSalesmanProvider } from './state';
 import { PetsCustomersScreen } from './screens/PetsCustomersScreen';
 import { PetsSellScreen } from './screens/PetsSellScreen';
 import { PetsReturnsScreen } from './screens/PetsReturnsScreen';
@@ -95,26 +94,24 @@ function Tabs() {
 
 export function PetsSalesmanNavigator() {
   return (
-    <PetsSalesmanProvider>
-      <Stack.Navigator
-        screenOptions={{
-          headerStyle: { backgroundColor: colors.surface },
-          headerTitleStyle: { color: colors.primaryDark, fontWeight: '800' },
-          headerTintColor: colors.primaryDark,
-        }}
-      >
-        <Stack.Screen
-          name="Tabs"
-          component={Tabs}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="PetCustomerDetail"
-          component={PetsCustomerDetailScreen}
-          options={{ title: 'Customer' }}
-        />
-      </Stack.Navigator>
-    </PetsSalesmanProvider>
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: colors.surface },
+        headerTitleStyle: { color: colors.primaryDark, fontWeight: '800' },
+        headerTintColor: colors.primaryDark,
+      }}
+    >
+      <Stack.Screen
+        name="Tabs"
+        component={Tabs}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="PetCustomerDetail"
+        component={PetsCustomerDetailScreen}
+        options={{ title: 'Customer' }}
+      />
+    </Stack.Navigator>
   );
 }
 

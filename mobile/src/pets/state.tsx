@@ -53,6 +53,8 @@ type State = {
   undoLastBill: () => BillEntry | null;
   recordReturn: (input: ReturnInput) => PetReturnEntry | null;
   undoLastReturn: () => PetReturnEntry | null;
+  /** Manager-only — set the packs loaded onto the salesman's van. */
+  setVanPacks: (pet600: number, pet1500: number) => void;
   resetDay: () => void;
 };
 
@@ -204,6 +206,13 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
     return last;
   }, [returns]);
 
+  const setVanPacks = useCallback<State['setVanPacks']>((pet600, pet1500) => {
+    setVanLoad({
+      pet600Packs: Math.max(0, pet600),
+      pet1500Packs: Math.max(0, pet1500),
+    });
+  }, []);
+
   const resetDay = useCallback(() => {
     setCustomers(demoPetCustomers);
     setVanLoad(initialPetVanLoad);
@@ -226,6 +235,7 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
       undoLastBill,
       recordReturn,
       undoLastReturn,
+      setVanPacks,
       resetDay,
     }),
     [
@@ -241,6 +251,7 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
       undoLastBill,
       recordReturn,
       undoLastReturn,
+      setVanPacks,
       resetDay,
     ]
   );

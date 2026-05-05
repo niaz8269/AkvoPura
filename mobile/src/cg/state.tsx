@@ -54,6 +54,8 @@ type CGSalesmanState = {
   undoLastDelivery: () => DeliveryEntry | null;
   recordCollection: (input: CollectionInput) => void;
   undoLastCollection: () => CollectionEntry | null;
+  /** Manager-only — set the filled-cans/gallons loaded onto the van. */
+  setFilledLoad: (filledCans: number, filledGallons: number) => void;
   resetDay: () => void;
 };
 
@@ -222,6 +224,17 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
     return last;
   }, [collections]);
 
+  const setFilledLoad = useCallback<CGSalesmanState['setFilledLoad']>(
+    (filledCans, filledGallons) => {
+      setVanLoad((prev) => ({
+        ...prev,
+        filledCans: Math.max(0, filledCans),
+        filledGallons: Math.max(0, filledGallons),
+      }));
+    },
+    []
+  );
+
   const resetDay = useCallback(() => {
     setCustomers(demoCustomers);
     setVanLoad(initialVanLoad);
@@ -243,6 +256,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       undoLastDelivery,
       recordCollection,
       undoLastCollection,
+      setFilledLoad,
       resetDay,
     }),
     [
@@ -258,6 +272,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       undoLastDelivery,
       recordCollection,
       undoLastCollection,
+      setFilledLoad,
       resetDay,
     ]
   );
