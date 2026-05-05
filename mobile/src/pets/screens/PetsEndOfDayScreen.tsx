@@ -10,7 +10,7 @@ import { colors, fontSizes, radii, spacing } from '../../theme';
 import { usePetsSalesman } from '../state';
 import { initialPetVanLoad } from '../demoData';
 
-export function PetsEndOfDayScreen() {
+export function PetsEndOfDayScreen({ navigation }: any) {
   const { customers, bills, returns, vanLoad, resetDay } = usePetsSalesman();
 
   const totalCash = bills.reduce((s, b) => s + b.cashCollected, 0);
@@ -116,11 +116,19 @@ export function PetsEndOfDayScreen() {
         )}
       </Section>
 
-      <View style={{ marginTop: spacing.lg }}>
+      <View style={{ marginTop: spacing.lg, gap: spacing.md }}>
         <BilingualButton
           label={{ en: 'Submit closure to manager', ur: 'منیجر کو بھیجیں' }}
           onPress={submit}
           disabled={bills.length === 0 && returns.length === 0}
+        />
+        <BilingualButton
+          label={{ en: 'Add field expense', ur: 'اخراجات شامل کریں' }}
+          variant="secondary"
+          onPress={() =>
+            navigation.getParent()?.navigate('SubmitExpense') ??
+            navigation.navigate('SubmitExpense')
+          }
         />
       </View>
     </Screen>

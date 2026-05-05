@@ -20,7 +20,7 @@ import { initialVanLoad } from '../demoData';
 const canIcon = require('../../../assets/brand/14ltr-can.webp');
 const gallonIcon = require('../../../assets/brand/19ltr-gallon.webp');
 
-export function CGEndOfDayScreen() {
+export function CGEndOfDayScreen({ navigation }: any) {
   const { customers, deliveries, collections, vanLoad, resetDay } = useCGSalesman();
 
   const totalCansDelivered = deliveries.reduce((s, d) => s + d.cansDelivered, 0);
@@ -153,11 +153,19 @@ export function CGEndOfDayScreen() {
         )}
       </Section>
 
-      <View style={{ marginTop: spacing.lg }}>
+      <View style={{ marginTop: spacing.lg, gap: spacing.md }}>
         <BilingualButton
           label={{ en: 'Submit closure to manager', ur: 'منیجر کو بھیجیں' }}
           onPress={submit}
           disabled={deliveries.length === 0 && collections.length === 0}
+        />
+        <BilingualButton
+          label={{ en: 'Add field expense', ur: 'اخراجات شامل کریں' }}
+          variant="secondary"
+          onPress={() =>
+            navigation.getParent()?.navigate('SubmitExpense') ??
+            navigation.navigate('SubmitExpense')
+          }
         />
       </View>
     </Screen>

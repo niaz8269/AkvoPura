@@ -23,10 +23,12 @@ import { CGDeliveryScreen } from './screens/CGDeliveryScreen';
 import { CGCollectionScreen } from './screens/CGCollectionScreen';
 import { CGEndOfDayScreen } from './screens/CGEndOfDayScreen';
 import { CGCustomerDetailScreen } from './screens/CGCustomerDetailScreen';
+import { SubmitExpenseScreen } from '../expenses/SubmitExpenseScreen';
 
 export type CGStackParamList = {
   Tabs: undefined;
   CustomerDetail: { customerId: string };
+  SubmitExpense: undefined;
 };
 
 const Stack = createNativeStackNavigator<CGStackParamList>();
@@ -110,6 +112,11 @@ export function CGSalesmanNavigator() {
         name="CustomerDetail"
         component={CGCustomerDetailScreen}
         options={{ title: 'Customer' }}
+      />
+      <Stack.Screen
+        name="SubmitExpense"
+        component={SubmitExpenseScreen}
+        options={{ title: 'New expense' }}
       />
     </Stack.Navigator>
   );

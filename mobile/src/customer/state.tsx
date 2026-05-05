@@ -55,6 +55,8 @@ type State = {
   markInTransit: (orderId: string) => void;
   markDelivered: (orderId: string) => void;
   managerCancelOrder: (orderId: string, note?: string) => void;
+  markComplaintInReview: (id: string) => void;
+  resolveComplaint: (id: string) => void;
 };
 
 const Ctx = createContext<State | undefined>(undefined);
@@ -174,6 +176,22 @@ export function CustomerProvider({ children }: PropsWithChildren) {
     []
   );
 
+  const markComplaintInReview = useCallback<State['markComplaintInReview']>((id) => {
+    setComplaints((prev) =>
+      prev.map((c) => (c.id === id && c.status === 'open' ? { ...c, status: 'in_review' } : c))
+    );
+  }, []);
+
+  const resolveComplaint = useCallback<State['resolveComplaint']>((id) => {
+    setComplaints((prev) =>
+      prev.map((c) =>
+        c.id === id && c.status !== 'resolved'
+          ? { ...c, status: 'resolved', resolvedAt: Date.now() }
+          : c
+      )
+    );
+  }, []);
+
   const value = useMemo<State>(
     () => ({
       orders,
@@ -189,6 +207,8 @@ export function CustomerProvider({ children }: PropsWithChildren) {
       markInTransit,
       markDelivered,
       managerCancelOrder,
+      markComplaintInReview,
+      resolveComplaint,
     }),
     [
       orders,
@@ -203,6 +223,8 @@ export function CustomerProvider({ children }: PropsWithChildren) {
       markInTransit,
       markDelivered,
       managerCancelOrder,
+      markComplaintInReview,
+      resolveComplaint,
     ]
   );
 

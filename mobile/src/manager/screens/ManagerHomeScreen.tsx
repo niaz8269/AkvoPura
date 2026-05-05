@@ -33,11 +33,12 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
   const assignments = useAssignments();
   const todayPets = assignments.petsSalesman();
   const todayCg = assignments.cgSalesman();
-  const { orders } = useCustomerPortal();
+  const { orders, complaints } = useCustomerPortal();
   const pendingOrders = orders.filter((o) => o.status === 'pending').length;
   const activeOrders = orders.filter(
     (o) => o.status === 'assigned' || o.status === 'in_transit'
   ).length;
+  const openComplaints = complaints.filter((c) => c.status === 'open').length;
 
   const cgCash = cg.deliveries.reduce((s, d) => s + d.cashCollected, 0);
   const petsCash = pets.bills.reduce((s, b) => s + b.cashCollected, 0);
@@ -148,7 +149,7 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
         </View>
       </Pressable>
 
-      {pendingOrders > 0 || activeOrders > 0 || pendingExpenses.length > 0 || totalDebt > 0 ? (
+      {pendingOrders > 0 || activeOrders > 0 || openComplaints > 0 || pendingExpenses.length > 0 || totalDebt > 0 ? (
         <View style={styles.alertSection}>
           {pendingOrders > 0 || activeOrders > 0 ? (
             <Pressable
@@ -181,6 +182,26 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
                 size={20}
                 color={pendingOrders > 0 ? colors.warning : colors.info}
               />
+            </Pressable>
+          ) : null}
+
+          {openComplaints > 0 ? (
+            <Pressable
+              onPress={() => navigation.navigate('Complaints')}
+              style={({ pressed }) => [
+                styles.alertCard,
+                styles.alertWarn,
+                pressed ? styles.alertPressed : null,
+              ]}
+            >
+              <Ionicons name="chatbubble-ellipses-outline" size={28} color={colors.warning} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.alertTitle}>
+                  {openComplaints} open complaint{openComplaints === 1 ? '' : 's'}
+                </Text>
+                <Text style={styles.alertSub}>Tap to review and resolve</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.warning} />
             </Pressable>
           ) : null}
 

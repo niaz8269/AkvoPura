@@ -23,10 +23,12 @@ import { PetsSellScreen } from './screens/PetsSellScreen';
 import { PetsReturnsScreen } from './screens/PetsReturnsScreen';
 import { PetsEndOfDayScreen } from './screens/PetsEndOfDayScreen';
 import { PetsCustomerDetailScreen } from './screens/PetsCustomerDetailScreen';
+import { SubmitExpenseScreen } from '../expenses/SubmitExpenseScreen';
 
 export type PetsStackParamList = {
   Tabs: undefined;
   PetCustomerDetail: { customerId: string };
+  SubmitExpense: undefined;
 };
 
 const Stack = createNativeStackNavigator<PetsStackParamList>();
@@ -110,6 +112,11 @@ export function PetsSalesmanNavigator() {
         name="PetCustomerDetail"
         component={PetsCustomerDetailScreen}
         options={{ title: 'Customer' }}
+      />
+      <Stack.Screen
+        name="SubmitExpense"
+        component={SubmitExpenseScreen}
+        options={{ title: 'New expense' }}
       />
     </Stack.Navigator>
   );
