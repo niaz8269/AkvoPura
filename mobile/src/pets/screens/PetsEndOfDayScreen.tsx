@@ -1,0 +1,272 @@
+/**
+ * PetsEndOfDayScreen — reconciliation summary for the Pets salesman.
+ */
+
+import React from 'react';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+
+import { BilingualButton, Screen } from '../../components';
+import { colors, fontSizes, radii, spacing } from '../../theme';
+import { usePetsSalesman } from '../state';
+import { initialPetVanLoad } from '../demoData';
+
+export function PetsEndOfDayScreen() {
+  const { customers, bills, returns, vanLoad, resetDay } = usePetsSalesman();
+
+  const totalCash = bills.reduce((s, b) => s + b.cashCollected, 0);
+  const totalBilled = bills.reduce((s, b) => s + b.amountBilled, 0);
+  const totalRefunds = returns.reduce((s, r) => s + r.refundAmount, 0);
+  const sold600 = bills.reduce((s, b) => s + b.pet600Packs, 0);
+  const sold1500 = bills.reduce((s, b) => s + b.pet1500Packs, 0);
+  const ret600 = returns.reduce((s, r) => s + r.pet600Packs, 0);
+  const ret1500 = returns.reduce((s, r) => s + r.pet1500Packs, 0);
+
+  // Per-customer breakdown
+  const perCustomer = customers
+    .map((c) => {
+      const bs = bills.filter((b) => b.customerId === c.id);
+      const rs = returns.filter((r) => r.customerId === c.id);
+      if (bs.length === 0 && rs.length === 0) return null;
+      return {
+        id: c.id,
+        name: c.name,
+        billed: bs.reduce((s, b) => s + b.amountBilled, 0),
+        cash: bs.reduce((s, b) => s + b.cashCollected, 0),
+        refund: rs.reduce((s, r) => s + r.refundAmount, 0),
+      };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
+
+  const submit = () => {
+    Alert.alert(
+      'Submit closure',
+      `Closure ready to send to manager.\n\nCash: Rs ${totalCash.toLocaleString()}\nSold: ${sold600} × 600ml, ${sold1500} × 1.5L\nReturns: ${ret600} × 600ml, ${ret1500} × 1.5L\nRefund credits: Rs ${totalRefunds.toLocaleString()}\n\n(Real submission goes to the backend in a later slice.)`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset day (demo)',
+          style: 'destructive',
+          onPress: () => resetDay(),
+        },
+      ]
+    );
+  };
+
+  return (
+    <Screen scroll>
+      <Text style={styles.title}>End of Day</Text>
+      <Text style={styles.titleUr}>دن کا اختتام</Text>
+
+      <View style={styles.cashCard}>
+        <Text style={styles.cashLabel}>Cash collected today</Text>
+        <Text style={styles.cashLabelUr}>آج جمع کی گئی نقدی</Text>
+        <Text style={styles.cashValue}>Rs {totalCash.toLocaleString()}</Text>
+        {totalBilled !== totalCash ? (
+          <Text style={styles.cashDelta}>
+            Billed Rs {totalBilled.toLocaleString()} • Credit Rs{' '}
+            {(totalBilled - totalCash).toLocaleString()}
+          </Text>
+        ) : null}
+      </View>
+
+      <View style={styles.statRow}>
+        <BigStat label="600 ml packs sold" value={sold600} />
+        <BigStat label="1.5 L packs sold" value={sold1500} />
+      </View>
+
+      <View style={styles.statRow}>
+        <BigStat label="600 ml packs returned" value={ret600} variant="warn" />
+        <BigStat label="1.5 L packs returned" value={ret1500} variant="warn" />
+      </View>
+
+      <Section title="Van reconciliation" subtitle="گاڑی کی پڑتال">
+        <Row
+          label="600 ml packs loaded → returning"
+          value={`${initialPetVanLoad.pet600Packs} → ${vanLoad.pet600Packs}`}
+        />
+        <Row
+          label="1.5 L packs loaded → returning"
+          value={`${initialPetVanLoad.pet1500Packs} → ${vanLoad.pet1500Packs}`}
+        />
+        <Row label="Refund credits issued" value={`Rs ${totalRefunds.toLocaleString()}`} />
+      </Section>
+
+      <Section title="Per-customer breakdown" subtitle="ہر کسٹمر کی تفصیل">
+        {perCustomer.length === 0 ? (
+          <Text style={styles.empty}>No bills or returns today.</Text>
+        ) : (
+          perCustomer.map((p) => (
+            <View key={p.id} style={styles.custRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.custName} numberOfLines={1}>
+                  {p.name}
+                </Text>
+                <Text style={styles.custSub}>
+                  Rs {p.cash.toLocaleString()}/{p.billed.toLocaleString()}
+                  {p.refund > 0 ? ` • refund Rs ${p.refund.toLocaleString()}` : ''}
+                </Text>
+              </View>
+              {p.cash < p.billed ? (
+                <View style={styles.creditChip}>
+                  <Text style={styles.creditChipText}>Credit</Text>
+                </View>
+              ) : null}
+            </View>
+          ))
+        )}
+      </Section>
+
+      <View style={{ marginTop: spacing.lg }}>
+        <BilingualButton
+          label={{ en: 'Submit closure to manager', ur: 'منیجر کو بھیجیں' }}
+          onPress={submit}
+          disabled={bills.length === 0 && returns.length === 0}
+        />
+      </View>
+    </Screen>
+  );
+}
+
+function BigStat({
+  label,
+  value,
+  variant,
+}: {
+  label: string;
+  value: number;
+  variant?: 'warn';
+}) {
+  return (
+    <View style={[styles.bigStat, variant === 'warn' ? styles.bigStatWarn : null]}>
+      <Text style={[styles.bigStatValue, variant === 'warn' ? styles.bigStatWarnText : null]}>
+        {value}
+      </Text>
+      <Text style={styles.bigStatLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function Section({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <View style={styles.section}>
+      <View style={{ marginBottom: spacing.sm }}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {subtitle ? <Text style={styles.sectionSubtitle}>{subtitle}</Text> : null}
+      </View>
+      <View style={styles.sectionBody}>{children}</View>
+    </View>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.reconRow}>
+      <Text style={styles.reconLabel}>{label}</Text>
+      <Text style={styles.reconValue}>{value}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  title: { fontSize: fontSizes.heading, fontWeight: '800', color: colors.primaryDark },
+  titleUr: { fontSize: fontSizes.body, color: colors.primary, marginBottom: spacing.lg },
+  cashCard: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.lg,
+    padding: spacing.xl,
+    marginBottom: spacing.lg,
+    alignItems: 'center',
+  },
+  cashLabel: { color: 'rgba(255,255,255,0.85)', fontSize: fontSizes.body, fontWeight: '600' },
+  cashLabelUr: { color: 'rgba(255,255,255,0.7)', fontSize: fontSizes.sm },
+  cashValue: {
+    color: colors.textInverse,
+    fontSize: fontSizes.display,
+    fontWeight: '900',
+    marginTop: spacing.sm,
+  },
+  cashDelta: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: fontSizes.sm,
+    marginTop: spacing.sm,
+  },
+  statRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  bigStat: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    alignItems: 'center',
+  },
+  bigStatWarn: { backgroundColor: colors.warning + '15' },
+  bigStatValue: {
+    fontSize: fontSizes.heading,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  bigStatWarnText: { color: colors.warning },
+  bigStatLabel: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  section: { marginTop: spacing.lg },
+  sectionTitle: { fontSize: fontSizes.body, fontWeight: '800', color: colors.primaryDark },
+  sectionSubtitle: { fontSize: fontSizes.xs, color: colors.textMuted },
+  sectionBody: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+  },
+  reconRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  reconLabel: { fontSize: fontSizes.sm, color: colors.text, flex: 1 },
+  reconValue: {
+    fontSize: fontSizes.sm,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  custRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  custName: { fontSize: fontSizes.body, fontWeight: '700', color: colors.text },
+  custSub: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 2 },
+  creditChip: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.pill,
+    backgroundColor: colors.warning + '22',
+  },
+  creditChipText: {
+    fontSize: fontSizes.xs,
+    fontWeight: '800',
+    color: colors.warning,
+  },
+  empty: {
+    fontStyle: 'italic',
+    color: colors.textMuted,
+    fontSize: fontSizes.sm,
+    paddingVertical: spacing.sm,
+  },
+});

@@ -1,0 +1,409 @@
+/**
+ * PetsSellScreen — generate a bill for a Pets customer.
+ *
+ * Single-screen flow (no wizard) so a salesman who's seen it 50 times can move
+ * fast: pick customer → set quantities → toggle Paid/Credit → swipe to finalize.
+ *
+ * After confirm: shows a brief receipt summary, then resets so they can sell
+ * to the next customer.
+ */
+
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+
+import { Screen } from '../../components';
+import { QuantityStepper } from '../../components/QuantityStepper';
+import { SwipeToConfirm } from '../../components/SwipeToConfirm';
+import { colors, fontSizes, radii, spacing } from '../../theme';
+import { CustomerPicker } from '../components/CustomerPicker';
+import { usePetsSalesman } from '../state';
+import type { PetCustomer } from '../types';
+
+export function PetsSellScreen() {
+  const {
+    customers,
+    vanLoad,
+    bills,
+    priceFor,
+    recordBill,
+    undoLastBill,
+  } = usePetsSalesman();
+
+  const [selected, setSelected] = useState<PetCustomer | null>(null);
+  const [pet600, setPet600] = useState(0);
+  const [pet1500, setPet1500] = useState(0);
+  const [paid, setPaid] = useState(true);
+  const [confirmed, setConfirmed] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
+  const [lastReceipt, setLastReceipt] = useState<{
+    name: string;
+    pet600: number;
+    pet1500: number;
+    amount: number;
+    cash: number;
+  } | null>(null);
+
+  const billed = useMemo(() => {
+    if (!selected) return 0;
+    return (
+      pet600 * priceFor(selected, 'pet600') +
+      pet1500 * priceFor(selected, 'pet1500')
+    );
+  }, [selected, pet600, pet1500, priceFor]);
+
+  const canSwipe = !!selected && pet600 + pet1500 > 0 && !confirmed;
+
+  useEffect(() => {
+    if (!confirmed) return;
+    const t = setTimeout(() => {
+      setConfirmed(false);
+      setSelected(null);
+      setPet600(0);
+      setPet1500(0);
+      setPaid(true);
+      setResetKey((k) => k + 1);
+    }, 2200);
+    return () => clearTimeout(t);
+  }, [confirmed]);
+
+  const onConfirm = () => {
+    if (!selected) return;
+    const entry = recordBill({
+      customerId: selected.id,
+      pet600Packs: pet600,
+      pet1500Packs: pet1500,
+      cashCollected: paid ? billed : 0,
+    });
+    if (entry) {
+      setLastReceipt({
+        name: selected.name,
+        pet600,
+        pet1500,
+        amount: billed,
+        cash: paid ? billed : 0,
+      });
+      setConfirmed(true);
+    }
+  };
+
+  return (
+    <Screen padded={false}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+      >
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <View>
+              <Text style={styles.title}>Sell</Text>
+              <Text style={styles.titleUr}>فروخت</Text>
+            </View>
+            <View style={styles.vanChip}>
+              <Text style={styles.vanChipLabel}>On van</Text>
+              <Text style={styles.vanChipValue}>
+                {vanLoad.pet600Packs} × 600ml • {vanLoad.pet1500Packs} × 1.5L
+              </Text>
+            </View>
+          </View>
+
+          {bills.length > 0 ? (
+            <Pressable
+              onPress={() => {
+                const last = undoLastBill();
+                if (last) Alert.alert('Undone', 'Last bill was undone.');
+              }}
+              style={({ pressed }) => [
+                styles.undoBtn,
+                pressed ? styles.undoBtnPressed : null,
+              ]}
+            >
+              <Text style={styles.undoText}>↶ Undo last bill</Text>
+            </Pressable>
+          ) : null}
+        </View>
+
+        <ScrollView
+          contentContainerStyle={styles.body}
+          keyboardShouldPersistTaps="handled"
+        >
+          <CustomerPicker
+            customers={customers}
+            selected={selected}
+            onSelect={(c) => {
+              setSelected(c);
+              setPet600(0);
+              setPet1500(0);
+              setLastReceipt(null);
+            }}
+          />
+
+          {selected ? (
+            <View style={styles.formCard}>
+              <Text style={styles.formTitle}>Quantities</Text>
+
+              <QuantityStepper
+                label="600 ml packs"
+                labelUr="۶۰۰ ملی پیک"
+                value={pet600}
+                onChange={setPet600}
+                max={vanLoad.pet600Packs}
+              />
+              <View style={styles.priceLine}>
+                <Text style={styles.priceLineText}>
+                  Rs {priceFor(selected, 'pet600')} × {pet600} ={' '}
+                  <Text style={styles.priceLineBold}>
+                    Rs {(priceFor(selected, 'pet600') * pet600).toLocaleString()}
+                  </Text>
+                </Text>
+              </View>
+
+              <View style={styles.divider} />
+
+              <QuantityStepper
+                label="1.5 L packs"
+                labelUr="۱.۵ لیٹر پیک"
+                value={pet1500}
+                onChange={setPet1500}
+                max={vanLoad.pet1500Packs}
+              />
+              <View style={styles.priceLine}>
+                <Text style={styles.priceLineText}>
+                  Rs {priceFor(selected, 'pet1500')} × {pet1500} ={' '}
+                  <Text style={styles.priceLineBold}>
+                    Rs {(priceFor(selected, 'pet1500') * pet1500).toLocaleString()}
+                  </Text>
+                </Text>
+              </View>
+
+              <View style={styles.totalCard}>
+                <Text style={styles.totalLabel}>Total bill</Text>
+                <Text style={styles.totalLabelUr}>کل بل</Text>
+                <Text style={styles.totalValue}>Rs {billed.toLocaleString()}</Text>
+              </View>
+
+              <Pressable
+                onPress={() => setPaid((p) => !p)}
+                style={({ pressed }) => [
+                  styles.paidToggle,
+                  paid ? styles.paidToggleOn : styles.paidToggleOff,
+                  pressed ? { opacity: 0.85 } : null,
+                ]}
+              >
+                <View style={[styles.checkBox, paid ? styles.checkBoxOn : null]}>
+                  {paid ? <Text style={styles.checkMark}>✓</Text> : null}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.paidLabel}>
+                    {paid ? 'Paid in full' : 'On credit (no cash)'}
+                  </Text>
+                  <Text style={styles.paidLabelUr}>
+                    {paid ? 'پوری ادائیگی ہوگئی' : 'ادھار (نقدی نہیں)'}
+                  </Text>
+                </View>
+              </Pressable>
+
+              <SwipeToConfirm
+                key={resetKey}
+                labelEn="Swipe to finalize bill  ›››"
+                labelUr="بل کو حتمی شکل دیں"
+                doneLabelEn="Bill saved ✓"
+                doneLabelUr="بل محفوظ ہو گیا"
+                done={confirmed}
+                disabled={!canSwipe}
+                onConfirm={onConfirm}
+                style={styles.swipe}
+              />
+            </View>
+          ) : null}
+
+          {confirmed && lastReceipt ? (
+            <View style={styles.receiptCard}>
+              <Text style={styles.receiptTitle}>✓ Bill saved</Text>
+              <Text style={styles.receiptCustomer}>{lastReceipt.name}</Text>
+              <Text style={styles.receiptLine}>
+                {lastReceipt.pet600} × 600ml + {lastReceipt.pet1500} × 1.5L
+              </Text>
+              <Text style={styles.receiptAmount}>
+                Rs {lastReceipt.amount.toLocaleString()}{' '}
+                {lastReceipt.cash < lastReceipt.amount ? '(on credit)' : '(paid)'}
+              </Text>
+              <Text style={styles.receiptHint}>Resetting for next sale…</Text>
+            </View>
+          ) : null}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  header: {
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  title: { fontSize: fontSizes.title, fontWeight: '800', color: colors.primaryDark },
+  titleUr: { fontSize: fontSizes.body, color: colors.primary },
+  vanChip: {
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
+  },
+  vanChipLabel: { fontSize: fontSizes.xs, color: colors.textMuted },
+  vanChipValue: {
+    fontSize: fontSizes.sm,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  undoBtn: {
+    alignSelf: 'flex-start',
+    marginTop: spacing.sm,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.pill,
+    backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: colors.warning,
+  },
+  undoBtnPressed: { backgroundColor: colors.warning + '33' },
+  undoText: { fontSize: fontSizes.sm, fontWeight: '700', color: colors.warning },
+  body: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xxxl,
+  },
+  formCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    marginTop: spacing.md,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  formTitle: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+    marginBottom: spacing.sm,
+  },
+  priceLine: {
+    paddingHorizontal: spacing.sm,
+    paddingTop: 4,
+  },
+  priceLineText: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+  },
+  priceLineBold: { color: colors.primaryDark, fontWeight: '800' },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: spacing.md,
+  },
+  totalCard: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.md,
+    padding: spacing.lg,
+    marginTop: spacing.md,
+    alignItems: 'center',
+  },
+  totalLabel: { color: 'rgba(255,255,255,0.85)', fontSize: fontSizes.body, fontWeight: '600' },
+  totalLabelUr: { color: 'rgba(255,255,255,0.7)', fontSize: fontSizes.xs },
+  totalValue: {
+    color: colors.textInverse,
+    fontSize: fontSizes.heading,
+    fontWeight: '900',
+    marginTop: 4,
+  },
+  paidToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.md,
+    marginTop: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 1.5,
+  },
+  paidToggleOn: {
+    backgroundColor: colors.success + '15',
+    borderColor: colors.success,
+  },
+  paidToggleOff: {
+    backgroundColor: colors.warning + '15',
+    borderColor: colors.warning,
+  },
+  checkBox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkBoxOn: { backgroundColor: colors.success, borderColor: colors.success },
+  checkMark: { color: colors.textInverse, fontWeight: '900', fontSize: 16 },
+  paidLabel: { fontSize: fontSizes.body, fontWeight: '700', color: colors.text },
+  paidLabelUr: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 1 },
+  swipe: { marginTop: spacing.sm },
+  receiptCard: {
+    marginTop: spacing.md,
+    padding: spacing.lg,
+    backgroundColor: colors.statusGreen + '22',
+    borderRadius: radii.lg,
+    borderWidth: 1.5,
+    borderColor: colors.success,
+    alignItems: 'center',
+  },
+  receiptTitle: {
+    fontSize: fontSizes.title,
+    fontWeight: '900',
+    color: colors.success,
+  },
+  receiptCustomer: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.text,
+    marginTop: spacing.xs,
+  },
+  receiptLine: {
+    fontSize: fontSizes.sm,
+    color: colors.text,
+    marginTop: spacing.xs,
+  },
+  receiptAmount: {
+    fontSize: fontSizes.title,
+    fontWeight: '900',
+    color: colors.primaryDark,
+    marginTop: spacing.sm,
+  },
+  receiptHint: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    fontStyle: 'italic',
+    marginTop: spacing.sm,
+  },
+});

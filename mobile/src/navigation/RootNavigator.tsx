@@ -16,23 +16,29 @@ import { useAuth } from '../auth/AuthContext';
 import { LoginScreen } from '../screens/LoginScreen';
 import { RoleHomeScreen } from '../screens/RoleHomeScreen';
 import { CGSalesmanNavigator } from '../cg/navigator';
+import { PetsSalesmanNavigator } from '../pets/navigator';
 import { colors, fontSizes, spacing } from '../theme';
 import { strings } from '../i18n/strings';
+import type { Role } from '../auth/types';
 
 const brandLogo = require('../../assets/brand/akvopura-brand.png');
 
 const Stack = createNativeStackNavigator();
+
+// Map each role to its top-level component.
+// Roles without a dedicated dashboard yet fall back to RoleHomeScreen (the
+// Slice 1 stub) until their slice ships.
+const ROLE_SCREENS: Partial<Record<Role, React.ComponentType<any>>> = {
+  cans_gallons_salesman: CGSalesmanNavigator,
+  pets_salesman: PetsSalesmanNavigator,
+};
 
 export function RootNavigator() {
   const { user, isLoading } = useAuth();
 
   if (isLoading) return <Splash />;
 
-  // Pick the screen component for the logged-in user's role.
-  // Roles other than cans_gallons_salesman still show the Slice 1 stub
-  // until their own slice ships.
-  const AuthedScreen =
-    user?.role === 'cans_gallons_salesman' ? CGSalesmanNavigator : RoleHomeScreen;
+  const AuthedScreen = (user && ROLE_SCREENS[user.role]) ?? RoleHomeScreen;
 
   return (
     <NavigationContainer>
