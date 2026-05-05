@@ -18,6 +18,7 @@ import { usePetsSalesman } from '../../pets/state';
 import { useManager } from '../state';
 import { useAssignments } from '../../assignments/state';
 import { useCustomerPortal } from '../../customer/state';
+import { useProduction } from '../../production/state';
 import { strings } from '../../i18n/strings';
 import { HIGH_VALUE_THRESHOLD } from '../demoData';
 
@@ -39,6 +40,17 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
     (o) => o.status === 'assigned' || o.status === 'in_transit'
   ).length;
   const openComplaints = complaints.filter((c) => c.status === 'open').length;
+  const { batches, lowStock } = useProduction();
+  const todayBatches = batches.filter((b) => {
+    const d = new Date(b.loggedAt);
+    const today = new Date();
+    return (
+      d.getFullYear() === today.getFullYear() &&
+      d.getMonth() === today.getMonth() &&
+      d.getDate() === today.getDate()
+    );
+  }).length;
+  const lowStockCount = lowStock().length;
 
   const cgCash = cg.deliveries.reduce((s, d) => s + d.cashCollected, 0);
   const petsCash = pets.bills.reduce((s, b) => s + b.cashCollected, 0);
@@ -149,7 +161,44 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
         </View>
       </Pressable>
 
-      {pendingOrders > 0 || activeOrders > 0 || openComplaints > 0 || pendingExpenses.length > 0 || totalDebt > 0 ? (
+      <Pressable
+        onPress={() => navigation.navigate('Production')}
+        style={({ pressed }) => [
+          styles.productionCard,
+          pressed ? { opacity: 0.85 } : null,
+        ]}
+      >
+        <View style={styles.productionHeader}>
+          <Text style={styles.productionTitle}>Production today</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
+        </View>
+        <View style={styles.productionRow}>
+          <View style={styles.productionItem}>
+            <Ionicons name="hammer-outline" size={16} color={colors.primary} />
+            <Text style={styles.productionValue}>{todayBatches}</Text>
+            <Text style={styles.productionLabel}>batches</Text>
+          </View>
+          <View style={styles.productionDivider} />
+          <View style={styles.productionItem}>
+            <Ionicons
+              name="alert-circle-outline"
+              size={16}
+              color={lowStockCount > 0 ? colors.danger : colors.textMuted}
+            />
+            <Text
+              style={[
+                styles.productionValue,
+                lowStockCount > 0 ? { color: colors.danger } : null,
+              ]}
+            >
+              {lowStockCount}
+            </Text>
+            <Text style={styles.productionLabel}>low stock</Text>
+          </View>
+        </View>
+      </Pressable>
+
+      {pendingOrders > 0 || activeOrders > 0 || openComplaints > 0 || lowStockCount > 0 || pendingExpenses.length > 0 || totalDebt > 0 ? (
         <View style={styles.alertSection}>
           {pendingOrders > 0 || activeOrders > 0 ? (
             <Pressable
@@ -182,6 +231,26 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
                 size={20}
                 color={pendingOrders > 0 ? colors.warning : colors.info}
               />
+            </Pressable>
+          ) : null}
+
+          {lowStockCount > 0 ? (
+            <Pressable
+              onPress={() => navigation.navigate('Production')}
+              style={({ pressed }) => [
+                styles.alertCard,
+                styles.alertDanger,
+                pressed ? styles.alertPressed : null,
+              ]}
+            >
+              <Ionicons name="warning-outline" size={28} color={colors.danger} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.alertTitle}>
+                  {lowStockCount} raw material{lowStockCount === 1 ? '' : 's'} low
+                </Text>
+                <Text style={styles.alertSub}>Tap to receive stock</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.danger} />
             </Pressable>
           ) : null}
 
@@ -516,5 +585,50 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.primaryDark,
     marginTop: 1,
+  },
+
+  productionCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
+  },
+  productionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  productionTitle: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  productionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  productionItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  productionDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: colors.border,
+    marginHorizontal: spacing.md,
+  },
+  productionValue: {
+    fontSize: fontSizes.title,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  productionLabel: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
   },
 });

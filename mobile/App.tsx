@@ -10,6 +10,7 @@ import { CustomerProvider } from './src/customer/state';
 import { PricingProvider } from './src/pricing/state';
 import { AssignmentsProvider } from './src/assignments/state';
 import { EmployeesProvider } from './src/employees/state';
+import { ProductionProvider } from './src/production/state';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 export default function App() {
@@ -22,11 +23,13 @@ export default function App() {
               <CGSalesmanProvider>
                 <AssignmentsProvider>
                   <EmployeesProvider>
-                    <ManagerProvider>
-                      <CustomerProvider>
-                        <RootNavigator />
-                      </CustomerProvider>
-                    </ManagerProvider>
+                    <ProductionProvider>
+                      <ManagerProvider>
+                        <CustomerProvider>
+                          <RootNavigator />
+                        </CustomerProvider>
+                      </ManagerProvider>
+                    </ProductionProvider>
                   </EmployeesProvider>
                 </AssignmentsProvider>
               </CGSalesmanProvider>

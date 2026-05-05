@@ -13,6 +13,7 @@ import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
 import { useOwnerData } from '../computed';
 import { useEmployees } from '../../employees/state';
+import { useProduction } from '../../production/state';
 import type { BranchKey, BranchSummary } from '../types';
 
 type Route = { params: { branch: BranchKey } };
@@ -25,6 +26,25 @@ export function OwnerBranchOverviewScreen({ route }: { route: Route }) {
   const { employeesByBranch, todayEntryForEmployee, totalsForEntry } = useEmployees();
   const branchEmployees = employeesByBranch(route.params.branch);
   const activeEmployees = branchEmployees.filter((e) => e.active);
+
+  // Production / raw materials are app-wide (not yet branch-scoped) — only
+  // show real numbers on the live branch.
+  const { batches, rawMaterials } = useProduction();
+  const isLiveBranch = isLive;
+  const todaysBatches = isLiveBranch
+    ? batches.filter((b) => {
+        const d = new Date(b.loggedAt);
+        const today = new Date();
+        return (
+          d.getFullYear() === today.getFullYear() &&
+          d.getMonth() === today.getMonth() &&
+          d.getDate() === today.getDate()
+        );
+      }).length
+    : 0;
+  const lowStockMaterials = isLiveBranch
+    ? rawMaterials.filter((r) => r.currentStock <= r.reorderThreshold)
+    : [];
 
   let inCount = 0;
   let doneCount = 0;
@@ -144,6 +164,27 @@ export function OwnerBranchOverviewScreen({ route }: { route: Route }) {
         ) : (
           <Row label="Hourly earned today" value="—" last />
         )}
+      </Section>
+
+      <Section title="Production & inventory" subtitle="پروڈکشن اور انوینٹری">
+        <Row label="Batches today" value={todaysBatches} />
+        <Row
+          label="Low-stock materials"
+          value={lowStockMaterials.length}
+          warn={lowStockMaterials.length > 0}
+          last={lowStockMaterials.length === 0}
+        />
+        {lowStockMaterials.length > 0
+          ? lowStockMaterials.map((m, i) => (
+              <Row
+                key={m.id}
+                label={`  • ${m.name}`}
+                value={`${m.currentStock} / ${m.reorderThreshold}`}
+                warn
+                last={i === lowStockMaterials.length - 1}
+              />
+            ))
+          : null}
       </Section>
 
       <Section title="Expenses" subtitle="اخراجات">
