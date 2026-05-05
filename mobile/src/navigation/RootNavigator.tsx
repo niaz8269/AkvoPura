@@ -15,6 +15,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../auth/AuthContext';
 import { LoginScreen } from '../screens/LoginScreen';
 import { RoleHomeScreen } from '../screens/RoleHomeScreen';
+import { CGSalesmanNavigator } from '../cg/navigator';
 import { colors, fontSizes, spacing } from '../theme';
 import { strings } from '../i18n/strings';
 
@@ -27,11 +28,17 @@ export function RootNavigator() {
 
   if (isLoading) return <Splash />;
 
+  // Pick the screen component for the logged-in user's role.
+  // Roles other than cans_gallons_salesman still show the Slice 1 stub
+  // until their own slice ships.
+  const AuthedScreen =
+    user?.role === 'cans_gallons_salesman' ? CGSalesmanNavigator : RoleHomeScreen;
+
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {user ? (
-          <Stack.Screen name="Home" component={RoleHomeScreen} />
+          <Stack.Screen name="Home" component={AuthedScreen} />
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} />
         )}
