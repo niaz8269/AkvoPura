@@ -33,6 +33,9 @@ export type CGCustomer = {
   pricePerCan: number;
   pricePerGallon: number;
 
+  /** Last time this customer received a delivery (timestamp). null = never. */
+  lastActivityAt?: number;
+
   notes?: string;
 };
 

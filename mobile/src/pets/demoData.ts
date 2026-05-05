@@ -4,6 +4,22 @@
 
 import type { PetCustomer, PetProduct, PetVanLoad } from './types';
 
+const daysAgo = (n: number) => Date.now() - n * 24 * 60 * 60_000;
+
+/** Synthetic last-activity offsets per Pets customer id (in days). */
+const LAST_ACTIVITY_DAYS_AGO: Record<string, number> = {
+  'p-1': 1,    // Al-Madina General — very recent
+  'p-2': 9,    // Khan Karyana — recent
+  'p-3': 50,   // New Sahib Departmental — at risk
+  'p-4': 4,    // Saima Tuck Shop — recent
+  'p-5': 6,    // Bypass Cold Drink — recent
+  'p-6': 38,   // Family Akbar — at risk
+  'p-7': 14,   // Hira Beauty — fine
+  'p-8': 75,   // Al-Falah Stationery — long inactive
+  'p-9': 2,    // Truck Adda Tea Stall — daily
+  'p-10': 22,  // Eidgah Mart — fine (under 30)
+};
+
 export const petProducts: PetProduct[] = [
   {
     id: 'pet600',
@@ -26,7 +42,7 @@ export const initialPetVanLoad: PetVanLoad = {
   pet1500Packs: 40,
 };
 
-export const demoPetCustomers: PetCustomer[] = [
+const basePetCustomers: PetCustomer[] = [
   {
     id: 'p-1',
     name: 'Al-Madina General Store',
@@ -113,3 +129,8 @@ export const demoPetCustomers: PetCustomer[] = [
     outstandingDebt: 0,
   },
 ];
+
+export const demoPetCustomers: PetCustomer[] = basePetCustomers.map((c) => {
+  const offset = LAST_ACTIVITY_DAYS_AGO[c.id];
+  return offset !== undefined ? { ...c, lastActivityAt: daysAgo(offset) } : c;
+});

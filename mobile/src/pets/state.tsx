@@ -125,6 +125,7 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
           ? {
               ...c,
               outstandingDebt: Math.max(0, c.outstandingDebt + billed - input.cashCollected),
+              lastActivityAt: Date.now(),
             }
           : c
       )

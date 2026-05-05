@@ -12,6 +12,7 @@ import { useMemo } from 'react';
 import { useCGSalesman } from '../cg/state';
 import { usePetsSalesman } from '../pets/state';
 import { useManager } from '../manager/state';
+import { classifyChurn } from '../analytics/churn';
 import { shergarhDemoSummary } from './demoData';
 import type { AuditLogItem, BranchKey, BranchSummary } from './types';
 
@@ -31,6 +32,14 @@ export function useOwnerData() {
 
     const cgInDebt = cg.customers.filter((c) => c.outstandingDebt > 0).length;
     const petsInDebt = pets.customers.filter((c) => c.outstandingDebt > 0).length;
+
+    const isAtRisk = (lastActivityAt: number | undefined) => {
+      const r = classifyChurn(lastActivityAt);
+      return r === 'at_risk' || r === 'never';
+    };
+    const atRisk =
+      cg.customers.filter((c) => isAtRisk(c.lastActivityAt)).length +
+      pets.customers.filter((c) => isAtRisk(c.lastActivityAt)).length;
 
     const expenses = manager.expenses;
     const approved = expenses.filter((e) => e.status === 'approved');
@@ -54,6 +63,7 @@ export function useOwnerData() {
 
       customerCount: cg.customers.length + pets.customers.length,
       customersInDebt: cgInDebt + petsInDebt,
+      customersAtRisk: atRisk,
       totalDebt: cgDebt + petsDebt,
 
       pendingExpenses: expenses.filter((e) => e.status === 'pending').length,

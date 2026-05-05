@@ -127,6 +127,12 @@ export function OwnerCombinedScreen() {
           warnHigher
         />
         <CompareRow
+          label="At risk (30+ days)"
+          a={timergara.customersAtRisk}
+          b={shergarh.customersAtRisk}
+          warnHigher
+        />
+        <CompareRow
           label="Total outstanding"
           a={timergara.totalDebt}
           b={shergarh.totalDebt}

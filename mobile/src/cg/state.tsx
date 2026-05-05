@@ -134,6 +134,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
                 0,
                 c.outstandingDebt + billed - input.cashCollected
               ),
+              lastActivityAt: Date.now(),
             }
       )
     );

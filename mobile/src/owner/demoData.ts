@@ -27,6 +27,7 @@ export const shergarhDemoSummary: BranchSummary = {
 
   customerCount: 18,
   customersInDebt: 5,
+  customersAtRisk: 3,
   totalDebt: 12_300,
 
   pendingExpenses: 2,

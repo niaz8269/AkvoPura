@@ -31,6 +31,7 @@ export type BranchSummary = {
   // Customers
   customerCount: number;
   customersInDebt: number;
+  customersAtRisk: number;
   totalDebt: number;
 
   // Expenses

@@ -14,8 +14,9 @@ import { colors, fontSizes, radii, spacing } from '../../theme';
 import { useCGSalesman } from '../../cg/state';
 import { usePetsSalesman } from '../../pets/state';
 import type { PaymentCycle } from '../../cg/types';
+import { classifyChurn, daysSince } from '../../analytics/churn';
 
-type Filter = 'all' | 'pets' | 'cg' | 'debt';
+type Filter = 'all' | 'pets' | 'cg' | 'debt' | 'at_risk';
 
 type UnifiedCustomer = {
   id: string;
@@ -27,6 +28,7 @@ type UnifiedCustomer = {
   debt: number;
   emptiesHeld?: number;
   paymentCycle?: PaymentCycle;
+  lastActivityAt?: number;
 };
 
 export function ManagerCustomersScreen() {
@@ -44,6 +46,7 @@ export function ManagerCustomersScreen() {
       area: c.area,
       phone: c.phone,
       debt: c.outstandingDebt,
+      lastActivityAt: c.lastActivityAt,
     }));
     const g: UnifiedCustomer[] = cg.customers.map((c) => ({
       id: 'cg-' + c.id,
@@ -55,6 +58,7 @@ export function ManagerCustomersScreen() {
       debt: c.outstandingDebt,
       emptiesHeld: c.emptyCansHeld + c.emptyGallonsHeld,
       paymentCycle: c.paymentCycle,
+      lastActivityAt: c.lastActivityAt,
     }));
     return [...p, ...g];
   }, [pets.customers, cg.customers]);
@@ -82,6 +86,11 @@ export function ManagerCustomersScreen() {
     if (filter === 'pets') list = list.filter((c) => c.type === 'Pets');
     else if (filter === 'cg') list = list.filter((c) => c.type === 'C/G');
     else if (filter === 'debt') list = list.filter((c) => c.debt > 0);
+    else if (filter === 'at_risk')
+      list = list.filter((c) => {
+        const r = classifyChurn(c.lastActivityAt);
+        return r === 'at_risk' || r === 'never';
+      });
 
     const q = query.trim().toLowerCase();
     if (q) {
@@ -102,6 +111,10 @@ export function ManagerCustomersScreen() {
 
   const totalDebt = all.reduce((s, c) => s + c.debt, 0);
   const inDebtCount = all.filter((c) => c.debt > 0).length;
+  const atRiskCount = all.filter((c) => {
+    const r = classifyChurn(c.lastActivityAt);
+    return r === 'at_risk' || r === 'never';
+  }).length;
 
   return (
     <Screen padded={false}>
@@ -115,6 +128,11 @@ export function ManagerCustomersScreen() {
             label="In debt"
             value={inDebtCount}
             highlight={inDebtCount > 0 ? 'warn' : undefined}
+          />
+          <KpiCard
+            label="At risk"
+            value={atRiskCount}
+            highlight={atRiskCount > 0 ? 'danger' : undefined}
           />
           <KpiCard
             label="Total owed"
@@ -134,7 +152,7 @@ export function ManagerCustomersScreen() {
         />
 
         <View style={styles.filterRow}>
-          {(['all', 'pets', 'cg', 'debt'] as Filter[]).map((f) => {
+          {(['all', 'pets', 'cg', 'debt', 'at_risk'] as Filter[]).map((f) => {
             const active = f === filter;
             return (
               <Pressable
@@ -186,6 +204,7 @@ const FILTER_LABELS: Record<Filter, string> = {
   pets: 'Pets',
   cg: 'C/G',
   debt: 'In debt',
+  at_risk: 'At risk',
 };
 
 function CustomerRow({
@@ -195,6 +214,29 @@ function CustomerRow({
   customer: UnifiedCustomer;
   onEditCycle?: () => void;
 }) {
+  const churn = classifyChurn(customer.lastActivityAt);
+  const days = daysSince(customer.lastActivityAt);
+  const churnBadge =
+    churn === 'never' ? (
+      <View style={[styles.churnBadge, styles.churnBadgeRisk]}>
+        <Text style={[styles.churnBadgeText, styles.churnBadgeTextRisk]}>
+          Never ordered
+        </Text>
+      </View>
+    ) : churn === 'at_risk' ? (
+      <View style={[styles.churnBadge, styles.churnBadgeRisk]}>
+        <Text style={[styles.churnBadgeText, styles.churnBadgeTextRisk]}>
+          At risk · {days}d
+        </Text>
+      </View>
+    ) : churn === 'borderline' ? (
+      <View style={[styles.churnBadge, styles.churnBadgeBorder]}>
+        <Text style={[styles.churnBadgeText, styles.churnBadgeTextBorder]}>
+          {days}d ago
+        </Text>
+      </View>
+    ) : null;
+
   const body = (
     <>
       <View
@@ -215,6 +257,7 @@ function CustomerRow({
         {customer.emptiesHeld && customer.emptiesHeld > 0 ? (
           <Text style={styles.empties}>Empties held: {customer.emptiesHeld}</Text>
         ) : null}
+        {churnBadge}
       </View>
       {customer.paymentCycle ? (
         <View
@@ -345,7 +388,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     marginBottom: spacing.sm,
   },
-  filterRow: { flexDirection: 'row', gap: spacing.sm },
+  filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   filterPill: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
@@ -424,4 +467,16 @@ const styles = StyleSheet.create({
   cycleBadgeText: { fontSize: 10, fontWeight: '900' },
   cycleBadgeTextDaily: { color: colors.accent },
   cycleBadgeTextWeekly: { color: colors.warning },
+  churnBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.pill,
+    marginTop: 4,
+  },
+  churnBadgeRisk: { backgroundColor: colors.danger + '22' },
+  churnBadgeBorder: { backgroundColor: colors.warning + '22' },
+  churnBadgeText: { fontSize: 10, fontWeight: '800' },
+  churnBadgeTextRisk: { color: colors.danger },
+  churnBadgeTextBorder: { color: colors.warning },
 });

@@ -30,6 +30,8 @@ export type PetCustomer = {
   /** Per-customer override prices. Falls back to product.defaultPrice. */
   pricePet600?: number;
   pricePet1500?: number;
+  /** Last time this customer received a bill (timestamp). null = never. */
+  lastActivityAt?: number;
   notes?: string;
 };
 

@@ -146,6 +146,11 @@ export function OwnerBranchOverviewScreen({ route, navigation }: { route: Route;
           warn={summary.customersInDebt > 0}
         />
         <Row
+          label="At risk (30+ days inactive)"
+          value={summary.customersAtRisk}
+          warn={summary.customersAtRisk > 0}
+        />
+        <Row
           label="Total outstanding"
           value={`Rs ${summary.totalDebt.toLocaleString()}`}
           warn={summary.totalDebt > 0}

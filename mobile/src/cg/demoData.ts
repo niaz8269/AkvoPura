@@ -7,6 +7,29 @@
 
 import type { CGCustomer, VanLoad } from './types';
 
+const daysAgo = (n: number) => Date.now() - n * 24 * 60 * 60_000;
+
+/**
+ * Synthetic last-activity offsets per customer id (in days). Mix of recent
+ * and old so the churn-risk feature has visible state in the demo.
+ * Anything > 30 days is treated as a churn risk by the helpers.
+ */
+const LAST_ACTIVITY_DAYS_AGO: Record<string, number> = {
+  'c-h1': 1,    // DHQ ICU — daily; very active
+  'c-h2': 2,    // DHQ OPD — recent
+  'c-h3': 45,   // Khan Medical — at risk
+  'c-h4': 8,    // Saima Maternity — fine
+  'c-b1': 1,    // Al-Madina Restaurant — daily
+  'c-b2': 60,   // Bypass Tyre Shop — long inactive
+  'c-b3': 3,    // Falcon Petrol Pump — recent
+  'c-b4': 5,    // Hajji Karim — recent
+  'c-o1': 12,   // Govt school — fine
+  'c-o2': 70,   // Hira Beauty — long inactive
+  'c-o3': 25,   // Rashid Auto — borderline (still safe at 25)
+  'c-o4': 10,   // Family Akbar — fine
+  'c-test': 4,  // Test customer — recent
+};
+
 export const initialVanLoad: VanLoad = {
   filledCans: 80,
   filledGallons: 60,
@@ -14,7 +37,7 @@ export const initialVanLoad: VanLoad = {
   emptyGallonsAboard: 0,
 };
 
-export const demoCustomers: CGCustomer[] = [
+const baseCustomers: CGCustomer[] = [
   // --- Hospital route ---
   {
     id: 'c-h1',
@@ -223,3 +246,8 @@ export const demoCustomers: CGCustomer[] = [
     pricePerGallon: 200,
   },
 ];
+
+export const demoCustomers: CGCustomer[] = baseCustomers.map((c) => {
+  const offset = LAST_ACTIVITY_DAYS_AGO[c.id];
+  return offset !== undefined ? { ...c, lastActivityAt: daysAgo(offset) } : c;
+});
