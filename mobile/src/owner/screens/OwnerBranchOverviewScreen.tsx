@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
 import { useOwnerData } from '../computed';
+import { useEmployees } from '../../employees/state';
 import type { BranchKey, BranchSummary } from '../types';
 
 type Route = { params: { branch: BranchKey } };
@@ -20,6 +21,30 @@ export function OwnerBranchOverviewScreen({ route }: { route: Route }) {
   const { timergara, shergarh } = useOwnerData();
   const summary = route.params.branch === 'timergara' ? timergara : shergarh;
   const isLive = route.params.branch === 'timergara';
+
+  const { employeesByBranch, todayEntryForEmployee, totalsForEntry } = useEmployees();
+  const branchEmployees = employeesByBranch(route.params.branch);
+  const activeEmployees = branchEmployees.filter((e) => e.active);
+
+  let inCount = 0;
+  let doneCount = 0;
+  let absentCount = 0;
+  let monthlyPayroll = 0;
+  let hourlyEarningsToday = 0;
+
+  activeEmployees.forEach((e) => {
+    const entry = todayEntryForEmployee(e.id);
+    if (!entry) absentCount++;
+    else if (entry.checkOutAt === null) inCount++;
+    else doneCount++;
+
+    if (e.employmentType === 'salaried' && e.monthlySalary) {
+      monthlyPayroll += e.monthlySalary;
+    }
+    if (e.employmentType === 'hourly' && entry?.checkOutAt) {
+      hourlyEarningsToday += totalsForEntry(entry, e).earnings;
+    }
+  });
 
   return (
     <Screen scroll>
@@ -88,6 +113,37 @@ export function OwnerBranchOverviewScreen({ route }: { route: Route }) {
           warn={summary.totalDebt > 0}
           last
         />
+      </Section>
+
+      <Section title="Employees" subtitle="ملازمین">
+        <Row label="Total active" value={activeEmployees.length} />
+        <Row
+          label="In today"
+          value={inCount}
+          success={inCount > 0}
+        />
+        <Row
+          label="Done today"
+          value={doneCount}
+        />
+        <Row
+          label="Absent today"
+          value={absentCount}
+          warn={absentCount > 0}
+        />
+        <Row
+          label="Monthly payroll"
+          value={`Rs ${monthlyPayroll.toLocaleString()}`}
+        />
+        {hourlyEarningsToday > 0 ? (
+          <Row
+            label="Hourly earned today"
+            value={`Rs ${Math.round(hourlyEarningsToday).toLocaleString()}`}
+            last
+          />
+        ) : (
+          <Row label="Hourly earned today" value="—" last />
+        )}
       </Section>
 
       <Section title="Expenses" subtitle="اخراجات">
