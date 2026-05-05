@@ -50,7 +50,6 @@ export function PetsSellScreen() {
   // like an empty string mid-edit). null means "use customer/default price".
   const [price600, setPrice600] = useState<string | null>(null);
   const [price1500, setPrice1500] = useState<string | null>(null);
-  const [paid, setPaid] = useState(true);
   const [confirmed, setConfirmed] = useState(false);
   const [resetKey, setResetKey] = useState(0);
   const [sharing, setSharing] = useState(false);
@@ -102,7 +101,6 @@ export function PetsSellScreen() {
       setPet1500(0);
       setPrice600(null);
       setPrice1500(null);
-      setPaid(true);
       setLastReceipt(null);
       setResetKey((k) => k + 1);
     }, 7000);
@@ -111,11 +109,14 @@ export function PetsSellScreen() {
 
   const onConfirm = () => {
     if (!selected) return;
+    // Pets bills are always treated as paid in full (cash on the spot).
+    // Credit-style sales now flow through the CG cycle logic; if a Pets credit
+    // mechanism is needed later it will get its own UI rather than a toggle.
     const entry = recordBill({
       customerId: selected.id,
       pet600Packs: pet600,
       pet1500Packs: pet1500,
-      cashCollected: paid ? billed : 0,
+      cashCollected: billed,
       pricePet600: effective600,
       pricePet1500: effective1500,
     });
@@ -128,7 +129,7 @@ export function PetsSellScreen() {
         unit600: effective600,
         unit1500: effective1500,
         amount: billed,
-        cash: paid ? billed : 0,
+        cash: billed,
       });
       setConfirmed(true);
     }
@@ -273,27 +274,6 @@ export function PetsSellScreen() {
                 <Text style={styles.totalLabelUr}>کل بل</Text>
                 <Text style={styles.totalValue}>Rs {billed.toLocaleString()}</Text>
               </View>
-
-              <Pressable
-                onPress={() => setPaid((p) => !p)}
-                style={({ pressed }) => [
-                  styles.paidToggle,
-                  paid ? styles.paidToggleOn : styles.paidToggleOff,
-                  pressed ? { opacity: 0.85 } : null,
-                ]}
-              >
-                <View style={[styles.checkBox, paid ? styles.checkBoxOn : null]}>
-                  {paid ? <Text style={styles.checkMark}>✓</Text> : null}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.paidLabel}>
-                    {paid ? 'Paid in full' : 'On credit (no cash)'}
-                  </Text>
-                  <Text style={styles.paidLabelUr}>
-                    {paid ? 'پوری ادائیگی ہوگئی' : 'ادھار (نقدی نہیں)'}
-                  </Text>
-                </View>
-              </Pressable>
 
               <SwipeToConfirm
                 key={resetKey}

@@ -141,13 +141,16 @@ function DeliveryRow({
   const { user } = useAuth();
   const [cans, setCans] = useState(customer.usualCans);
   const [gallons, setGallons] = useState(customer.usualGallons);
-  const [paid, setPaid] = useState(true);
   const [confirmed, setConfirmed] = useState(false);
   const [resetKey, setResetKey] = useState(0);
   const [lastEntry, setLastEntry] = useState<DeliveryEntry | null>(null);
   const [sharing, setSharing] = useState(false);
 
   const billed = cans * customer.pricePerCan + gallons * customer.pricePerGallon;
+  // Cash vs credit is derived from the customer's payment cycle:
+  //   daily customers pay on every visit → full cash collected
+  //   weekly customers settle once a week → bill goes to outstanding debt
+  const isPaidNow = customer.paymentCycle === 'daily';
   const canSwipe = cans + gallons > 0;
 
   // After a successful confirm, hold the green row + Share button for a while,
@@ -159,7 +162,6 @@ function DeliveryRow({
       setLastEntry(null);
       setCans(customer.usualCans);
       setGallons(customer.usualGallons);
-      setPaid(true);
       setResetKey((k) => k + 1);
     }, 7000);
     return () => clearTimeout(t);
@@ -172,7 +174,7 @@ function DeliveryRow({
       gallonsDelivered: gallons,
       emptyCansCollected: 0,
       emptyGallonsCollected: 0,
-      cashCollected: paid ? billed : 0,
+      cashCollected: isPaidNow ? billed : 0,
     });
     if (entry) {
       setLastEntry(entry);
@@ -257,27 +259,6 @@ function DeliveryRow({
         onChange={setGallons}
         icon={gallonIcon}
       />
-
-      <Pressable
-        onPress={() => setPaid((p) => !p)}
-        style={({ pressed }) => [
-          styles.paidToggle,
-          paid ? styles.paidToggleOn : styles.paidToggleOff,
-          pressed ? styles.paidPressed : null,
-        ]}
-      >
-        <View style={[styles.checkBox, paid ? styles.checkBoxOn : null]}>
-          {paid ? <Text style={styles.checkMark}>✓</Text> : null}
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.paidLabel}>
-            {paid ? 'Paid in full' : 'On credit (no cash collected)'}
-          </Text>
-          <Text style={styles.paidLabelUr}>
-            {paid ? 'پوری ادائیگی ہوگئی' : 'ادھار (نقدی نہیں)'}
-          </Text>
-        </View>
-      </Pressable>
 
       <View style={styles.swipeWrap}>
         <SwipeToConfirm
