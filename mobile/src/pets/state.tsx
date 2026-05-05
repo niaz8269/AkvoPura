@@ -32,6 +32,8 @@ type BillInput = {
   /** Bill-time price overrides (per pack). If omitted, falls back to priceFor(). */
   pricePet600?: number;
   pricePet1500?: number;
+  /** Optional flat Rs discount applied to the subtotal. */
+  discount?: number;
 };
 
 type ReturnInput = {
@@ -113,7 +115,9 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
 
     const unit600 = input.pricePet600 ?? priceFor(customer, 'pet600');
     const unit1500 = input.pricePet1500 ?? priceFor(customer, 'pet1500');
-    const billed = input.pet600Packs * unit600 + input.pet1500Packs * unit1500;
+    const subtotal = input.pet600Packs * unit600 + input.pet1500Packs * unit1500;
+    const discount = Math.max(0, Math.min(subtotal, input.discount ?? 0));
+    const billed = subtotal - discount;
 
     setCustomers((prev) =>
       prev.map((c) =>
@@ -136,6 +140,8 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
       customerId: customer.id,
       pet600Packs: input.pet600Packs,
       pet1500Packs: input.pet1500Packs,
+      subtotal,
+      discount,
       amountBilled: billed,
       cashCollected: input.cashCollected,
       tripNumber: currentTripNumber,

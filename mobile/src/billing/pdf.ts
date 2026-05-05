@@ -25,6 +25,8 @@ export type BillData = {
   branchName: string;
   salesmanName?: string;
   items: BillItem[];
+  /** Optional flat Rs discount applied to the subtotal. */
+  discount?: number;
   paid: number;
   credit: number;
 };
@@ -53,6 +55,7 @@ function escapeHtml(s: string) {
 
 export function generateBillHtml(bill: BillData): string {
   const subtotal = bill.items.reduce((s, it) => s + it.qty * it.unitPrice, 0);
+  const discount = Math.max(0, bill.discount ?? 0);
   const total = bill.paid + bill.credit;
 
   const itemsRows = bill.items
@@ -246,6 +249,11 @@ export function generateBillHtml(bill: BillData): string {
         <td class="label">Subtotal</td>
         <td class="value">Rs ${subtotal.toLocaleString()}</td>
       </tr>
+      ${discount > 0 ? `
+      <tr>
+        <td class="label" style="color: #E8A53C;">Discount</td>
+        <td class="value" style="color: #E8A53C;">−Rs ${discount.toLocaleString()}</td>
+      </tr>` : ''}
       <tr>
         <td class="label">Cash paid</td>
         <td class="value">Rs ${bill.paid.toLocaleString()}</td>

@@ -16,6 +16,7 @@ export function PetsEndOfDayScreen({ navigation }: any) {
 
   const totalCash = bills.reduce((s, b) => s + b.cashCollected, 0);
   const totalBilled = bills.reduce((s, b) => s + b.amountBilled, 0);
+  const totalDiscount = bills.reduce((s, b) => s + (b.discount ?? 0), 0);
   const totalRefunds = returns.reduce((s, r) => s + r.refundAmount, 0);
   const sold600 = bills.reduce((s, b) => s + b.pet600Packs, 0);
   const sold1500 = bills.reduce((s, b) => s + b.pet1500Packs, 0);
@@ -114,6 +115,12 @@ export function PetsEndOfDayScreen({ navigation }: any) {
           value={`${initialPetVanLoad.pet1500Packs} → ${vanLoad.pet1500Packs}`}
         />
         <Row label="Refund credits issued" value={`Rs ${totalRefunds.toLocaleString()}`} />
+        <Row
+          label="Discount given today"
+          value={
+            totalDiscount > 0 ? `−Rs ${totalDiscount.toLocaleString()}` : '—'
+          }
+        />
       </Section>
 
       <Section title="Per-customer breakdown" subtitle="ہر کسٹمر کی تفصیل">

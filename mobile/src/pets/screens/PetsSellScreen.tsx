@@ -50,6 +50,7 @@ export function PetsSellScreen() {
   // like an empty string mid-edit). null means "use customer/default price".
   const [price600, setPrice600] = useState<string | null>(null);
   const [price1500, setPrice1500] = useState<string | null>(null);
+  const [discountStr, setDiscountStr] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [resetKey, setResetKey] = useState(0);
   const [sharing, setSharing] = useState(false);
@@ -60,6 +61,8 @@ export function PetsSellScreen() {
     pet1500: number;
     unit600: number;
     unit1500: number;
+    subtotal: number;
+    discount: number;
     amount: number;
     cash: number;
   } | null>(null);
@@ -84,10 +87,15 @@ export function PetsSellScreen() {
     return priceFor(selected, 'pet1500');
   }, [selected, price1500, priceFor]);
 
-  const billed = useMemo(
+  const subtotal = useMemo(
     () => pet600 * effective600 + pet1500 * effective1500,
     [pet600, pet1500, effective600, effective1500]
   );
+  const discount = useMemo(() => {
+    const n = Number(discountStr) || 0;
+    return Math.max(0, Math.min(subtotal, n));
+  }, [discountStr, subtotal]);
+  const billed = subtotal - discount;
 
   const canSwipe = !!selected && pet600 + pet1500 > 0 && !confirmed;
 
@@ -101,6 +109,7 @@ export function PetsSellScreen() {
       setPet1500(0);
       setPrice600(null);
       setPrice1500(null);
+      setDiscountStr('');
       setLastReceipt(null);
       setResetKey((k) => k + 1);
     }, 7000);
@@ -119,6 +128,7 @@ export function PetsSellScreen() {
       cashCollected: billed,
       pricePet600: effective600,
       pricePet1500: effective1500,
+      discount,
     });
     if (entry) {
       setLastReceipt({
@@ -128,6 +138,8 @@ export function PetsSellScreen() {
         pet1500,
         unit600: effective600,
         unit1500: effective1500,
+        subtotal,
+        discount,
         amount: billed,
         cash: billed,
       });
@@ -163,6 +175,7 @@ export function PetsSellScreen() {
         branchName: user?.branch === 'shergarh' ? 'Shergarh' : 'Timergara',
         salesmanName: user?.name,
         items,
+        discount: lastReceipt.discount,
         paid: lastReceipt.cash,
         credit: lastReceipt.amount - lastReceipt.cash,
       });
@@ -226,6 +239,7 @@ export function PetsSellScreen() {
               setPet1500(0);
               setPrice600(null);
               setPrice1500(null);
+              setDiscountStr('');
               setLastReceipt(null);
             }}
           />
@@ -269,7 +283,32 @@ export function PetsSellScreen() {
               />
 
 
+              <View style={styles.discountRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.discountLabel}>Discount (Rs)</Text>
+                  <Text style={styles.discountLabelUr}>چھوٹ</Text>
+                </View>
+                <View style={styles.discountInputWrap}>
+                  <Text style={styles.discountMinus}>−</Text>
+                  <TextInput
+                    value={discountStr}
+                    onChangeText={(t) => setDiscountStr(t.replace(/[^0-9]/g, ''))}
+                    keyboardType="number-pad"
+                    placeholder="0"
+                    placeholderTextColor={colors.textMuted}
+                    style={styles.discountInput}
+                    maxLength={6}
+                  />
+                </View>
+              </View>
+
               <View style={styles.totalCard}>
+                {discount > 0 ? (
+                  <Text style={styles.subtotalLine}>
+                    Subtotal Rs {subtotal.toLocaleString()} · Discount −Rs{' '}
+                    {discount.toLocaleString()}
+                  </Text>
+                ) : null}
                 <Text style={styles.totalLabel}>Total bill</Text>
                 <Text style={styles.totalLabelUr}>کل بل</Text>
                 <Text style={styles.totalValue}>Rs {billed.toLocaleString()}</Text>
@@ -518,6 +557,45 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.border,
     marginVertical: spacing.md,
+  },
+  discountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.warning + '10',
+    borderWidth: 1.5,
+    borderColor: colors.warning,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.md,
+    gap: spacing.sm,
+  },
+  discountLabel: { fontSize: fontSizes.sm, fontWeight: '700', color: colors.warning },
+  discountLabelUr: { fontSize: fontSizes.xs, color: colors.warning },
+  discountInputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    borderColor: colors.warning,
+    paddingHorizontal: spacing.sm,
+    height: 40,
+    minWidth: 110,
+  },
+  discountMinus: { fontSize: 20, fontWeight: '900', color: colors.warning, lineHeight: 22 },
+  discountInput: {
+    flex: 1,
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.warning,
+    textAlign: 'right',
+  },
+  subtotalLine: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: fontSizes.xs,
+    marginBottom: spacing.xs,
   },
   totalCard: {
     backgroundColor: colors.primary,

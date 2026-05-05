@@ -43,6 +43,11 @@ export type BillEntry = {
   customerId: string;
   pet600Packs: number;
   pet1500Packs: number;
+  /** Subtotal before discount = sum(qty * unit price). */
+  subtotal: number;
+  /** Flat Rs amount discounted off this bill (0 if none). */
+  discount: number;
+  /** Final amount the customer owes = subtotal - discount. */
   amountBilled: number;
   cashCollected: number;
   /** Which trip (1, 2, 3...) of the day this bill belongs to. */
