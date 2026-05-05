@@ -13,7 +13,7 @@ import { usePetsSalesman } from '../state';
 type Nav = { navigate: (screen: string, params?: { customerId: string }) => void };
 
 export function PetsCustomersScreen({ navigation }: { navigation: Nav }) {
-  const { customers, vanLoad, billsForCustomer } = usePetsSalesman();
+  const { customers, vanLoad, billsForCustomer, currentTripNumber } = usePetsSalesman();
   const [query, setQuery] = useState('');
 
   const filtered = useMemo(() => {
@@ -30,6 +30,9 @@ export function PetsCustomersScreen({ navigation }: { navigation: Nav }) {
   return (
     <Screen padded={false}>
       <View style={styles.headerBar}>
+        <View style={styles.tripChip}>
+          <Text style={styles.tripChipText}>Trip #{currentTripNumber}</Text>
+        </View>
         <Text style={styles.headerStat}>
           On van: <Text style={styles.headerStatVal}>{vanLoad.pet600Packs}</Text> × 600ml ·{' '}
           <Text style={styles.headerStatVal}>{vanLoad.pet1500Packs}</Text> × 1.5L
@@ -126,6 +129,19 @@ const styles = StyleSheet.create({
   headerStatVal: {
     color: colors.primaryDark,
     fontWeight: '800',
+  },
+  tripChip: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.pill,
+    backgroundColor: colors.accent + '22',
+    marginRight: spacing.md,
+  },
+  tripChipText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.accent,
+    letterSpacing: 0.5,
   },
   search: {
     borderWidth: 1.5,

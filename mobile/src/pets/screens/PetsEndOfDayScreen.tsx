@@ -11,7 +11,8 @@ import { usePetsSalesman } from '../state';
 import { initialPetVanLoad } from '../demoData';
 
 export function PetsEndOfDayScreen({ navigation }: any) {
-  const { customers, bills, returns, vanLoad, resetDay } = usePetsSalesman();
+  const { customers, bills, returns, vanLoad, currentTripNumber, resetDay } =
+    usePetsSalesman();
 
   const totalCash = bills.reduce((s, b) => s + b.cashCollected, 0);
   const totalBilled = bills.reduce((s, b) => s + b.amountBilled, 0);
@@ -78,6 +79,30 @@ export function PetsEndOfDayScreen({ navigation }: any) {
         <BigStat label="600 ml packs returned" value={ret600} variant="warn" />
         <BigStat label="1.5 L packs returned" value={ret1500} variant="warn" />
       </View>
+
+      <Section title={`Per-trip breakdown (${currentTripNumber} trip${currentTripNumber === 1 ? '' : 's'} today)`} subtitle="ٹرپ کے حساب سے">
+        {Array.from({ length: currentTripNumber }, (_, i) => {
+          const tripNum = i + 1;
+          const tripBills = bills.filter((b) => b.tripNumber === tripNum);
+          const tripReturns = returns.filter((r) => r.tripNumber === tripNum);
+          const tCash = tripBills.reduce((s, b) => s + b.cashCollected, 0);
+          const t600 = tripBills.reduce((s, b) => s + b.pet600Packs, 0);
+          const t1500 = tripBills.reduce((s, b) => s + b.pet1500Packs, 0);
+          const tRet600 = tripReturns.reduce((s, r) => s + r.pet600Packs, 0);
+          const tRet1500 = tripReturns.reduce((s, r) => s + r.pet1500Packs, 0);
+          return (
+            <Row
+              key={tripNum}
+              label={`Trip #${tripNum}`}
+              value={
+                tripBills.length === 0 && tripReturns.length === 0
+                  ? '—'
+                  : `${t600}×600ml ${t1500}×1.5L · returns ${tRet600}+${tRet1500} · Rs ${tCash.toLocaleString()}`
+              }
+            />
+          );
+        })}
+      </Section>
 
       <Section title="Van reconciliation" subtitle="گاڑی کی پڑتال">
         <Row

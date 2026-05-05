@@ -59,6 +59,10 @@ type State = {
   undoLastReturn: () => PetReturnEntry | null;
   /** Manager-only — set the packs loaded onto the salesman's van. */
   setVanPacks: (pet600: number, pet1500: number) => void;
+  /** Manager-only — start a new trip: increments trip number and reloads van. */
+  startNewTrip: (pet600: number, pet1500: number) => void;
+  /** Which trip the salesman is on right now. */
+  currentTripNumber: number;
   resetDay: () => void;
 };
 
@@ -74,6 +78,7 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
   const [vanLoad, setVanLoad] = useState<PetVanLoad>(initialPetVanLoad);
   const [bills, setBills] = useState<BillEntry[]>([]);
   const [returns, setReturns] = useState<PetReturnEntry[]>([]);
+  const [currentTripNumber, setCurrentTripNumber] = useState(1);
 
   const customerById = useCallback(
     (id: string) => customers.find((c) => c.id === id),
@@ -133,11 +138,12 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
       pet1500Packs: input.pet1500Packs,
       amountBilled: billed,
       cashCollected: input.cashCollected,
+      tripNumber: currentTripNumber,
       timestamp: Date.now(),
     };
     setBills((prev) => [...prev, entry]);
     return entry;
-  }, [customers, priceFor]);
+  }, [customers, priceFor, currentTripNumber]);
 
   const undoLastBill = useCallback<State['undoLastBill']>(() => {
     if (bills.length === 0) return null;
@@ -191,11 +197,12 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
       pet1500Packs: input.pet1500Packs,
       refundAmount: refund,
       reason: input.reason,
+      tripNumber: currentTripNumber,
       timestamp: Date.now(),
     };
     setReturns((prev) => [...prev, entry]);
     return entry;
-  }, [customers, priceFor]);
+  }, [customers, priceFor, currentTripNumber]);
 
   const undoLastReturn = useCallback<State['undoLastReturn']>(() => {
     if (returns.length === 0) return null;
@@ -223,11 +230,20 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
     });
   }, []);
 
+  const startNewTrip = useCallback<State['startNewTrip']>((pet600, pet1500) => {
+    setCurrentTripNumber((n) => n + 1);
+    setVanLoad({
+      pet600Packs: Math.max(0, pet600),
+      pet1500Packs: Math.max(0, pet1500),
+    });
+  }, []);
+
   const resetDay = useCallback(() => {
     setCustomers(demoPetCustomers);
     setVanLoad(initialPetVanLoad);
     setBills([]);
     setReturns([]);
+    setCurrentTripNumber(1);
   }, []);
 
   const value = useMemo<State>(
@@ -246,6 +262,8 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
       recordReturn,
       undoLastReturn,
       setVanPacks,
+      startNewTrip,
+      currentTripNumber,
       resetDay,
     }),
     [
@@ -262,6 +280,8 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
       recordReturn,
       undoLastReturn,
       setVanPacks,
+      startNewTrip,
+      currentTripNumber,
       resetDay,
     ]
   );

@@ -47,6 +47,8 @@ export type DeliveryEntry = {
   cashCollected: number;
   /** Total amount of this delivery (cans*price + gallons*price), for receipt. */
   amountBilled: number;
+  /** Which trip (1, 2, 3...) of the day this delivery belongs to. */
+  tripNumber: number;
   timestamp: number;
 };
 
@@ -55,6 +57,8 @@ export type CollectionEntry = {
   customerId: string;
   cansCollected: number;
   gallonsCollected: number;
+  /** Which trip of the day this collection belongs to. */
+  tripNumber: number;
   timestamp: number;
 };
 

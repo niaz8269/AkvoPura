@@ -21,7 +21,8 @@ const canIcon = require('../../../assets/brand/14ltr-can.webp');
 const gallonIcon = require('../../../assets/brand/19ltr-gallon.webp');
 
 export function CGEndOfDayScreen({ navigation }: any) {
-  const { customers, deliveries, collections, vanLoad, resetDay } = useCGSalesman();
+  const { customers, deliveries, collections, vanLoad, currentTripNumber, resetDay } =
+    useCGSalesman();
 
   const totalCansDelivered = deliveries.reduce((s, d) => s + d.cansDelivered, 0);
   const totalGallonsDelivered = deliveries.reduce((s, d) => s + d.gallonsDelivered, 0);
@@ -108,6 +109,30 @@ export function CGEndOfDayScreen({ navigation }: any) {
           value={totalGallonsCollected}
         />
       </View>
+
+      <Section title={`Per-trip breakdown (${currentTripNumber} trip${currentTripNumber === 1 ? '' : 's'} today)`} subtitle="ٹرپ کے حساب سے">
+        {Array.from({ length: currentTripNumber }, (_, i) => {
+          const tripNum = i + 1;
+          const tripDeliveries = deliveries.filter((d) => d.tripNumber === tripNum);
+          const tripCollections = collections.filter((c) => c.tripNumber === tripNum);
+          const tCash = tripDeliveries.reduce((s, d) => s + d.cashCollected, 0);
+          const tCans = tripDeliveries.reduce((s, d) => s + d.cansDelivered, 0);
+          const tGallons = tripDeliveries.reduce((s, d) => s + d.gallonsDelivered, 0);
+          const tEmpCans = tripCollections.reduce((s, c) => s + c.cansCollected, 0);
+          const tEmpGallons = tripCollections.reduce((s, c) => s + c.gallonsCollected, 0);
+          return (
+            <ReconRow
+              key={tripNum}
+              label={`Trip #${tripNum}`}
+              value={
+                tripDeliveries.length === 0 && tripCollections.length === 0
+                  ? '—'
+                  : `${tCans}🥫 ${tGallons}💧 · empties ${tEmpCans}🥫 ${tEmpGallons}💧 · Rs ${tCash.toLocaleString()}`
+              }
+            />
+          );
+        })}
+      </Section>
 
       <Section title="Van reconciliation" subtitle="گاڑی کی پڑتال">
         <ReconRow

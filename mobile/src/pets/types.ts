@@ -45,6 +45,8 @@ export type BillEntry = {
   pet1500Packs: number;
   amountBilled: number;
   cashCollected: number;
+  /** Which trip (1, 2, 3...) of the day this bill belongs to. */
+  tripNumber: number;
   timestamp: number;
 };
 
@@ -56,5 +58,7 @@ export type PetReturnEntry = {
   /** Refund credited to customer's outstanding balance. */
   refundAmount: number;
   reason?: string;
+  /** Which trip of the day this return belongs to. */
+  tripNumber: number;
   timestamp: number;
 };

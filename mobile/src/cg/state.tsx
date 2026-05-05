@@ -45,6 +45,8 @@ type CGSalesmanState = {
   vanLoad: VanLoad;
   deliveries: DeliveryEntry[];
   collections: CollectionEntry[];
+  /** Which trip the salesman is on right now (1, 2, 3...). */
+  currentTripNumber: number;
 
   customerById: (id: string) => CGCustomer | undefined;
   customersByRoute: (route: CGRoute) => CGCustomer[];
@@ -57,6 +59,8 @@ type CGSalesmanState = {
   undoLastCollection: () => CollectionEntry | null;
   /** Manager-only — set the filled-cans/gallons loaded onto the van. */
   setFilledLoad: (filledCans: number, filledGallons: number) => void;
+  /** Manager-only — start a new trip: increments trip number and reloads van. */
+  startNewTrip: (filledCans: number, filledGallons: number) => void;
   /** Both manager and salesman can change a customer's payment cycle. */
   setPaymentCycle: (customerId: string, cycle: PaymentCycle) => void;
   resetDay: () => void;
@@ -73,6 +77,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
   const [vanLoad, setVanLoad] = useState<VanLoad>(initialVanLoad);
   const [deliveries, setDeliveries] = useState<DeliveryEntry[]>([]);
   const [collections, setCollections] = useState<CollectionEntry[]>([]);
+  const [currentTripNumber, setCurrentTripNumber] = useState(1);
 
   const customerById = useCallback(
     (id: string) => customers.find((c) => c.id === id),
@@ -140,11 +145,12 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       emptyGallonsCollected: input.emptyGallonsCollected,
       cashCollected: input.cashCollected,
       amountBilled: billed,
+      tripNumber: currentTripNumber,
       timestamp: Date.now(),
     };
     setDeliveries((prev) => [...prev, entry]);
     return entry;
-  }, [customers]);
+  }, [customers, currentTripNumber]);
 
   const undoLastDelivery = useCallback<CGSalesmanState['undoLastDelivery']>(() => {
     if (deliveries.length === 0) return null;
@@ -201,10 +207,11 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
         customerId: input.customerId,
         cansCollected: input.cansCollected,
         gallonsCollected: input.gallonsCollected,
+        tripNumber: currentTripNumber,
         timestamp: Date.now(),
       },
     ]);
-  }, []);
+  }, [currentTripNumber]);
 
   const undoLastCollection = useCallback<CGSalesmanState['undoLastCollection']>(() => {
     if (collections.length === 0) return null;
@@ -249,11 +256,26 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
     []
   );
 
+  const startNewTrip = useCallback<CGSalesmanState['startNewTrip']>(
+    (filledCans, filledGallons) => {
+      setCurrentTripNumber((n) => n + 1);
+      setVanLoad((prev) => ({
+        ...prev,
+        filledCans: Math.max(0, filledCans),
+        filledGallons: Math.max(0, filledGallons),
+        // Empties stay on the van across trips — driver only off-loads them
+        // back at the depot at end of day.
+      }));
+    },
+    []
+  );
+
   const resetDay = useCallback(() => {
     setCustomers(demoCustomers);
     setVanLoad(initialVanLoad);
     setDeliveries([]);
     setCollections([]);
+    setCurrentTripNumber(1);
   }, []);
 
   const value = useMemo<CGSalesmanState>(
@@ -262,6 +284,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       vanLoad,
       deliveries,
       collections,
+      currentTripNumber,
       customerById,
       customersByRoute,
       deliveriesForCustomer,
@@ -271,6 +294,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       recordCollection,
       undoLastCollection,
       setFilledLoad,
+      startNewTrip,
       setPaymentCycle,
       resetDay,
     }),
@@ -279,6 +303,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       vanLoad,
       deliveries,
       collections,
+      currentTripNumber,
       customerById,
       customersByRoute,
       deliveriesForCustomer,
@@ -288,6 +313,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       recordCollection,
       undoLastCollection,
       setFilledLoad,
+      startNewTrip,
       setPaymentCycle,
       resetDay,
     ]

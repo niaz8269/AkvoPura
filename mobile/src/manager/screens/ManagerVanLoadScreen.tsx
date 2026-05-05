@@ -26,6 +26,40 @@ export function ManagerVanLoadScreen() {
   const pets = usePetsSalesman();
   const assignments = useAssignments();
 
+  const startNewPetsTrip = () => {
+    Alert.alert(
+      'Start a new Pets trip?',
+      `Current trip is #${pets.currentTripNumber}. Starting trip #${pets.currentTripNumber + 1} will reset the van load — please set the new totals after.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Start trip',
+          onPress: () => {
+            pets.startNewTrip(pet600, pet1500);
+            Alert.alert('Trip started', `Pets van is now on trip #${pets.currentTripNumber + 1}.`);
+          },
+        },
+      ]
+    );
+  };
+
+  const startNewCgTrip = () => {
+    Alert.alert(
+      'Start a new C/G trip?',
+      `Current trip is #${cg.currentTripNumber}. Starting trip #${cg.currentTripNumber + 1} will reset the filled cans/gallons — please set the new totals after.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Start trip',
+          onPress: () => {
+            cg.startNewTrip(filledCans, filledGallons);
+            Alert.alert('Trip started', `C/G van is now on trip #${cg.currentTripNumber + 1}.`);
+          },
+        },
+      ]
+    );
+  };
+
   const [pet600, setPet600] = useState(pets.vanLoad.pet600Packs);
   const [pet1500, setPet1500] = useState(pets.vanLoad.pet1500Packs);
   const [filledCans, setFilledCans] = useState(cg.vanLoad.filledCans);
@@ -70,7 +104,12 @@ export function ManagerVanLoadScreen() {
 
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Pets van</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={styles.cardTitle}>Pets van</Text>
+            <View style={styles.tripBadge}>
+              <Text style={styles.tripBadgeText}>Trip #{pets.currentTripNumber}</Text>
+            </View>
+          </View>
           <Text style={styles.cardTitleUr}>پیٹس وین</Text>
         </View>
 
@@ -110,11 +149,29 @@ export function ManagerVanLoadScreen() {
           disabled={!petsDirty}
           variant={petsDirty ? 'primary' : 'secondary'}
         />
+
+        <Pressable
+          onPress={startNewPetsTrip}
+          style={({ pressed }) => [
+            styles.startTripBtn,
+            pressed ? { opacity: 0.85 } : null,
+          ]}
+        >
+          <Ionicons name="refresh-circle-outline" size={18} color={colors.warning} />
+          <Text style={styles.startTripText}>
+            Start new trip (#{pets.currentTripNumber + 1})
+          </Text>
+        </Pressable>
       </View>
 
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Cans / Gallons van</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={styles.cardTitle}>Cans / Gallons van</Text>
+            <View style={styles.tripBadge}>
+              <Text style={styles.tripBadgeText}>Trip #{cg.currentTripNumber}</Text>
+            </View>
+          </View>
           <Text style={styles.cardTitleUr}>کین / گیلن وین</Text>
         </View>
 
@@ -159,6 +216,19 @@ export function ManagerVanLoadScreen() {
           disabled={!cgDirty}
           variant={cgDirty ? 'primary' : 'secondary'}
         />
+
+        <Pressable
+          onPress={startNewCgTrip}
+          style={({ pressed }) => [
+            styles.startTripBtn,
+            pressed ? { opacity: 0.85 } : null,
+          ]}
+        >
+          <Ionicons name="refresh-circle-outline" size={18} color={colors.warning} />
+          <Text style={styles.startTripText}>
+            Start new trip (#{cg.currentTripNumber + 1})
+          </Text>
+        </Pressable>
       </View>
     </Screen>
   );
@@ -296,5 +366,34 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.sm,
     color: colors.textMuted,
     fontStyle: 'italic',
+  },
+  tripBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.pill,
+    backgroundColor: colors.accent + '22',
+  },
+  tripBadgeText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.accent,
+    letterSpacing: 0.5,
+  },
+  startTripBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.sm,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    borderColor: colors.warning,
+    backgroundColor: colors.warning + '10',
+  },
+  startTripText: {
+    fontSize: fontSizes.sm,
+    fontWeight: '800',
+    color: colors.warning,
   },
 });

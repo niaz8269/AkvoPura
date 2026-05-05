@@ -113,51 +113,84 @@ function CGSection() {
         ]}
       />
 
-      <SectionTitle text="Activity feed" />
+      <SectionTitle text={`Activity feed — currently on trip #${cg.currentTripNumber}`} />
       {events.length === 0 ? (
         <Empty text="No trip activity yet today." />
       ) : (
-        events.map((e) => {
-          const cust = cg.customerById(
-            e.kind === 'delivery' ? e.data.customerId : e.data.customerId
-          );
-          if (e.kind === 'delivery') {
-            const d = e.data;
+        renderGrouped(
+          events,
+          (ev) => ev.data.tripNumber,
+          (ev) => {
+            const cust = cg.customerById(ev.data.customerId);
+            if (ev.kind === 'delivery') {
+              const d = ev.data;
+              return (
+                <View key={d.id} style={styles.eventRow}>
+                  <View style={[styles.kindChip, styles.chipDeliver]}>
+                    <Text style={styles.kindChipText}>Deliver</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.eventName}>{cust?.name ?? '—'}</Text>
+                    <Text style={styles.eventLine}>
+                      {d.cansDelivered} cans • {d.gallonsDelivered} gallons • Rs{' '}
+                      {d.cashCollected.toLocaleString()}/{d.amountBilled.toLocaleString()}
+                    </Text>
+                  </View>
+                  <Text style={styles.eventTime}>{formatTime(d.timestamp)}</Text>
+                </View>
+              );
+            }
+            const c = ev.data;
             return (
-              <View key={d.id} style={styles.eventRow}>
-                <View style={[styles.kindChip, styles.chipDeliver]}>
-                  <Text style={styles.kindChipText}>Deliver</Text>
+              <View key={c.id} style={styles.eventRow}>
+                <View style={[styles.kindChip, styles.chipCollect]}>
+                  <Text style={styles.kindChipText}>Collect</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.eventName}>{cust?.name ?? '—'}</Text>
                   <Text style={styles.eventLine}>
-                    {d.cansDelivered} cans • {d.gallonsDelivered} gallons • Rs{' '}
-                    {d.cashCollected.toLocaleString()}/{d.amountBilled.toLocaleString()}
+                    {c.cansCollected} cans • {c.gallonsCollected} gallons returned
                   </Text>
                 </View>
-                <Text style={styles.eventTime}>{formatTime(d.timestamp)}</Text>
+                <Text style={styles.eventTime}>{formatTime(c.timestamp)}</Text>
               </View>
             );
           }
-          const c = e.data;
-          return (
-            <View key={c.id} style={styles.eventRow}>
-              <View style={[styles.kindChip, styles.chipCollect]}>
-                <Text style={styles.kindChipText}>Collect</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.eventName}>{cust?.name ?? '—'}</Text>
-                <Text style={styles.eventLine}>
-                  {c.cansCollected} cans • {c.gallonsCollected} gallons returned
-                </Text>
-              </View>
-              <Text style={styles.eventTime}>{formatTime(c.timestamp)}</Text>
-            </View>
-          );
-        })
+        )
       )}
     </>
   );
+}
+
+/** Groups timestamp-sorted events by trip number with a small section header
+ *  before each group ("Trip #1", "Trip #2"). Returns React nodes. */
+function renderGrouped<T>(
+  items: T[],
+  tripOf: (item: T) => number,
+  renderItem: (item: T) => React.ReactNode
+): React.ReactNode {
+  if (items.length === 0) return null;
+  const groups = new Map<number, T[]>();
+  items.forEach((it) => {
+    const t = tripOf(it);
+    if (!groups.has(t)) groups.set(t, []);
+    groups.get(t)!.push(it);
+  });
+  // Sort by trip number desc so most-recent trip comes first
+  const sortedTrips = [...groups.keys()].sort((a, b) => b - a);
+  return sortedTrips.map((tripNum) => (
+    <React.Fragment key={`trip-${tripNum}`}>
+      <View style={styles.tripGroupHeader}>
+        <Text style={styles.tripGroupText}>Trip #{tripNum}</Text>
+        <View style={styles.tripGroupCount}>
+          <Text style={styles.tripGroupCountText}>
+            {groups.get(tripNum)!.length} {groups.get(tripNum)!.length === 1 ? 'event' : 'events'}
+          </Text>
+        </View>
+      </View>
+      {groups.get(tripNum)!.map(renderItem)}
+    </React.Fragment>
+  ));
 }
 
 function PetsSection() {
@@ -202,49 +235,51 @@ function PetsSection() {
         ]}
       />
 
-      <SectionTitle text="Activity feed" />
+      <SectionTitle text={`Activity feed — currently on trip #${pets.currentTripNumber}`} />
       {events.length === 0 ? (
         <Empty text="No trip activity yet today." />
       ) : (
-        events.map((e) => {
-          const cust = pets.customerById(
-            e.kind === 'bill' ? e.data.customerId : e.data.customerId
-          );
-          if (e.kind === 'bill') {
-            const b = e.data;
+        renderGrouped(
+          events,
+          (ev) => ev.data.tripNumber,
+          (ev) => {
+            const cust = pets.customerById(ev.data.customerId);
+            if (ev.kind === 'bill') {
+              const b = ev.data;
+              return (
+                <View key={b.id} style={styles.eventRow}>
+                  <View style={[styles.kindChip, styles.chipBill]}>
+                    <Text style={styles.kindChipText}>Bill</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.eventName}>{cust?.name ?? '—'}</Text>
+                    <Text style={styles.eventLine}>
+                      {b.pet600Packs} × 600ml • {b.pet1500Packs} × 1.5L • Rs{' '}
+                      {b.cashCollected.toLocaleString()}/{b.amountBilled.toLocaleString()}
+                    </Text>
+                  </View>
+                  <Text style={styles.eventTime}>{formatTime(b.timestamp)}</Text>
+                </View>
+              );
+            }
+            const r = ev.data;
             return (
-              <View key={b.id} style={styles.eventRow}>
-                <View style={[styles.kindChip, styles.chipBill]}>
-                  <Text style={styles.kindChipText}>Bill</Text>
+              <View key={r.id} style={styles.eventRow}>
+                <View style={[styles.kindChip, styles.chipReturn]}>
+                  <Text style={styles.kindChipText}>Return</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.eventName}>{cust?.name ?? '—'}</Text>
                   <Text style={styles.eventLine}>
-                    {b.pet600Packs} × 600ml • {b.pet1500Packs} × 1.5L • Rs{' '}
-                    {b.cashCollected.toLocaleString()}/{b.amountBilled.toLocaleString()}
+                    {r.pet600Packs} × 600ml • {r.pet1500Packs} × 1.5L • refund Rs{' '}
+                    {r.refundAmount.toLocaleString()}
                   </Text>
                 </View>
-                <Text style={styles.eventTime}>{formatTime(b.timestamp)}</Text>
+                <Text style={styles.eventTime}>{formatTime(r.timestamp)}</Text>
               </View>
             );
           }
-          const r = e.data;
-          return (
-            <View key={r.id} style={styles.eventRow}>
-              <View style={[styles.kindChip, styles.chipReturn]}>
-                <Text style={styles.kindChipText}>Return</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.eventName}>{cust?.name ?? '—'}</Text>
-                <Text style={styles.eventLine}>
-                  {r.pet600Packs} × 600ml • {r.pet1500Packs} × 1.5L • refund Rs{' '}
-                  {r.refundAmount.toLocaleString()}
-                </Text>
-              </View>
-              <Text style={styles.eventTime}>{formatTime(r.timestamp)}</Text>
-            </View>
-          );
-        })
+        )
       )}
     </>
   );
@@ -425,4 +460,29 @@ const styles = StyleSheet.create({
   eventName: { fontSize: fontSizes.sm, fontWeight: '800', color: colors.text },
   eventLine: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 2 },
   eventTime: { fontSize: fontSizes.xs, color: colors.textMuted },
+
+  tripGroupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.accent + '15',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radii.md,
+    marginTop: spacing.sm,
+    marginBottom: 6,
+  },
+  tripGroupText: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: colors.accent,
+    letterSpacing: 0.5,
+  },
+  tripGroupCount: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.pill,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  tripGroupCountText: { fontSize: 10, fontWeight: '700', color: colors.textMuted },
 });

@@ -26,7 +26,8 @@ type Nav = {
 };
 
 export function CGTodayScreen({ navigation }: { navigation: Nav }) {
-  const { customers, vanLoad, deliveries, deliveriesForCustomer } = useCGSalesman();
+  const { customers, vanLoad, deliveries, deliveriesForCustomer, currentTripNumber } =
+    useCGSalesman();
 
   const [cycle, setCycle] = useState<CycleFilterValue>('all');
   const [route, setRoute] = useState<CGRoute>('hospital');
@@ -62,6 +63,9 @@ export function CGTodayScreen({ navigation }: { navigation: Nav }) {
   return (
     <Screen padded={false}>
       <View style={styles.vanBar}>
+        <View style={styles.tripChip}>
+          <Text style={styles.tripChipText}>Trip #{currentTripNumber}</Text>
+        </View>
         <VanStat icon={canIcon} label="Cans" value={vanLoad.filledCans} />
         <View style={styles.vanDivider} />
         <VanStat icon={gallonIcon} label="Gallons" value={vanLoad.filledGallons} />
@@ -148,6 +152,19 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.textMuted,
     fontWeight: '600',
+  },
+  tripChip: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.pill,
+    backgroundColor: colors.accent + '22',
+    marginRight: spacing.md,
+  },
+  tripChipText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.accent,
+    letterSpacing: 0.5,
   },
   scroll: { flex: 1 },
   list: {
