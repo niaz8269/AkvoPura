@@ -51,6 +51,9 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
     );
   }).length;
   const lowStockCount = lowStock().length;
+  const customersHoldingEmpties = cg.customers.filter(
+    (c) => c.emptyCansHeld + c.emptyGallonsHeld > 0
+  ).length;
 
   const cgCash = cg.deliveries.reduce((s, d) => s + d.cashCollected, 0);
   const petsCash = pets.bills.reduce((s, b) => s + b.cashCollected, 0);
@@ -196,6 +199,23 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
             <Text style={styles.productionLabel}>low stock</Text>
           </View>
         </View>
+      </Pressable>
+
+      <Pressable
+        onPress={() => navigation.navigate('ContainerFees')}
+        style={({ pressed }) => [
+          styles.feesLink,
+          pressed ? { opacity: 0.85 } : null,
+        ]}
+      >
+        <Ionicons name="cash-outline" size={20} color={colors.warning} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.feesLinkTitle}>Lost / damaged container fees</Text>
+          <Text style={styles.feesLinkSub}>
+            {customersHoldingEmpties} customer{customersHoldingEmpties === 1 ? '' : 's'} currently holding empties
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
       </Pressable>
 
       {pendingOrders > 0 || activeOrders > 0 || openComplaints > 0 || lowStockCount > 0 || pendingExpenses.length > 0 || totalDebt > 0 ? (
@@ -630,5 +650,27 @@ const styles = StyleSheet.create({
   productionLabel: {
     fontSize: fontSizes.xs,
     color: colors.textMuted,
+  },
+
+  feesLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.warning + '12',
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.warning,
+  },
+  feesLinkTitle: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  feesLinkSub: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    marginTop: 2,
   },
 });

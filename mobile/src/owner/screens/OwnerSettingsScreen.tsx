@@ -13,13 +13,15 @@ import { BilingualButton, Screen } from '../../components';
 import { QuantityStepper } from '../../components/QuantityStepper';
 import { colors, fontSizes, radii, spacing } from '../../theme';
 import {
+  FEE_LABELS,
   PRODUCT_LABELS,
+  type ContainerFees,
   type ProductPriceKey,
   usePricing,
 } from '../../pricing/state';
 
 export function OwnerSettingsScreen() {
-  const { prices, setPrice, resetPrices } = usePricing();
+  const { prices, fees, setPrice, setFee, resetPrices } = usePricing();
 
   return (
     <Screen scroll>
@@ -39,6 +41,18 @@ export function OwnerSettingsScreen() {
           productKey={key}
           value={prices[key]}
           onSave={(v) => setPrice(key, v)}
+        />
+      ))}
+
+      <Text style={styles.sectionTitle}>Lost / damaged container fees</Text>
+      <Text style={styles.sectionSub}>گم/خراب برتنوں کی فیس</Text>
+
+      {(Object.keys(fees) as Array<keyof ContainerFees>).map((key) => (
+        <FeeCard
+          key={key}
+          feeKey={key}
+          value={fees[key]}
+          onSave={(v) => setFee(key, v)}
         />
       ))}
 
@@ -63,6 +77,67 @@ export function OwnerSettingsScreen() {
         />
       </View>
     </Screen>
+  );
+}
+
+function FeeCard({
+  feeKey,
+  value,
+  onSave,
+}: {
+  feeKey: keyof ContainerFees;
+  value: number;
+  onSave: (v: number) => void;
+}) {
+  const [draft, setDraft] = useState(value);
+  useEffect(() => setDraft(value), [value]);
+
+  const dirty = draft !== value;
+  const label = FEE_LABELS[feeKey];
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.productName}>{label.en}</Text>
+          <Text style={styles.productNameUr}>{label.ur}</Text>
+          <Text style={styles.productDesc}>{label.description}</Text>
+        </View>
+        <View style={[styles.priceChip, { backgroundColor: colors.warning + '15' }]}>
+          <Text style={[styles.priceChipText, { color: colors.warning }]}>
+            Rs {value.toLocaleString()}
+          </Text>
+        </View>
+      </View>
+
+      <QuantityStepper
+        label="New fee (Rs)"
+        labelUr="نئی فیس"
+        value={draft}
+        onChange={setDraft}
+        max={5000}
+      />
+
+      {dirty ? (
+        <View style={styles.actionRow}>
+          <BilingualButton
+            label={{ en: 'Save', ur: 'محفوظ کریں' }}
+            onPress={() => {
+              onSave(draft);
+              Alert.alert('Saved', `${label.en} fee is now Rs ${draft.toLocaleString()}.`);
+            }}
+            style={{ flex: 1 }}
+          />
+          <View style={{ width: spacing.md }} />
+          <BilingualButton
+            label={{ en: 'Discard', ur: 'منسوخ' }}
+            variant="secondary"
+            onPress={() => setDraft(value)}
+            style={{ flex: 1 }}
+          />
+        </View>
+      ) : null}
+    </View>
   );
 }
 

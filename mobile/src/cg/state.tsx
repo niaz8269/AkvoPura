@@ -63,6 +63,15 @@ type CGSalesmanState = {
   startNewTrip: (filledCans: number, filledGallons: number) => void;
   /** Both manager and salesman can change a customer's payment cycle. */
   setPaymentCycle: (customerId: string, cycle: PaymentCycle) => void;
+  /** Manager charges a customer for lost / damaged containers. The held
+   *  empties are removed from the customer's record and the total charge
+   *  added to their outstanding debt. */
+  chargeContainerLoss: (
+    customerId: string,
+    cans: number,
+    gallons: number,
+    totalCharge: number
+  ) => void;
   resetDay: () => void;
 };
 
@@ -256,6 +265,24 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
     []
   );
 
+  const chargeContainerLoss = useCallback<CGSalesmanState['chargeContainerLoss']>(
+    (customerId, cans, gallons, totalCharge) => {
+      setCustomers((prev) =>
+        prev.map((c) =>
+          c.id === customerId
+            ? {
+                ...c,
+                emptyCansHeld: Math.max(0, c.emptyCansHeld - cans),
+                emptyGallonsHeld: Math.max(0, c.emptyGallonsHeld - gallons),
+                outstandingDebt: c.outstandingDebt + Math.max(0, totalCharge),
+              }
+            : c
+        )
+      );
+    },
+    []
+  );
+
   const startNewTrip = useCallback<CGSalesmanState['startNewTrip']>(
     (filledCans, filledGallons) => {
       setCurrentTripNumber((n) => n + 1);
@@ -296,6 +323,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       setFilledLoad,
       startNewTrip,
       setPaymentCycle,
+      chargeContainerLoss,
       resetDay,
     }),
     [
@@ -315,6 +343,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       setFilledLoad,
       startNewTrip,
       setPaymentCycle,
+      chargeContainerLoss,
       resetDay,
     ]
   );

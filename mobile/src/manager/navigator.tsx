@@ -27,6 +27,7 @@ import { ManagerEmployeeDetailScreen } from './screens/ManagerEmployeeDetailScre
 import { ManagerOrdersScreen } from './screens/ManagerOrdersScreen';
 import { ManagerComplaintsScreen } from './screens/ManagerComplaintsScreen';
 import { ManagerProductionScreen } from './screens/ManagerProductionScreen';
+import { ManagerContainerFeesScreen } from './screens/ManagerContainerFeesScreen';
 import { useManager } from './state';
 
 const Tab = createBottomTabNavigator();
@@ -87,6 +88,11 @@ function HomeStack() {
         name="Production"
         component={ManagerProductionScreen}
         options={{ title: 'Production' }}
+      />
+      <Stack.Screen
+        name="ContainerFees"
+        component={ManagerContainerFeesScreen}
+        options={{ title: 'Container fees' }}
       />
     </Stack.Navigator>
   );
