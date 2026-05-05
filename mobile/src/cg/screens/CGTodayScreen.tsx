@@ -14,6 +14,7 @@ import { colors, fontSizes, radii, spacing } from '../../theme';
 import { useCGSalesman } from '../state';
 import { CustomerCard } from '../components/CustomerCard';
 import { RouteTabs } from '../components/RouteTabs';
+import { CycleFilter, type CycleFilterValue } from '../components/CycleFilter';
 import { statusForCustomer } from '../cardStatus';
 import type { CGRoute } from '../types';
 
@@ -25,39 +26,51 @@ type Nav = {
 };
 
 export function CGTodayScreen({ navigation }: { navigation: Nav }) {
-  const { customers, vanLoad, deliveries, customersByRoute, deliveriesForCustomer } =
-    useCGSalesman();
+  const { customers, vanLoad, deliveries, deliveriesForCustomer } = useCGSalesman();
 
+  const [cycle, setCycle] = useState<CycleFilterValue>('all');
   const [route, setRoute] = useState<CGRoute>('hospital');
 
-  const countByRoute = useMemo(
+  const cycleFiltered = useMemo(
+    () => (cycle === 'all' ? customers : customers.filter((c) => c.paymentCycle === cycle)),
+    [customers, cycle]
+  );
+
+  const countByCycle = useMemo(
     () => ({
-      hospital: customers.filter((c) => c.route === 'hospital').length,
-      bypass: customers.filter((c) => c.route === 'bypass').length,
-      others: customers.filter((c) => c.route === 'others').length,
+      all: customers.length,
+      daily: customers.filter((c) => c.paymentCycle === 'daily').length,
+      weekly: customers.filter((c) => c.paymentCycle === 'weekly').length,
     }),
     [customers]
   );
 
-  const visible = customersByRoute(route);
+  const countByRoute = useMemo(
+    () => ({
+      hospital: cycleFiltered.filter((c) => c.route === 'hospital').length,
+      bypass: cycleFiltered.filter((c) => c.route === 'bypass').length,
+      others: cycleFiltered.filter((c) => c.route === 'others').length,
+    }),
+    [cycleFiltered]
+  );
+
+  const visible = cycleFiltered.filter((c) => c.route === route);
 
   // Trigger re-render when deliveries change (status colors).
   void deliveries.length;
 
   return (
     <Screen padded={false}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Today's Trip</Text>
-        <Text style={styles.titleUr}>آج کا ٹرپ</Text>
-        <View style={styles.vanRow}>
-          <VanStat icon={canIcon} label="Cans on van" value={vanLoad.filledCans} />
-          <VanStat icon={gallonIcon} label="Gallons on van" value={vanLoad.filledGallons} />
-        </View>
+      <View style={styles.vanBar}>
+        <VanStat icon={canIcon} label="Cans" value={vanLoad.filledCans} />
+        <View style={styles.vanDivider} />
+        <VanStat icon={gallonIcon} label="Gallons" value={vanLoad.filledGallons} />
       </View>
 
+      <CycleFilter selected={cycle} onSelect={setCycle} counts={countByCycle} />
       <RouteTabs selected={route} onSelect={setRoute} countByRoute={countByRoute} />
 
-      <ScrollView contentContainerStyle={styles.list}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.list}>
         {visible.map((c) => {
           const todays = deliveriesForCustomer(c.id);
           const status = statusForCustomer(c, todays);
@@ -76,7 +89,9 @@ export function CGTodayScreen({ navigation }: { navigation: Nav }) {
         })}
 
         {visible.length === 0 ? (
-          <Text style={styles.empty}>No customers on this route.</Text>
+          <Text style={styles.empty}>
+            No {cycle === 'all' ? '' : cycle + ' '}customers on this route.
+          </Text>
         ) : null}
       </ScrollView>
     </Screen>
@@ -95,60 +110,50 @@ function VanStat({
   return (
     <View style={styles.vanStat}>
       <Image source={icon} style={styles.vanIcon} resizeMode="contain" />
-      <View>
-        <Text style={styles.vanValue}>{value}</Text>
-        <Text style={styles.vanLabel}>{label}</Text>
-      </View>
+      <Text style={styles.vanValue}>{value}</Text>
+      <Text style={styles.vanLabel}>{label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
+  vanBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.lg,
+    paddingVertical: 4,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  title: {
-    fontSize: fontSizes.title,
-    fontWeight: '800',
-    color: colors.primaryDark,
-  },
-  titleUr: {
-    fontSize: fontSizes.body,
-    color: colors.primary,
-  },
-  vanRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.md,
+  vanDivider: {
+    width: 1,
+    height: 18,
+    backgroundColor: colors.border,
+    marginHorizontal: spacing.md,
   },
   vanStat: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surfaceMuted,
-    padding: spacing.md,
-    borderRadius: radii.md,
+    gap: 6,
   },
-  vanIcon: { width: 36, height: 36 },
+  vanIcon: { width: 18, height: 18 },
   vanValue: {
-    fontSize: fontSizes.title,
+    fontSize: 14,
     fontWeight: '800',
     color: colors.primaryDark,
-    lineHeight: 26,
   },
   vanLabel: {
-    fontSize: fontSizes.xs,
+    fontSize: 11,
     color: colors.textMuted,
+    fontWeight: '600',
   },
+  scroll: { flex: 1 },
   list: {
-    padding: spacing.lg,
-    paddingBottom: spacing.xxxl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: 4,
+    paddingBottom: spacing.sm,
   },
   empty: {
     textAlign: 'center',

@@ -7,23 +7,26 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
 import { useCGSalesman } from '../../cg/state';
 import { usePetsSalesman } from '../../pets/state';
+import type { PaymentCycle } from '../../cg/types';
 
 type Filter = 'all' | 'pets' | 'cg' | 'debt';
 
 type UnifiedCustomer = {
   id: string;
+  cgId?: string;                  // present only for CG rows
   type: 'Pets' | 'C/G';
   name: string;
   area: string;
   phone: string;
   debt: number;
   emptiesHeld?: number;
+  paymentCycle?: PaymentCycle;
 };
 
 export function ManagerCustomersScreen() {
@@ -44,15 +47,35 @@ export function ManagerCustomersScreen() {
     }));
     const g: UnifiedCustomer[] = cg.customers.map((c) => ({
       id: 'cg-' + c.id,
+      cgId: c.id,
       type: 'C/G',
       name: c.name,
       area: c.route,
       phone: c.phone,
       debt: c.outstandingDebt,
       emptiesHeld: c.emptyCansHeld + c.emptyGallonsHeld,
+      paymentCycle: c.paymentCycle,
     }));
     return [...p, ...g];
   }, [pets.customers, cg.customers]);
+
+  const editCycle = (cgId: string, name: string, current: PaymentCycle) => {
+    Alert.alert(
+      `Payment cycle for ${name}`,
+      `Currently: ${current === 'daily' ? 'Daily' : 'Weekly'}. Change to:`,
+      [
+        {
+          text: current === 'daily' ? 'Keep Daily' : 'Switch to Daily',
+          onPress: () => cg.setPaymentCycle(cgId, 'daily'),
+        },
+        {
+          text: current === 'weekly' ? 'Keep Weekly' : 'Switch to Weekly',
+          onPress: () => cg.setPaymentCycle(cgId, 'weekly'),
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
 
   const filtered = useMemo(() => {
     let list = all;
@@ -142,28 +165,15 @@ export function ManagerCustomersScreen() {
           <Text style={styles.empty}>No matching customers.</Text>
         ) : (
           filtered.map((c) => (
-            <View key={c.id} style={[styles.row, c.debt > 0 ? styles.rowDebt : null]}>
-              <View style={[styles.typeChip, c.type === 'Pets' ? styles.typeChipPets : styles.typeChipCg]}>
-                <Text style={styles.typeChipText}>{c.type}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.name} numberOfLines={1}>
-                  {c.name}
-                </Text>
-                <Text style={styles.sub} numberOfLines={1}>
-                  {c.area} • {c.phone}
-                </Text>
-                {c.emptiesHeld && c.emptiesHeld > 0 ? (
-                  <Text style={styles.empties}>Empties held: {c.emptiesHeld}</Text>
-                ) : null}
-              </View>
-              {c.debt > 0 ? (
-                <View style={styles.debtBlock}>
-                  <Text style={styles.debtAmount}>Rs {c.debt.toLocaleString()}</Text>
-                  <Text style={styles.debtLabel}>owed</Text>
-                </View>
-              ) : null}
-            </View>
+            <CustomerRow
+              key={c.id}
+              customer={c}
+              onEditCycle={
+                c.cgId && c.paymentCycle
+                  ? () => editCycle(c.cgId!, c.name, c.paymentCycle!)
+                  : undefined
+              }
+            />
           ))
         )}
       </ScrollView>
@@ -177,6 +187,84 @@ const FILTER_LABELS: Record<Filter, string> = {
   cg: 'C/G',
   debt: 'In debt',
 };
+
+function CustomerRow({
+  customer,
+  onEditCycle,
+}: {
+  customer: UnifiedCustomer;
+  onEditCycle?: () => void;
+}) {
+  const body = (
+    <>
+      <View
+        style={[
+          styles.typeChip,
+          customer.type === 'Pets' ? styles.typeChipPets : styles.typeChipCg,
+        ]}
+      >
+        <Text style={styles.typeChipText}>{customer.type}</Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.name} numberOfLines={1}>
+          {customer.name}
+        </Text>
+        <Text style={styles.sub} numberOfLines={1}>
+          {customer.area} • {customer.phone}
+        </Text>
+        {customer.emptiesHeld && customer.emptiesHeld > 0 ? (
+          <Text style={styles.empties}>Empties held: {customer.emptiesHeld}</Text>
+        ) : null}
+      </View>
+      {customer.paymentCycle ? (
+        <View
+          style={[
+            styles.cycleBadge,
+            customer.paymentCycle === 'daily'
+              ? styles.cycleBadgeDaily
+              : styles.cycleBadgeWeekly,
+          ]}
+        >
+          <Text
+            style={[
+              styles.cycleBadgeText,
+              customer.paymentCycle === 'daily'
+                ? styles.cycleBadgeTextDaily
+                : styles.cycleBadgeTextWeekly,
+            ]}
+          >
+            {customer.paymentCycle === 'daily' ? 'Daily' : 'Weekly'}
+          </Text>
+        </View>
+      ) : null}
+      {customer.debt > 0 ? (
+        <View style={styles.debtBlock}>
+          <Text style={styles.debtAmount}>Rs {customer.debt.toLocaleString()}</Text>
+          <Text style={styles.debtLabel}>owed</Text>
+        </View>
+      ) : null}
+    </>
+  );
+
+  if (onEditCycle) {
+    return (
+      <Pressable
+        onPress={onEditCycle}
+        style={({ pressed }) => [
+          styles.row,
+          customer.debt > 0 ? styles.rowDebt : null,
+          pressed ? { opacity: 0.85 } : null,
+        ]}
+      >
+        {body}
+      </Pressable>
+    );
+  }
+
+  return (
+    <View style={[styles.row, customer.debt > 0 ? styles.rowDebt : null]}>{body}</View>
+  );
+}
 
 function KpiCard({
   label,
@@ -216,8 +304,8 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
+    paddingTop: 4,
+    paddingBottom: 4,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -277,7 +365,7 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
   },
   filterPillTextActive: { color: colors.textInverse },
-  list: { padding: spacing.lg, paddingBottom: spacing.xxxl },
+  list: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
   empty: {
     textAlign: 'center',
     color: colors.textMuted,
@@ -325,4 +413,15 @@ const styles = StyleSheet.create({
     color: colors.danger,
   },
   debtLabel: { fontSize: 10, color: colors.danger },
+  cycleBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radii.pill,
+    marginLeft: spacing.xs,
+  },
+  cycleBadgeDaily: { backgroundColor: colors.accent + '22' },
+  cycleBadgeWeekly: { backgroundColor: colors.warning + '22' },
+  cycleBadgeText: { fontSize: 10, fontWeight: '900' },
+  cycleBadgeTextDaily: { color: colors.accent },
+  cycleBadgeTextWeekly: { color: colors.warning },
 });

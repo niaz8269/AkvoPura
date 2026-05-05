@@ -211,8 +211,8 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
+    paddingTop: 4,
+    paddingBottom: 4,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   },
   kpiLabel: { fontSize: fontSizes.xs, color: colors.textMuted },
 
-  body: { padding: spacing.lg, paddingBottom: spacing.xxxl },
+  body: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
   sectionTitle: {
     fontSize: fontSizes.body,
     fontWeight: '800',

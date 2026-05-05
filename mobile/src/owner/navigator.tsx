@@ -16,6 +16,7 @@ import { OwnerBranchOverviewScreen } from './screens/OwnerBranchOverviewScreen';
 import { OwnerCombinedScreen } from './screens/OwnerCombinedScreen';
 import { OwnerForwardedScreen } from './screens/OwnerForwardedScreen';
 import { OwnerAuditScreen } from './screens/OwnerAuditScreen';
+import { OwnerSettingsScreen } from './screens/OwnerSettingsScreen';
 import { useManager } from '../manager/state';
 import type { BranchKey } from './types';
 
@@ -93,6 +94,7 @@ export function OwnerNavigator() {
             CombinedTab: focused ? 'git-compare' : 'git-compare-outline',
             Forwarded: focused ? 'arrow-up-circle' : 'arrow-up-circle-outline',
             Audit: focused ? 'list' : 'list-outline',
+            Settings: focused ? 'settings' : 'settings-outline',
           };
           if (route.name === 'Forwarded') {
             return (
@@ -129,6 +131,11 @@ export function OwnerNavigator() {
         name="Audit"
         component={WrappedAudit}
         options={{ title: 'Audit' }}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={WrappedSettings}
+        options={{ title: 'Settings' }}
       />
     </Tab.Navigator>
   );
@@ -187,6 +194,25 @@ function WrappedAudit() {
         name="Landing"
         component={OwnerAuditScreen}
         options={{ title: 'Audit log' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function WrappedSettings() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: colors.surface },
+        headerTitleStyle: { color: colors.primaryDark, fontWeight: '800' },
+        headerTintColor: colors.primaryDark,
+        headerRight: () => <HeaderRight />,
+      }}
+    >
+      <Stack.Screen
+        name="Landing"
+        component={OwnerSettingsScreen}
+        options={{ title: 'Settings' }}
       />
     </Stack.Navigator>
   );

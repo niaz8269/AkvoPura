@@ -313,8 +313,8 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
+    paddingTop: 4,
+    paddingBottom: 4,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
   tabText: { fontSize: fontSizes.body, fontWeight: '700', color: colors.primaryDark },
   tabTextActive: { color: colors.textInverse },
 
-  body: { padding: spacing.lg, paddingBottom: spacing.xxxl },
+  body: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
   kpiRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
   kpi: {
     flex: 1,

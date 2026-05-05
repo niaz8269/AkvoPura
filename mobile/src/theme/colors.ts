@@ -23,9 +23,10 @@ export const colors = {
   // Borders / dividers
   border: '#D5E3EE',
 
-  // Status colors (per spec — used for Cans/Gallons customer cards)
+  // Status colors (used for Cans/Gallons customer cards)
   statusWhite: '#FFFFFF',    // no dues, no empties
   statusYellow: '#FFD66E',   // empties held, no dues
+  statusOrange: '#F2913A',   // debt only, no empties
   statusRed: '#E5564D',      // empties held + dues
   statusGreen: '#3DBE6C',    // delivered today
 

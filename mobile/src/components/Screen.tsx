@@ -52,6 +52,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   padded: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
   },
 });

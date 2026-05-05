@@ -268,15 +268,15 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
+    paddingTop: 4,
+    paddingBottom: 4,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   title: { fontSize: fontSizes.title, fontWeight: '800', color: colors.primaryDark },
   titleUr: { fontSize: fontSizes.body, color: colors.primary },
 
-  body: { padding: spacing.lg, paddingBottom: spacing.xxxl },
+  body: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
 
   sectionTitleWrap: { marginTop: spacing.md, marginBottom: spacing.sm },
   sectionTitle: {

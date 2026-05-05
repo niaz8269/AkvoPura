@@ -7,13 +7,16 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { BilingualButton, Screen } from '../../components';
 import { QuantityStepper } from '../../components/QuantityStepper';
 import { colors, fontSizes, radii, spacing } from '../../theme';
 import { useCGSalesman } from '../../cg/state';
 import { usePetsSalesman } from '../../pets/state';
+import { useAssignments } from '../../assignments/state';
+import type { Role, User } from '../../auth/types';
 
 const canIcon = require('../../../assets/brand/14ltr-can.webp');
 const gallonIcon = require('../../../assets/brand/19ltr-gallon.webp');
@@ -21,6 +24,7 @@ const gallonIcon = require('../../../assets/brand/19ltr-gallon.webp');
 export function ManagerVanLoadScreen() {
   const cg = useCGSalesman();
   const pets = usePetsSalesman();
+  const assignments = useAssignments();
 
   const [pet600, setPet600] = useState(pets.vanLoad.pet600Packs);
   const [pet1500, setPet1500] = useState(pets.vanLoad.pet1500Packs);
@@ -70,6 +74,15 @@ export function ManagerVanLoadScreen() {
           <Text style={styles.cardTitleUr}>پیٹس وین</Text>
         </View>
 
+        <SalesmanPicker
+          title="Today's Pets salesman"
+          options={assignments.candidates('pets_salesman')}
+          selectedId={assignments.petsSalesmanId}
+          onSelect={assignments.setPetsSalesman}
+        />
+
+        <View style={styles.divider} />
+
         <QuantityStepper
           label="600 ml packs"
           labelUr="۶۰۰ ملی پیک"
@@ -105,6 +118,15 @@ export function ManagerVanLoadScreen() {
           <Text style={styles.cardTitleUr}>کین / گیلن وین</Text>
         </View>
 
+        <SalesmanPicker
+          title="Today's C/G salesman"
+          options={assignments.candidates('cans_gallons_salesman')}
+          selectedId={assignments.cgSalesmanId}
+          onSelect={assignments.setCgSalesman}
+        />
+
+        <View style={styles.divider} />
+
         <QuantityStepper
           label="Filled cans"
           labelUr="بھری کین"
@@ -139,6 +161,57 @@ export function ManagerVanLoadScreen() {
         />
       </View>
     </Screen>
+  );
+}
+
+function SalesmanPicker({
+  title,
+  options,
+  selectedId,
+  onSelect,
+}: {
+  title: string;
+  options: User[];
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+}) {
+  return (
+    <View style={styles.picker}>
+      <Text style={styles.pickerLabel}>{title}</Text>
+      <View style={styles.pickerOptions}>
+        {options.map((u) => {
+          const active = u.id === selectedId;
+          return (
+            <Pressable
+              key={u.id}
+              onPress={() => onSelect(u.id)}
+              style={({ pressed }) => [
+                styles.pickerOption,
+                active ? styles.pickerOptionActive : null,
+                pressed && !active ? { opacity: 0.7 } : null,
+              ]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+            >
+              <Ionicons
+                name={active ? 'person' : 'person-outline'}
+                size={16}
+                color={active ? colors.textInverse : colors.primaryDark}
+              />
+              <Text
+                style={[styles.pickerOptionText, active ? styles.pickerOptionTextActive : null]}
+                numberOfLines={1}
+              >
+                {u.name}
+              </Text>
+            </Pressable>
+          );
+        })}
+        {options.length === 0 ? (
+          <Text style={styles.pickerEmpty}>No salesmen available.</Text>
+        ) : null}
+      </View>
+    </View>
   );
 }
 
@@ -181,5 +254,47 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.xs,
     color: colors.textMuted,
     marginTop: 2,
+  },
+  picker: {
+    marginBottom: spacing.sm,
+  },
+  pickerLabel: {
+    fontSize: fontSizes.xs,
+    fontWeight: '700',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: spacing.sm,
+  },
+  pickerOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  pickerOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.pill,
+    borderWidth: 1.5,
+    borderColor: colors.primaryLight,
+    backgroundColor: colors.surface,
+  },
+  pickerOptionActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primaryDark,
+  },
+  pickerOptionText: {
+    fontSize: fontSizes.sm,
+    fontWeight: '700',
+    color: colors.primaryDark,
+  },
+  pickerOptionTextActive: { color: colors.textInverse },
+  pickerEmpty: {
+    fontSize: fontSizes.sm,
+    color: colors.textMuted,
+    fontStyle: 'italic',
   },
 });

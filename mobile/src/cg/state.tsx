@@ -21,6 +21,7 @@ import type {
   CGRoute,
   CollectionEntry,
   DeliveryEntry,
+  PaymentCycle,
   VanLoad,
 } from './types';
 
@@ -56,6 +57,8 @@ type CGSalesmanState = {
   undoLastCollection: () => CollectionEntry | null;
   /** Manager-only — set the filled-cans/gallons loaded onto the van. */
   setFilledLoad: (filledCans: number, filledGallons: number) => void;
+  /** Both manager and salesman can change a customer's payment cycle. */
+  setPaymentCycle: (customerId: string, cycle: PaymentCycle) => void;
   resetDay: () => void;
 };
 
@@ -237,6 +240,15 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
     []
   );
 
+  const setPaymentCycle = useCallback<CGSalesmanState['setPaymentCycle']>(
+    (customerId, cycle) => {
+      setCustomers((prev) =>
+        prev.map((c) => (c.id === customerId ? { ...c, paymentCycle: cycle } : c))
+      );
+    },
+    []
+  );
+
   const resetDay = useCallback(() => {
     setCustomers(demoCustomers);
     setVanLoad(initialVanLoad);
@@ -259,6 +271,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       recordCollection,
       undoLastCollection,
       setFilledLoad,
+      setPaymentCycle,
       resetDay,
     }),
     [
@@ -275,6 +288,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       recordCollection,
       undoLastCollection,
       setFilledLoad,
+      setPaymentCycle,
       resetDay,
     ]
   );

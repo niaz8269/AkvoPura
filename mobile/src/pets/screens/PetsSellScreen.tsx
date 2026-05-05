@@ -17,6 +17,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -45,6 +46,10 @@ export function PetsSellScreen() {
   const [selected, setSelected] = useState<PetCustomer | null>(null);
   const [pet600, setPet600] = useState(0);
   const [pet1500, setPet1500] = useState(0);
+  // Bill-time price overrides (string so the TextInput can hold partial values
+  // like an empty string mid-edit). null means "use customer/default price".
+  const [price600, setPrice600] = useState<string | null>(null);
+  const [price1500, setPrice1500] = useState<string | null>(null);
   const [paid, setPaid] = useState(true);
   const [confirmed, setConfirmed] = useState(false);
   const [resetKey, setResetKey] = useState(0);
@@ -54,17 +59,36 @@ export function PetsSellScreen() {
     customer: PetCustomer;
     pet600: number;
     pet1500: number;
+    unit600: number;
+    unit1500: number;
     amount: number;
     cash: number;
   } | null>(null);
 
-  const billed = useMemo(() => {
+  // Effective unit prices used for the bill = override (if a valid number) else
+  // the customer/default price from priceFor.
+  const effective600 = useMemo(() => {
     if (!selected) return 0;
-    return (
-      pet600 * priceFor(selected, 'pet600') +
-      pet1500 * priceFor(selected, 'pet1500')
-    );
-  }, [selected, pet600, pet1500, priceFor]);
+    if (price600 !== null) {
+      const n = Number(price600);
+      if (!Number.isNaN(n) && n >= 0) return n;
+    }
+    return priceFor(selected, 'pet600');
+  }, [selected, price600, priceFor]);
+
+  const effective1500 = useMemo(() => {
+    if (!selected) return 0;
+    if (price1500 !== null) {
+      const n = Number(price1500);
+      if (!Number.isNaN(n) && n >= 0) return n;
+    }
+    return priceFor(selected, 'pet1500');
+  }, [selected, price1500, priceFor]);
+
+  const billed = useMemo(
+    () => pet600 * effective600 + pet1500 * effective1500,
+    [pet600, pet1500, effective600, effective1500]
+  );
 
   const canSwipe = !!selected && pet600 + pet1500 > 0 && !confirmed;
 
@@ -76,6 +100,8 @@ export function PetsSellScreen() {
       setSelected(null);
       setPet600(0);
       setPet1500(0);
+      setPrice600(null);
+      setPrice1500(null);
       setPaid(true);
       setLastReceipt(null);
       setResetKey((k) => k + 1);
@@ -90,6 +116,8 @@ export function PetsSellScreen() {
       pet600Packs: pet600,
       pet1500Packs: pet1500,
       cashCollected: paid ? billed : 0,
+      pricePet600: effective600,
+      pricePet1500: effective1500,
     });
     if (entry) {
       setLastReceipt({
@@ -97,6 +125,8 @@ export function PetsSellScreen() {
         customer: selected,
         pet600,
         pet1500,
+        unit600: effective600,
+        unit1500: effective1500,
         amount: billed,
         cash: paid ? billed : 0,
       });
@@ -113,14 +143,14 @@ export function PetsSellScreen() {
         items.push({
           name: '600 ml pack',
           qty: lastReceipt.pet600,
-          unitPrice: priceFor(lastReceipt.customer, 'pet600'),
+          unitPrice: lastReceipt.unit600,
         });
       }
       if (lastReceipt.pet1500 > 0) {
         items.push({
           name: '1.5 L pack',
           qty: lastReceipt.pet1500,
-          unitPrice: priceFor(lastReceipt.customer, 'pet1500'),
+          unitPrice: lastReceipt.unit1500,
         });
       }
       const ok = await generateAndShareBill({
@@ -182,6 +212,7 @@ export function PetsSellScreen() {
         </View>
 
         <ScrollView
+          style={styles.scroll}
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
         >
@@ -192,6 +223,8 @@ export function PetsSellScreen() {
               setSelected(c);
               setPet600(0);
               setPet1500(0);
+              setPrice600(null);
+              setPrice1500(null);
               setLastReceipt(null);
             }}
           />
@@ -207,14 +240,14 @@ export function PetsSellScreen() {
                 onChange={setPet600}
                 max={vanLoad.pet600Packs}
               />
-              <View style={styles.priceLine}>
-                <Text style={styles.priceLineText}>
-                  Rs {priceFor(selected, 'pet600')} × {pet600} ={' '}
-                  <Text style={styles.priceLineBold}>
-                    Rs {(priceFor(selected, 'pet600') * pet600).toLocaleString()}
-                  </Text>
-                </Text>
-              </View>
+              <PriceEditor
+                label="Price per 600 ml pack"
+                defaultPrice={priceFor(selected, 'pet600')}
+                value={price600}
+                onChange={setPrice600}
+                lineQty={pet600}
+                lineTotal={effective600 * pet600}
+              />
 
               <View style={styles.divider} />
 
@@ -225,14 +258,15 @@ export function PetsSellScreen() {
                 onChange={setPet1500}
                 max={vanLoad.pet1500Packs}
               />
-              <View style={styles.priceLine}>
-                <Text style={styles.priceLineText}>
-                  Rs {priceFor(selected, 'pet1500')} × {pet1500} ={' '}
-                  <Text style={styles.priceLineBold}>
-                    Rs {(priceFor(selected, 'pet1500') * pet1500).toLocaleString()}
-                  </Text>
-                </Text>
-              </View>
+              <PriceEditor
+                label="Price per 1.5 L pack"
+                defaultPrice={priceFor(selected, 'pet1500')}
+                value={price1500}
+                onChange={setPrice1500}
+                lineQty={pet1500}
+                lineTotal={effective1500 * pet1500}
+              />
+
 
               <View style={styles.totalCard}>
                 <Text style={styles.totalLabel}>Total bill</Text>
@@ -311,12 +345,67 @@ export function PetsSellScreen() {
   );
 }
 
+function PriceEditor({
+  label,
+  defaultPrice,
+  value,
+  onChange,
+  lineQty,
+  lineTotal,
+}: {
+  label: string;
+  defaultPrice: number;
+  value: string | null;
+  onChange: (v: string | null) => void;
+  lineQty: number;
+  lineTotal: number;
+}) {
+  const isOverridden = value !== null && Number(value) !== defaultPrice;
+
+  return (
+    <View style={styles.priceEditor}>
+      <View style={styles.priceEditorRow}>
+        <Text style={styles.priceEditorLabel}>{label}</Text>
+        {isOverridden ? (
+          <Pressable
+            onPress={() => onChange(null)}
+            style={({ pressed }) => [
+              styles.priceResetBtn,
+              pressed ? { opacity: 0.7 } : null,
+            ]}
+          >
+            <Ionicons name="refresh-outline" size={12} color={colors.textMuted} />
+            <Text style={styles.priceResetText}>Reset to Rs {defaultPrice}</Text>
+          </Pressable>
+        ) : null}
+      </View>
+
+      <View style={styles.priceInputRow}>
+        <Text style={styles.priceCurrency}>Rs</Text>
+        <TextInput
+          value={value ?? String(defaultPrice)}
+          onChangeText={(t) => {
+            // Only digits allowed
+            const cleaned = t.replace(/[^0-9]/g, '');
+            onChange(cleaned === '' ? '' : cleaned);
+          }}
+          keyboardType="number-pad"
+          style={styles.priceInput}
+          maxLength={5}
+        />
+        <Text style={styles.priceTimes}>× {lineQty} =</Text>
+        <Text style={styles.priceLineTotal}>Rs {lineTotal.toLocaleString()}</Text>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   header: {
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
+    paddingTop: 4,
+    paddingBottom: 4,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -351,9 +440,11 @@ const styles = StyleSheet.create({
   },
   undoBtnPressed: { backgroundColor: colors.warning + '33' },
   undoText: { fontSize: fontSizes.sm, fontWeight: '700', color: colors.warning },
+  scroll: { flex: 1 },
   body: {
-    padding: spacing.lg,
-    paddingBottom: spacing.xxxl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
   },
   formCard: {
     backgroundColor: colors.surface,
@@ -381,6 +472,68 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   priceLineBold: { color: colors.primaryDark, fontWeight: '800' },
+  priceEditor: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    marginTop: spacing.sm,
+  },
+  priceEditorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
+  priceEditorLabel: {
+    fontSize: fontSizes.xs,
+    fontWeight: '700',
+    color: colors.textMuted,
+  },
+  priceResetBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.pill,
+    backgroundColor: colors.surface,
+  },
+  priceResetText: { fontSize: 10, color: colors.textMuted, fontWeight: '700' },
+  priceInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  priceCurrency: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.textMuted,
+  },
+  priceInput: {
+    width: 80,
+    height: 40,
+    borderWidth: 1.5,
+    borderColor: colors.primaryLight,
+    borderRadius: radii.md,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.sm,
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+    textAlign: 'center',
+  },
+  priceTimes: {
+    fontSize: fontSizes.sm,
+    color: colors.textMuted,
+    fontWeight: '700',
+  },
+  priceLineTotal: {
+    flex: 1,
+    textAlign: 'right',
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
   divider: {
     height: 1,
     backgroundColor: colors.border,

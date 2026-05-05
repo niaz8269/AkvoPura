@@ -9,12 +9,17 @@
 
 export type CGRoute = 'hospital' | 'bypass' | 'others';
 
+/** How often this customer settles their bill. Drives the top-level filter
+ *  on the salesman screens (Daily salesman runs vs Weekly collection runs). */
+export type PaymentCycle = 'daily' | 'weekly';
+
 export type CGCustomer = {
   id: string;
   name: string;
   phone: string;
   address: string;
   route: CGRoute;
+  paymentCycle: PaymentCycle;
 
   /** Auto-fill quantity hints on the delivery sheet. */
   usualCans: number;
@@ -53,8 +58,14 @@ export type CollectionEntry = {
   timestamp: number;
 };
 
-/** Computed visual state for a customer card. */
-export type CGCardStatus = 'white' | 'yellow' | 'red' | 'green';
+/** Computed visual state for a customer card.
+ *  white  = clean
+ *  yellow = empties held only (no debt)
+ *  orange = debt only (no empties held)
+ *  red    = both empties + debt
+ *  green  = delivered today (overrides everything)
+ */
+export type CGCardStatus = 'white' | 'yellow' | 'orange' | 'red' | 'green';
 
 export type VanLoad = {
   filledCans: number;

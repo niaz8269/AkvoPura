@@ -103,6 +103,7 @@ export function PetsReturnsScreen() {
         </View>
 
         <ScrollView
+          style={styles.scroll}
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
         >
@@ -176,8 +177,8 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
+    paddingTop: 4,
+    paddingBottom: 4,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -201,7 +202,8 @@ const styles = StyleSheet.create({
   },
   undoBtnPressed: { backgroundColor: colors.warning + '33' },
   undoText: { fontSize: fontSizes.sm, fontWeight: '700', color: colors.warning },
-  body: { padding: spacing.lg, paddingBottom: spacing.xxxl },
+  scroll: { flex: 1 },
+  body: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
   formCard: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,

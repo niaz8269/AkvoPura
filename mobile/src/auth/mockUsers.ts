@@ -48,7 +48,7 @@ export const mockAccounts: MockAccount[] = [
   {
     user: {
       id: 'u-pets-sales',
-      name: 'Pets Salesman',
+      name: 'Imran (Pets)',
       identifier: 'pets',
       role: 'pets_salesman',
       branch: 'timergara',
@@ -57,9 +57,29 @@ export const mockAccounts: MockAccount[] = [
   },
   {
     user: {
+      id: 'u-pets-sales-2',
+      name: 'Bilal (Pets)',
+      identifier: 'pets2',
+      role: 'pets_salesman',
+      branch: 'timergara',
+    },
+    password: 'pets',
+  },
+  {
+    user: {
       id: 'u-cg-sales',
-      name: 'Cans/Gallons Salesman',
+      name: 'Asif (Cans/Gallons)',
       identifier: 'cans',
+      role: 'cans_gallons_salesman',
+      branch: 'timergara',
+    },
+    password: 'cans',
+  },
+  {
+    user: {
+      id: 'u-cg-sales-2',
+      name: 'Zubair (Cans/Gallons)',
+      identifier: 'cans2',
       role: 'cans_gallons_salesman',
       branch: 'timergara',
     },

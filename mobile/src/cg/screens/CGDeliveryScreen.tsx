@@ -32,6 +32,7 @@ import { SwipeToConfirm } from '../../components/SwipeToConfirm';
 import { colors, fontSizes, radii, spacing } from '../../theme';
 import { useCGSalesman } from '../state';
 import { RouteTabs } from '../components/RouteTabs';
+import { CycleFilter, type CycleFilterValue } from '../components/CycleFilter';
 import type { CGCustomer, CGRoute } from '../types';
 import { generateAndShareBill, type BillItem } from '../../billing/pdf';
 import { useAuth } from '../../auth/AuthContext';
@@ -42,7 +43,6 @@ const gallonIcon = require('../../../assets/brand/19ltr-gallon.webp');
 export function CGDeliveryScreen() {
   const {
     customers,
-    customersByRoute,
     deliveries,
     deliveriesForCustomer,
     recordDelivery,
@@ -50,35 +50,40 @@ export function CGDeliveryScreen() {
     vanLoad,
   } = useCGSalesman();
 
+  const [cycle, setCycle] = useState<CycleFilterValue>('all');
   const [route, setRoute] = useState<CGRoute>('hospital');
 
-  const countByRoute = useMemo(
+  const cycleFiltered = useMemo(
+    () => (cycle === 'all' ? customers : customers.filter((c) => c.paymentCycle === cycle)),
+    [customers, cycle]
+  );
+
+  const countByCycle = useMemo(
     () => ({
-      hospital: customers.filter((c) => c.route === 'hospital').length,
-      bypass: customers.filter((c) => c.route === 'bypass').length,
-      others: customers.filter((c) => c.route === 'others').length,
+      all: customers.length,
+      daily: customers.filter((c) => c.paymentCycle === 'daily').length,
+      weekly: customers.filter((c) => c.paymentCycle === 'weekly').length,
     }),
     [customers]
   );
 
-  const visible = customersByRoute(route);
+  const countByRoute = useMemo(
+    () => ({
+      hospital: cycleFiltered.filter((c) => c.route === 'hospital').length,
+      bypass: cycleFiltered.filter((c) => c.route === 'bypass').length,
+      others: cycleFiltered.filter((c) => c.route === 'others').length,
+    }),
+    [cycleFiltered]
+  );
+
+  const visible = cycleFiltered.filter((c) => c.route === route);
 
   return (
     <Screen padded={false}>
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.title}>Deliver</Text>
-            <Text style={styles.titleUr}>ڈیلیور کریں</Text>
-          </View>
-          <View style={styles.headerStats}>
-            <Text style={styles.headerStatLabel}>On van</Text>
-            <Text style={styles.headerStatValue}>
-              {vanLoad.filledCans}🥫 · {vanLoad.filledGallons}💧
-            </Text>
-          </View>
-        </View>
-
+      <View style={styles.headerBar}>
+        <Text style={styles.headerStat}>
+          On van: <Text style={styles.headerStatVal}>{vanLoad.filledCans}🥫 · {vanLoad.filledGallons}💧</Text>
+        </Text>
         {deliveries.length > 0 ? (
           <Pressable
             onPress={() => {
@@ -90,14 +95,15 @@ export function CGDeliveryScreen() {
               pressed ? styles.undoBtnPressed : null,
             ]}
           >
-            <Text style={styles.undoText}>↶ Undo last delivery</Text>
+            <Text style={styles.undoText}>↶ Undo</Text>
           </Pressable>
         ) : null}
       </View>
 
+      <CycleFilter selected={cycle} onSelect={setCycle} counts={countByCycle} />
       <RouteTabs selected={route} onSelect={setRoute} countByRoute={countByRoute} />
 
-      <ScrollView contentContainerStyle={styles.list}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.list}>
         {visible.map((c) => (
           <DeliveryRow
             key={c.id}
@@ -109,7 +115,9 @@ export function CGDeliveryScreen() {
         ))}
 
         {visible.length === 0 ? (
-          <Text style={styles.empty}>No customers on this route.</Text>
+          <Text style={styles.empty}>
+            No {cycle === 'all' ? '' : cycle + ' '}customers on this route.
+          </Text>
         ) : null}
       </ScrollView>
     </Screen>
@@ -305,44 +313,30 @@ function DeliveryRow({
 }
 
 const styles = StyleSheet.create({
-  header: {
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
+    paddingVertical: 4,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    minHeight: 32,
   },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  headerStat: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontWeight: '600',
   },
-  title: {
-    fontSize: fontSizes.title,
-    fontWeight: '800',
+  headerStatVal: {
     color: colors.primaryDark,
-  },
-  titleUr: { fontSize: fontSizes.body, color: colors.primary },
-  headerStats: {
-    backgroundColor: colors.surfaceMuted,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.md,
-  },
-  headerStatLabel: { fontSize: fontSizes.xs, color: colors.textMuted },
-  headerStatValue: {
-    fontSize: fontSizes.body,
     fontWeight: '800',
-    color: colors.primaryDark,
   },
   undoBtn: {
-    alignSelf: 'flex-start',
-    marginTop: spacing.sm,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    paddingHorizontal: spacing.sm,
     borderRadius: radii.pill,
-    backgroundColor: colors.surfaceMuted,
     borderWidth: 1,
     borderColor: colors.warning,
   },
@@ -350,13 +344,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.warning + '33',
   },
   undoText: {
-    fontSize: fontSizes.sm,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.warning,
   },
+  scroll: { flex: 1 },
   list: {
-    padding: spacing.lg,
-    paddingBottom: spacing.xxxl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: 4,
+    paddingBottom: spacing.sm,
   },
   empty: {
     textAlign: 'center',
@@ -367,8 +363,9 @@ const styles = StyleSheet.create({
   row: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.sm,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 1,

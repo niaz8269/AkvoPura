@@ -7,11 +7,12 @@
  */
 
 import React from 'react';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
 import { useCGSalesman } from '../state';
+import type { PaymentCycle } from '../types';
 
 const canIcon = require('../../../assets/brand/14ltr-can.webp');
 const gallonIcon = require('../../../assets/brand/19ltr-gallon.webp');
@@ -19,7 +20,8 @@ const gallonIcon = require('../../../assets/brand/19ltr-gallon.webp');
 type Route = { params: { customerId: string } };
 
 export function CGCustomerDetailScreen({ route }: { route: Route }) {
-  const { customerById, deliveriesForCustomer, collectionsForCustomer } = useCGSalesman();
+  const { customerById, deliveriesForCustomer, collectionsForCustomer, setPaymentCycle } =
+    useCGSalesman();
   const customer = customerById(route.params.customerId);
 
   if (!customer) {
@@ -70,6 +72,27 @@ export function CGCustomerDetailScreen({ route }: { route: Route }) {
           Rs {customer.outstandingDebt.toLocaleString()}
         </Text>
       </View>
+
+      <Section title="Payment cycle" subtitle="ادائیگی کا چکر">
+        <View style={styles.cycleRow}>
+          <CycleOption
+            value="daily"
+            label="Daily"
+            labelUr="روزانہ"
+            sub="Pays on every visit"
+            active={customer.paymentCycle === 'daily'}
+            onPress={() => setPaymentCycle(customer.id, 'daily')}
+          />
+          <CycleOption
+            value="weekly"
+            label="Weekly"
+            labelUr="ہفتہ وار"
+            sub="Settles once a week"
+            active={customer.paymentCycle === 'weekly'}
+            onPress={() => setPaymentCycle(customer.id, 'weekly')}
+          />
+        </View>
+      </Section>
 
       <Section title="Today's deliveries" subtitle="آج کی ڈیلیوریز">
         {deliveries.length === 0 ? (
@@ -131,6 +154,53 @@ export function CGCustomerDetailScreen({ route }: { route: Route }) {
         </View>
       </Section>
     </Screen>
+  );
+}
+
+function CycleOption({
+  value,
+  label,
+  labelUr,
+  sub,
+  active,
+  onPress,
+}: {
+  value: PaymentCycle;
+  label: string;
+  labelUr: string;
+  sub: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.cycleOption,
+        active ? styles.cycleOptionActive : null,
+        pressed && !active ? { opacity: 0.85 } : null,
+      ]}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+    >
+      <View
+        style={[
+          styles.cycleRadio,
+          active ? styles.cycleRadioActive : null,
+        ]}
+      >
+        {active ? <View style={styles.cycleRadioInner} /> : null}
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.cycleLabel, active ? styles.cycleLabelActive : null]}>
+          {label}
+        </Text>
+        <Text style={[styles.cycleLabelUr, active ? styles.cycleLabelUrActive : null]}>
+          {labelUr}
+        </Text>
+        <Text style={[styles.cycleSub, active ? styles.cycleSubActive : null]}>{sub}</Text>
+      </View>
+    </Pressable>
   );
 }
 
@@ -331,4 +401,51 @@ const styles = StyleSheet.create({
   },
   priceLabel: { fontSize: fontSizes.body, color: colors.text },
   priceValue: { fontSize: fontSizes.body, fontWeight: '800', color: colors.primaryDark },
+  cycleRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  cycleOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  cycleOptionActive: {
+    borderColor: colors.accent,
+    backgroundColor: colors.accent + '15',
+  },
+  cycleRadio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cycleRadioActive: {
+    borderColor: colors.accent,
+  },
+  cycleRadioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.accent,
+  },
+  cycleLabel: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.text,
+  },
+  cycleLabelActive: { color: colors.primaryDark },
+  cycleLabelUr: { fontSize: fontSizes.xs, color: colors.textMuted },
+  cycleLabelUrActive: { color: colors.primary },
+  cycleSub: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 2 },
+  cycleSubActive: { color: colors.primaryDark },
 });

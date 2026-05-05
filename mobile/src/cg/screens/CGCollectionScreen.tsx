@@ -25,6 +25,7 @@ import { QuantityStepper } from '../../components/QuantityStepper';
 import { SwipeToConfirm } from '../../components/SwipeToConfirm';
 import { colors, fontSizes, radii, spacing } from '../../theme';
 import { useCGSalesman } from '../state';
+import { CycleFilter, type CycleFilterValue } from '../components/CycleFilter';
 import type { CGCustomer } from '../types';
 
 const canIcon = require('../../../assets/brand/14ltr-can.webp');
@@ -39,9 +40,28 @@ export function CGCollectionScreen() {
     vanLoad,
   } = useCGSalesman();
 
+  const [cycle, setCycle] = useState<CycleFilterValue>('all');
+
   const customersWithEmpties = useMemo(
     () => customers.filter((c) => c.emptyCansHeld + c.emptyGallonsHeld > 0),
     [customers]
+  );
+
+  const visibleEmpties = useMemo(
+    () =>
+      cycle === 'all'
+        ? customersWithEmpties
+        : customersWithEmpties.filter((c) => c.paymentCycle === cycle),
+    [customersWithEmpties, cycle]
+  );
+
+  const countByCycle = useMemo(
+    () => ({
+      all: customersWithEmpties.length,
+      daily: customersWithEmpties.filter((c) => c.paymentCycle === 'daily').length,
+      weekly: customersWithEmpties.filter((c) => c.paymentCycle === 'weekly').length,
+    }),
+    [customersWithEmpties]
   );
 
   const totalCansCollected = collections.reduce((s, c) => s + c.cansCollected, 0);
@@ -49,26 +69,13 @@ export function CGCollectionScreen() {
 
   return (
     <Screen padded={false}>
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.title}>Collect Empties</Text>
-            <Text style={styles.titleUr}>خالی جمع کریں</Text>
-          </View>
-          <View style={styles.headerStats}>
-            <Text style={styles.headerStatLabel}>Today collected</Text>
-            <Text style={styles.headerStatValue}>
-              {totalCansCollected}🥫 · {totalGallonsCollected}💧
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.subStatRow}>
-          <Text style={styles.subStat}>
-            On van empties: {vanLoad.emptyCansAboard} cans · {vanLoad.emptyGallonsAboard} gallons
-          </Text>
-        </View>
-
+      <View style={styles.headerBar}>
+        <Text style={styles.headerStat}>
+          Today: <Text style={styles.headerStatVal}>{totalCansCollected}🥫 · {totalGallonsCollected}💧</Text>
+        </Text>
+        <Text style={styles.headerStatMuted}>
+          On van: {vanLoad.emptyCansAboard}🥫 · {vanLoad.emptyGallonsAboard}💧
+        </Text>
         {collections.length > 0 ? (
           <Pressable
             onPress={() => {
@@ -80,18 +87,22 @@ export function CGCollectionScreen() {
               pressed ? styles.undoBtnPressed : null,
             ]}
           >
-            <Text style={styles.undoText}>↶ Undo last collection</Text>
+            <Text style={styles.undoText}>↶ Undo</Text>
           </Pressable>
         ) : null}
       </View>
 
-      <ScrollView contentContainerStyle={styles.list}>
-        {customersWithEmpties.length === 0 ? (
+      <CycleFilter selected={cycle} onSelect={setCycle} counts={countByCycle} />
+
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.list}>
+        {visibleEmpties.length === 0 ? (
           <Text style={styles.empty}>
-            No customers are holding empties right now. Nothing to collect.
+            {customersWithEmpties.length === 0
+              ? 'No customers are holding empties right now. Nothing to collect.'
+              : `No ${cycle} customers are holding empties.`}
           </Text>
         ) : (
-          customersWithEmpties.map((c) => (
+          visibleEmpties.map((c) => (
             <CollectionRow
               key={c.id}
               customer={c}
@@ -192,50 +203,33 @@ function CollectionRow({
 }
 
 const styles = StyleSheet.create({
-  header: {
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
+    paddingVertical: 4,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    minHeight: 32,
+    gap: spacing.sm,
+    flexWrap: 'wrap',
   },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  title: { fontSize: fontSizes.title, fontWeight: '800', color: colors.primaryDark },
-  titleUr: { fontSize: fontSizes.body, color: colors.primary },
-  headerStats: {
-    backgroundColor: colors.surfaceMuted,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.md,
-  },
-  headerStatLabel: { fontSize: fontSizes.xs, color: colors.textMuted },
-  headerStatValue: {
-    fontSize: fontSizes.body,
-    fontWeight: '800',
-    color: colors.primaryDark,
-  },
-  subStatRow: { marginTop: spacing.sm },
-  subStat: { fontSize: fontSizes.xs, color: colors.textMuted },
+  headerStat: { fontSize: 12, color: colors.textMuted, fontWeight: '600' },
+  headerStatVal: { color: colors.primaryDark, fontWeight: '800' },
+  headerStatMuted: { fontSize: 11, color: colors.textMuted },
   undoBtn: {
-    alignSelf: 'flex-start',
-    marginTop: spacing.sm,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    paddingHorizontal: spacing.sm,
     borderRadius: radii.pill,
-    backgroundColor: colors.surfaceMuted,
     borderWidth: 1,
     borderColor: colors.warning,
   },
-  undoBtnPressed: {
-    backgroundColor: colors.warning + '33',
-  },
-  undoText: { fontSize: fontSizes.sm, fontWeight: '700', color: colors.warning },
-  list: { padding: spacing.lg, paddingBottom: spacing.xxxl },
+  undoBtnPressed: { backgroundColor: colors.warning + '33' },
+  undoText: { fontSize: 12, fontWeight: '700', color: colors.warning },
+  scroll: { flex: 1 },
+  list: { paddingHorizontal: spacing.lg, paddingTop: 4, paddingBottom: spacing.sm },
   empty: {
     textAlign: 'center',
     color: colors.textMuted,
@@ -246,8 +240,9 @@ const styles = StyleSheet.create({
   row: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.sm,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 1,

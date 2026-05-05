@@ -1,6 +1,8 @@
 /**
- * Demo data for Slice 2 — 12 sample customers across the three routes.
- * Replaced by real API data in a later slice.
+ * Demo data — sample customers across the three routes.
+ * Each customer has a paymentCycle: 'daily' (settles on every visit) or
+ * 'weekly' (manager / salesman collects once a week). Replaced by real
+ * API data in a later slice.
  */
 
 import type { CGCustomer, VanLoad } from './types';
@@ -20,6 +22,7 @@ export const demoCustomers: CGCustomer[] = [
     phone: '0300-1112233',
     address: 'DHQ Hospital, ICU Block, Timergara',
     route: 'hospital',
+    paymentCycle: 'daily',
     usualCans: 4,
     usualGallons: 6,
     emptyCansHeld: 4,
@@ -35,6 +38,7 @@ export const demoCustomers: CGCustomer[] = [
     phone: '0300-1112244',
     address: 'DHQ Hospital, OPD wing',
     route: 'hospital',
+    paymentCycle: 'daily',
     usualCans: 3,
     usualGallons: 2,
     emptyCansHeld: 0,
@@ -49,6 +53,7 @@ export const demoCustomers: CGCustomer[] = [
     phone: '0301-7788990',
     address: 'Hospital Road, near pharmacy',
     route: 'hospital',
+    paymentCycle: 'weekly',
     usualCans: 2,
     usualGallons: 3,
     emptyCansHeld: 2,
@@ -64,6 +69,7 @@ export const demoCustomers: CGCustomer[] = [
     phone: '0312-4455667',
     address: 'Hospital Road, Block C',
     route: 'hospital',
+    paymentCycle: 'weekly',
     usualCans: 1,
     usualGallons: 2,
     emptyCansHeld: 1,
@@ -80,6 +86,7 @@ export const demoCustomers: CGCustomer[] = [
     phone: '0344-5566778',
     address: 'Bypass Road, near fuel pump',
     route: 'bypass',
+    paymentCycle: 'daily',
     usualCans: 5,
     usualGallons: 4,
     emptyCansHeld: 0,
@@ -94,6 +101,7 @@ export const demoCustomers: CGCustomer[] = [
     phone: '0345-9988776',
     address: 'Bypass Road, Tyre market',
     route: 'bypass',
+    paymentCycle: 'weekly',
     usualCans: 1,
     usualGallons: 1,
     emptyCansHeld: 1,
@@ -108,6 +116,7 @@ export const demoCustomers: CGCustomer[] = [
     phone: '0322-1010101',
     address: 'Bypass main road, opposite mosque',
     route: 'bypass',
+    paymentCycle: 'daily',
     usualCans: 2,
     usualGallons: 1,
     emptyCansHeld: 0,
@@ -122,6 +131,7 @@ export const demoCustomers: CGCustomer[] = [
     phone: '0331-2233445',
     address: 'Bypass turn, before bridge',
     route: 'bypass',
+    paymentCycle: 'daily',
     usualCans: 1,
     usualGallons: 0,
     emptyCansHeld: 2,
@@ -139,6 +149,7 @@ export const demoCustomers: CGCustomer[] = [
     phone: '0300-7654321',
     address: 'Main Bazaar, school street',
     route: 'others',
+    paymentCycle: 'weekly',
     usualCans: 2,
     usualGallons: 4,
     emptyCansHeld: 0,
@@ -154,6 +165,7 @@ export const demoCustomers: CGCustomer[] = [
     phone: '0335-8899001',
     address: 'Bazaar second floor',
     route: 'others',
+    paymentCycle: 'weekly',
     usualCans: 1,
     usualGallons: 0,
     emptyCansHeld: 1,
@@ -168,6 +180,7 @@ export const demoCustomers: CGCustomer[] = [
     phone: '0310-7777888',
     address: 'Workshop street, near garage',
     route: 'others',
+    paymentCycle: 'weekly',
     usualCans: 1,
     usualGallons: 1,
     emptyCansHeld: 0,
@@ -182,6 +195,7 @@ export const demoCustomers: CGCustomer[] = [
     phone: '0303-2424242',
     address: 'House #14, Street 5',
     route: 'others',
+    paymentCycle: 'weekly',
     usualCans: 0,
     usualGallons: 1,
     emptyCansHeld: 0,
@@ -199,6 +213,7 @@ export const demoCustomers: CGCustomer[] = [
     phone: '0300-0000001',
     address: 'House #7, Street 12',
     route: 'others',
+    paymentCycle: 'weekly',
     usualCans: 1,
     usualGallons: 2,
     emptyCansHeld: 1,

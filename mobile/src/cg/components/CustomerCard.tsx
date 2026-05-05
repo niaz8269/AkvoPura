@@ -55,6 +55,18 @@ export function CustomerCard({
             {customer.address}
           </Text>
         </View>
+        <View
+          style={[
+            styles.cycleBadge,
+            customer.paymentCycle === 'daily'
+              ? styles.cycleBadgeDaily
+              : styles.cycleBadgeWeekly,
+          ]}
+        >
+          <Text style={styles.cycleBadgeText}>
+            {customer.paymentCycle === 'daily' ? 'D' : 'W'}
+          </Text>
+        </View>
         <View style={[styles.dot, { backgroundColor: palette.dot }]} />
       </View>
 
@@ -111,6 +123,13 @@ const STATUS_PALETTE: Record<CGCardStatus, Palette> = {
     muted: '#6B5300',
     dot: '#B7891F',
   },
+  orange: {
+    bg: colors.statusOrange,
+    border: '#C26D1F',
+    text: colors.textInverse,
+    muted: 'rgba(255,255,255,0.9)',
+    dot: '#FFFFFF',
+  },
   red: {
     bg: colors.statusRed,
     border: '#A83A33',
@@ -130,9 +149,10 @@ const STATUS_PALETTE: Record<CGCardStatus, Palette> = {
 const styles = StyleSheet.create({
   card: {
     borderRadius: radii.lg,
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     borderWidth: 1.5,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 1,
@@ -157,6 +177,25 @@ const styles = StyleSheet.create({
     height: 14,
     borderRadius: 7,
     marginLeft: spacing.sm,
+  },
+  cycleBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.pill,
+    marginLeft: spacing.sm,
+    minWidth: 24,
+    alignItems: 'center',
+  },
+  cycleBadgeDaily: {
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  cycleBadgeWeekly: {
+    backgroundColor: 'rgba(255,255,255,0.35)',
+  },
+  cycleBadgeText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#000',
   },
   statusRow: {
     flexDirection: 'row',

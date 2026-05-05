@@ -15,6 +15,7 @@ import React, {
 } from 'react';
 
 import { demoPetCustomers, initialPetVanLoad, petProducts } from './demoData';
+import { usePricing } from '../pricing/state';
 import type {
   BillEntry,
   PetCustomer,
@@ -28,6 +29,9 @@ type BillInput = {
   pet600Packs: number;
   pet1500Packs: number;
   cashCollected: number;
+  /** Bill-time price overrides (per pack). If omitted, falls back to priceFor(). */
+  pricePet600?: number;
+  pricePet1500?: number;
 };
 
 type ReturnInput = {
@@ -65,6 +69,7 @@ function nextId(prefix: string) {
 }
 
 export function PetsSalesmanProvider({ children }: PropsWithChildren) {
+  const { prices } = usePricing();
   const [customers, setCustomers] = useState<PetCustomer[]>(demoPetCustomers);
   const [vanLoad, setVanLoad] = useState<PetVanLoad>(initialPetVanLoad);
   const [bills, setBills] = useState<BillEntry[]>([]);
@@ -85,20 +90,25 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
     [returns]
   );
 
-  const priceFor = useCallback<State['priceFor']>((customer, productId) => {
-    if (productId === 'pet600') {
-      return customer.pricePet600 ?? petProducts.find((p) => p.id === 'pet600')!.defaultPrice;
-    }
-    return customer.pricePet1500 ?? petProducts.find((p) => p.id === 'pet1500')!.defaultPrice;
-  }, []);
+  // Customer-specific override wins; otherwise use the owner's current default
+  // from PricingProvider (so editing prices in Owner Settings flows through here).
+  const priceFor = useCallback<State['priceFor']>(
+    (customer, productId) => {
+      if (productId === 'pet600') {
+        return customer.pricePet600 ?? prices.pet600;
+      }
+      return customer.pricePet1500 ?? prices.pet1500;
+    },
+    [prices]
+  );
 
   const recordBill = useCallback<State['recordBill']>((input) => {
     const customer = customers.find((c) => c.id === input.customerId);
     if (!customer) return null;
 
-    const billed =
-      input.pet600Packs * priceFor(customer, 'pet600') +
-      input.pet1500Packs * priceFor(customer, 'pet1500');
+    const unit600 = input.pricePet600 ?? priceFor(customer, 'pet600');
+    const unit1500 = input.pricePet1500 ?? priceFor(customer, 'pet1500');
+    const billed = input.pet600Packs * unit600 + input.pet1500Packs * unit1500;
 
     setCustomers((prev) =>
       prev.map((c) =>

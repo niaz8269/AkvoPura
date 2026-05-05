@@ -4,13 +4,11 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
 import { usePetsSalesman } from '../state';
-
-const brandLogo = require('../../../assets/brand/akvopura-brand.png');
 
 type Nav = { navigate: (screen: string, params?: { customerId: string }) => void };
 
@@ -31,31 +29,23 @@ export function PetsCustomersScreen({ navigation }: { navigation: Nav }) {
 
   return (
     <Screen padded={false}>
-      <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <Image source={brandLogo} style={styles.logo} resizeMode="contain" />
-          <View>
-            <Text style={styles.title}>Today's Customers</Text>
-            <Text style={styles.titleUr}>آج کے کسٹمرز</Text>
-          </View>
-        </View>
-
-        <View style={styles.vanRow}>
-          <VanStat label="600 ml packs" value={vanLoad.pet600Packs} />
-          <VanStat label="1.5 L packs" value={vanLoad.pet1500Packs} />
-        </View>
-
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search by name, area, or phone"
-          placeholderTextColor={colors.textMuted}
-          style={styles.search}
-          autoCorrect={false}
-        />
+      <View style={styles.headerBar}>
+        <Text style={styles.headerStat}>
+          On van: <Text style={styles.headerStatVal}>{vanLoad.pet600Packs}</Text> × 600ml ·{' '}
+          <Text style={styles.headerStatVal}>{vanLoad.pet1500Packs}</Text> × 1.5L
+        </Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.list}>
+      <TextInput
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Search by name, area, or phone"
+        placeholderTextColor={colors.textMuted}
+        style={styles.search}
+        autoCorrect={false}
+      />
+
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.list}>
         {filtered.map((c) => {
           const billed = billsForCustomer(c.id);
           const billedToday = billed.length > 0;
@@ -117,71 +107,44 @@ export function PetsCustomersScreen({ navigation }: { navigation: Nav }) {
   );
 }
 
-function VanStat({ label, value }: { label: string; value: number }) {
-  return (
-    <View style={styles.vanStat}>
-      <Text style={styles.vanValue}>{value}</Text>
-      <Text style={styles.vanLabel}>{label}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  header: {
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
+    paddingVertical: 4,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    minHeight: 32,
   },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  logo: { width: 44, height: 44 },
-  title: {
-    fontSize: fontSizes.title,
-    fontWeight: '800',
-    color: colors.primaryDark,
-  },
-  titleUr: { fontSize: fontSizes.body, color: colors.primary },
-  vanRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  vanStat: {
-    flex: 1,
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radii.md,
-    padding: spacing.md,
-    alignItems: 'center',
-  },
-  vanValue: {
-    fontSize: fontSizes.heading,
-    fontWeight: '800',
-    color: colors.primaryDark,
-  },
-  vanLabel: {
-    fontSize: fontSizes.xs,
+  headerStat: {
+    fontSize: 12,
     color: colors.textMuted,
+    fontWeight: '600',
+  },
+  headerStatVal: {
+    color: colors.primaryDark,
+    fontWeight: '800',
   },
   search: {
     borderWidth: 1.5,
     borderColor: colors.border,
     borderRadius: radii.md,
+    marginHorizontal: spacing.lg,
+    marginTop: 6,
+    marginBottom: 6,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    fontSize: fontSizes.body,
+    paddingVertical: 6,
+    fontSize: fontSizes.sm,
     color: colors.text,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
   },
+  scroll: { flex: 1 },
   list: {
-    padding: spacing.lg,
-    paddingBottom: spacing.xxxl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
   },
   card: {
     backgroundColor: colors.surface,

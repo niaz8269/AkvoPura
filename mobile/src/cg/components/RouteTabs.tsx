@@ -1,19 +1,22 @@
 /**
- * RouteTabs — top tab strip for Hospital / Bypass / Others.
- * Big tappable pills with English + Urdu labels and a count badge.
+ * RouteTabs — compact horizontal pills for Hospital / Bypass / Others.
+ *
+ * Designed to be dense (~36 px tall) so the filter row above the customer
+ * list doesn't eat the screen. English label only inside the pill — Urdu
+ * is reserved for the screen header. The active pill shows its count badge;
+ * inactive pills omit it to reduce noise.
  */
 
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, fontSizes, radii, spacing } from '../../theme';
-import { strings } from '../../i18n/strings';
 import type { CGRoute } from '../types';
 
-const ROUTE_LABELS: Record<CGRoute, { en: string; ur: string }> = {
-  hospital: { en: 'Hospital', ur: 'ہسپتال' },
-  bypass: { en: 'Bypass', ur: 'بائی پاس' },
-  others: { en: 'Others', ur: 'دیگر' },
+const ROUTE_LABELS: Record<CGRoute, string> = {
+  hospital: 'Hospital',
+  bypass: 'Bypass',
+  others: 'Others',
 };
 
 const ROUTES: CGRoute[] = ['hospital', 'bypass', 'others'];
@@ -24,20 +27,11 @@ type Props = {
   countByRoute: Record<CGRoute, number>;
 };
 
-// Touch the strings import so unused-warnings stay quiet if the consumer
-// later wants to swap to the global strings table.
-void strings;
-
 export function RouteTabs({ selected, onSelect, countByRoute }: Props) {
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.row}
-    >
+    <View style={styles.row}>
       {ROUTES.map((route) => {
         const active = route === selected;
-        const label = ROUTE_LABELS[route];
         return (
           <Pressable
             key={route}
@@ -50,42 +44,41 @@ export function RouteTabs({ selected, onSelect, countByRoute }: Props) {
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
           >
-            <View>
-              <Text style={[styles.labelEn, active ? styles.labelActive : null]}>
-                {label.en}
-              </Text>
-              <Text style={[styles.labelUr, active ? styles.labelUrActive : null]}>
-                {label.ur}
-              </Text>
-            </View>
-            <View style={[styles.badge, active ? styles.badgeActive : null]}>
-              <Text style={[styles.badgeText, active ? styles.badgeTextActive : null]}>
-                {countByRoute[route] ?? 0}
-              </Text>
-            </View>
+            <Text style={[styles.label, active ? styles.labelActive : null]}>
+              {ROUTE_LABELS[route]}
+            </Text>
+            {active ? (
+              <View style={styles.countActive}>
+                <Text style={styles.countActiveText}>{countByRoute[route] ?? 0}</Text>
+              </View>
+            ) : (
+              <Text style={styles.countInactive}>{countByRoute[route] ?? 0}</Text>
+            )}
           </Pressable>
         );
       })}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingVertical: 2,
     gap: spacing.sm,
   },
   tab: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    height: 30,
     borderRadius: radii.pill,
-    borderWidth: 1.5,
-    borderColor: colors.primaryLight,
+    borderWidth: 1,
+    borderColor: colors.border,
     backgroundColor: colors.surface,
-    gap: spacing.sm,
+    gap: 6,
   },
   tabActive: {
     backgroundColor: colors.primary,
@@ -94,39 +87,29 @@ const styles = StyleSheet.create({
   tabPressed: {
     backgroundColor: colors.surfaceMuted,
   },
-  labelEn: {
-    fontSize: fontSizes.body,
+  label: {
+    fontSize: 13,
     fontWeight: '700',
     color: colors.primaryDark,
   },
-  labelActive: {
-    color: colors.textInverse,
-  },
-  labelUr: {
-    fontSize: fontSizes.xs,
+  labelActive: { color: colors.textInverse },
+  countInactive: {
+    fontSize: 12,
+    fontWeight: '700',
     color: colors.textMuted,
   },
-  labelUrActive: {
-    color: 'rgba(255,255,255,0.85)',
-  },
-  badge: {
-    minWidth: 28,
-    height: 24,
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    backgroundColor: colors.primaryLight + '33',
+  countActive: {
+    minWidth: 22,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 6,
+    backgroundColor: 'rgba(255,255,255,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeActive: {
-    backgroundColor: 'rgba(255,255,255,0.25)',
-  },
-  badgeText: {
-    fontSize: fontSizes.xs,
+  countActiveText: {
+    fontSize: 11,
     fontWeight: '800',
-    color: colors.primaryDark,
-  },
-  badgeTextActive: {
     color: colors.textInverse,
   },
 });

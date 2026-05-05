@@ -16,6 +16,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { useCGSalesman } from '../../cg/state';
 import { usePetsSalesman } from '../../pets/state';
 import { useManager } from '../state';
+import { useAssignments } from '../../assignments/state';
 import { strings } from '../../i18n/strings';
 import { HIGH_VALUE_THRESHOLD } from '../demoData';
 
@@ -28,6 +29,9 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
   const cg = useCGSalesman();
   const pets = usePetsSalesman();
   const { pendingExpenses } = useManager();
+  const assignments = useAssignments();
+  const todayPets = assignments.petsSalesman();
+  const todayCg = assignments.cgSalesman();
 
   const cgCash = cg.deliveries.reduce((s, d) => s + d.cashCollected, 0);
   const petsCash = pets.bills.reduce((s, b) => s + b.cashCollected, 0);
@@ -103,6 +107,40 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
         <Kpi label="Pets bills" value={petsBills} />
         <Kpi label="C/G deliveries" value={cgDeliveries} />
       </View>
+
+      <Pressable
+        onPress={() => navigation.navigate('VanLoad')}
+        style={({ pressed }) => [
+          styles.assignmentsCard,
+          pressed ? { opacity: 0.85 } : null,
+        ]}
+      >
+        <View style={styles.assignmentsHeader}>
+          <Text style={styles.assignmentsTitle}>Today's assignments</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
+        </View>
+        <View style={styles.assignmentsRow}>
+          <View style={styles.assignmentItem}>
+            <Ionicons name="cube-outline" size={16} color={colors.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.assignmentLabel}>Pets van</Text>
+              <Text style={styles.assignmentName} numberOfLines={1}>
+                {todayPets ? todayPets.name : 'Unassigned'}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.assignmentDivider} />
+          <View style={styles.assignmentItem}>
+            <Ionicons name="water-outline" size={16} color={colors.accent} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.assignmentLabel}>C/G van</Text>
+              <Text style={styles.assignmentName} numberOfLines={1}>
+                {todayCg ? todayCg.name : 'Unassigned'}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </Pressable>
 
       {pendingExpenses.length > 0 || totalDebt > 0 ? (
         <View style={styles.alertSection}>
@@ -322,4 +360,50 @@ const styles = StyleSheet.create({
   },
   activityLine: { fontSize: fontSizes.sm, color: colors.text },
   activityTime: { fontSize: fontSizes.xs, color: colors.textMuted },
+
+  assignmentsCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.accent,
+  },
+  assignmentsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  assignmentsTitle: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  assignmentsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  assignmentItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  assignmentDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: colors.border,
+    marginHorizontal: spacing.md,
+  },
+  assignmentLabel: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+  },
+  assignmentName: {
+    fontSize: fontSizes.sm,
+    fontWeight: '800',
+    color: colors.primaryDark,
+    marginTop: 1,
+  },
 });

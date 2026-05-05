@@ -139,8 +139,8 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
+    paddingTop: 4,
+    paddingBottom: 4,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   filterPillTextActive: { color: colors.textInverse },
   countLine: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: spacing.sm },
 
-  body: { padding: spacing.lg, paddingBottom: spacing.xxxl },
+  body: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
   empty: {
     fontStyle: 'italic',
     color: colors.textMuted,
