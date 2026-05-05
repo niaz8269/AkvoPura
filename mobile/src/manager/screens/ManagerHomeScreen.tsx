@@ -17,6 +17,7 @@ import { useCGSalesman } from '../../cg/state';
 import { usePetsSalesman } from '../../pets/state';
 import { useManager } from '../state';
 import { useAssignments } from '../../assignments/state';
+import { useCustomerPortal } from '../../customer/state';
 import { strings } from '../../i18n/strings';
 import { HIGH_VALUE_THRESHOLD } from '../demoData';
 
@@ -32,6 +33,11 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
   const assignments = useAssignments();
   const todayPets = assignments.petsSalesman();
   const todayCg = assignments.cgSalesman();
+  const { orders } = useCustomerPortal();
+  const pendingOrders = orders.filter((o) => o.status === 'pending').length;
+  const activeOrders = orders.filter(
+    (o) => o.status === 'assigned' || o.status === 'in_transit'
+  ).length;
 
   const cgCash = cg.deliveries.reduce((s, d) => s + d.cashCollected, 0);
   const petsCash = pets.bills.reduce((s, b) => s + b.cashCollected, 0);
@@ -142,8 +148,42 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
         </View>
       </Pressable>
 
-      {pendingExpenses.length > 0 || totalDebt > 0 ? (
+      {pendingOrders > 0 || activeOrders > 0 || pendingExpenses.length > 0 || totalDebt > 0 ? (
         <View style={styles.alertSection}>
+          {pendingOrders > 0 || activeOrders > 0 ? (
+            <Pressable
+              onPress={() => navigation.navigate('Orders')}
+              style={({ pressed }) => [
+                styles.alertCard,
+                pendingOrders > 0 ? styles.alertWarn : styles.alertInfo,
+                pressed ? styles.alertPressed : null,
+              ]}
+            >
+              <Ionicons
+                name="cart-outline"
+                size={28}
+                color={pendingOrders > 0 ? colors.warning : colors.info}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.alertTitle}>
+                  {pendingOrders > 0
+                    ? `${pendingOrders} new customer order${pendingOrders === 1 ? '' : 's'}`
+                    : `${activeOrders} order${activeOrders === 1 ? '' : 's'} in progress`}
+                </Text>
+                <Text style={styles.alertSub}>
+                  {pendingOrders > 0
+                    ? 'Tap to assign to a salesman'
+                    : 'Tap to update status'}
+                </Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={pendingOrders > 0 ? colors.warning : colors.info}
+              />
+            </Pressable>
+          ) : null}
+
           {pendingExpenses.length > 0 ? (
             <Pressable
               onPress={() => navigation.navigate('Expenses')}
@@ -195,13 +235,36 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
       ) : null}
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Recent activity</Text>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitle}>Recent activity</Text>
+          {recentActivity.length > 0 ? (
+            <Pressable
+              onPress={() => navigation.navigate('Trips')}
+              style={({ pressed }) => [
+                styles.viewAllBtn,
+                pressed ? { opacity: 0.7 } : null,
+              ]}
+              accessibilityLabel="View full activity feed"
+            >
+              <Text style={styles.viewAllText}>View all</Text>
+              <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+            </Pressable>
+          ) : null}
+        </View>
         <View style={styles.sectionBody}>
           {recentActivity.length === 0 ? (
             <Text style={styles.empty}>No deliveries yet today.</Text>
           ) : (
             recentActivity.map((a) => (
-              <View key={a.id} style={styles.activityRow}>
+              <Pressable
+                key={a.id}
+                onPress={() => navigation.navigate('Trips')}
+                style={({ pressed }) => [
+                  styles.activityRow,
+                  pressed ? { backgroundColor: colors.surfaceMuted } : null,
+                ]}
+                accessibilityLabel={`Open trips — ${a.line}`}
+              >
                 <View
                   style={[
                     styles.activityKindChip,
@@ -216,7 +279,13 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
                   </Text>
                 </View>
                 <Text style={styles.activityTime}>{formatTime(a.time)}</Text>
-              </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={14}
+                  color={colors.textMuted}
+                  style={{ marginLeft: 4 }}
+                />
+              </Pressable>
             ))
           )}
         </View>
@@ -309,6 +378,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.warning + '15',
     borderLeftColor: colors.warning,
   },
+  alertInfo: {
+    backgroundColor: colors.info + '15',
+    borderLeftColor: colors.info,
+  },
   alertDanger: {
     backgroundColor: colors.danger + '15',
     borderLeftColor: colors.danger,
@@ -318,11 +391,28 @@ const styles = StyleSheet.create({
   alertSub: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 2 },
 
   section: { marginTop: spacing.md },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
   sectionTitle: {
     fontSize: fontSizes.body,
     fontWeight: '800',
     color: colors.primaryDark,
-    marginBottom: spacing.sm,
+  },
+  viewAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
+  viewAllText: {
+    fontSize: fontSizes.sm,
+    fontWeight: '700',
+    color: colors.primary,
   },
   sectionBody: {
     backgroundColor: colors.surface,

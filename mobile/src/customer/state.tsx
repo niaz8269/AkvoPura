@@ -49,6 +49,12 @@ type State = {
   cancelOrder: (id: string) => void;
   fileComplaint: (input: FileComplaintInput) => Complaint;
   rateComplaint: (id: string, rating: number) => void;
+
+  // Manager-side workflow actions
+  assignOrder: (orderId: string, salesmanId: string) => void;
+  markInTransit: (orderId: string) => void;
+  markDelivered: (orderId: string) => void;
+  managerCancelOrder: (orderId: string, note?: string) => void;
 };
 
 const Ctx = createContext<State | undefined>(undefined);
@@ -120,6 +126,54 @@ export function CustomerProvider({ children }: PropsWithChildren) {
     );
   }, []);
 
+  const assignOrder = useCallback<State['assignOrder']>((orderId, salesmanId) => {
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId
+          ? {
+              ...o,
+              assignedSalesmanId: salesmanId,
+              status: 'assigned',
+              updatedAt: Date.now(),
+            }
+          : o
+      )
+    );
+  }, []);
+
+  const markInTransit = useCallback<State['markInTransit']>((orderId) => {
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId && (o.status === 'assigned' || o.status === 'pending')
+          ? { ...o, status: 'in_transit', updatedAt: Date.now() }
+          : o
+      )
+    );
+  }, []);
+
+  const markDelivered = useCallback<State['markDelivered']>((orderId) => {
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId && o.status !== 'delivered' && o.status !== 'cancelled'
+          ? { ...o, status: 'delivered', updatedAt: Date.now() }
+          : o
+      )
+    );
+  }, []);
+
+  const managerCancelOrder = useCallback<State['managerCancelOrder']>(
+    (orderId, note) => {
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId && o.status !== 'delivered' && o.status !== 'cancelled'
+            ? { ...o, status: 'cancelled', managerNote: note, updatedAt: Date.now() }
+            : o
+        )
+      );
+    },
+    []
+  );
+
   const value = useMemo<State>(
     () => ({
       orders,
@@ -131,6 +185,10 @@ export function CustomerProvider({ children }: PropsWithChildren) {
       cancelOrder,
       fileComplaint,
       rateComplaint,
+      assignOrder,
+      markInTransit,
+      markDelivered,
+      managerCancelOrder,
     }),
     [
       orders,
@@ -141,6 +199,10 @@ export function CustomerProvider({ children }: PropsWithChildren) {
       cancelOrder,
       fileComplaint,
       rateComplaint,
+      assignOrder,
+      markInTransit,
+      markDelivered,
+      managerCancelOrder,
     ]
   );
 

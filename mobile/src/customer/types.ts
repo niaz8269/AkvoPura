@@ -28,6 +28,10 @@ export type CustomerOrder = {
   preferredTime?: string;     // free text from the customer ("by 6 PM today")
   notes?: string;
   status: CustomerOrderStatus;
+  /** Salesman the manager assigned this to. Null until assigned. */
+  assignedSalesmanId?: string;
+  /** Optional manager note (e.g., reason for cancellation). */
+  managerNote?: string;
   placedAt: number;
   updatedAt: number;
 };
