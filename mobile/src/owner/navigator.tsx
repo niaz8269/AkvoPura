@@ -17,6 +17,7 @@ import { OwnerCombinedScreen } from './screens/OwnerCombinedScreen';
 import { OwnerForwardedScreen } from './screens/OwnerForwardedScreen';
 import { OwnerAuditScreen } from './screens/OwnerAuditScreen';
 import { OwnerSettingsScreen } from './screens/OwnerSettingsScreen';
+import { OwnerLeaderboardScreen } from './screens/OwnerLeaderboardScreen';
 import { useManager } from '../manager/state';
 import type { BranchKey } from './types';
 
@@ -24,6 +25,7 @@ export type OwnerStackParamList = {
   Landing: undefined;
   BranchOverview: { branch: BranchKey };
   Combined: undefined;
+  Leaderboard: undefined;
 };
 
 const Stack = createNativeStackNavigator<OwnerStackParamList>();
@@ -67,6 +69,11 @@ function BranchesStack() {
         name="Combined"
         component={OwnerCombinedScreen}
         options={{ title: 'Comparison' }}
+      />
+      <Stack.Screen
+        name="Leaderboard"
+        component={OwnerLeaderboardScreen}
+        options={{ title: 'Leaderboard' }}
       />
     </Stack.Navigator>
   );

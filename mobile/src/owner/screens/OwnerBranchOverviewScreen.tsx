@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Screen } from '../../components';
@@ -17,8 +17,9 @@ import { useProduction } from '../../production/state';
 import type { BranchKey, BranchSummary } from '../types';
 
 type Route = { params: { branch: BranchKey } };
+type Nav = { navigate: (screen: string) => void };
 
-export function OwnerBranchOverviewScreen({ route }: { route: Route }) {
+export function OwnerBranchOverviewScreen({ route, navigation }: { route: Route; navigation: Nav }) {
   const { timergara, shergarh } = useOwnerData();
   const summary = route.params.branch === 'timergara' ? timergara : shergarh;
   const isLive = route.params.branch === 'timergara';
@@ -105,6 +106,23 @@ export function OwnerBranchOverviewScreen({ route }: { route: Route }) {
           </Text>
         ) : null}
       </View>
+
+      {isLive ? (
+        <Pressable
+          onPress={() => navigation.navigate('Leaderboard')}
+          style={({ pressed }) => [
+            styles.leaderboardLink,
+            pressed ? { opacity: 0.85 } : null,
+          ]}
+        >
+          <Ionicons name="trophy" size={20} color="#B58200" />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.leaderboardTitle}>Salesman leaderboard</Text>
+            <Text style={styles.leaderboardSub}>Today's ranking by cash collected</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
+        </Pressable>
+      ) : null}
 
       <Section title="Pets sales" subtitle="پیٹس فروخت">
         <Row label="Bills today" value={summary.petsBills} />
@@ -338,4 +356,26 @@ const styles = StyleSheet.create({
   },
   rowValueWarn: { color: colors.danger },
   rowValueSuccess: { color: colors.success },
+
+  leaderboardLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: '#FFF8DC',
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    borderLeftWidth: 4,
+    borderLeftColor: '#B58200',
+  },
+  leaderboardTitle: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  leaderboardSub: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
 });
