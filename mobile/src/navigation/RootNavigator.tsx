@@ -7,7 +7,7 @@
  * While the saved user is being restored from AsyncStorage, show a splash.
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -20,6 +20,8 @@ import { PetsSalesmanNavigator } from '../pets/navigator';
 import { ManagerNavigator } from '../manager/navigator';
 import { OwnerNavigator } from '../owner/navigator';
 import { CustomerNavigator } from '../customer/navigator';
+import { TutorialOverlay } from '../tutorial/TutorialOverlay';
+import { useTutorial } from '../tutorial/state';
 import { colors, fontSizes, spacing } from '../theme';
 import { strings } from '../i18n/strings';
 import type { Role } from '../auth/types';
@@ -41,21 +43,36 @@ const ROLE_SCREENS: Partial<Record<Role, React.ComponentType<any>>> = {
 
 export function RootNavigator() {
   const { user, isLoading } = useAuth();
+  const { hasSeen, setActiveRole } = useTutorial();
+
+  // When a user logs in (or restored on launch), kick off the tutorial if
+  // they haven't seen their role's walkthrough yet on this device.
+  useEffect(() => {
+    if (user && !hasSeen(user.role)) {
+      // Tiny delay so the tutorial appears just after the first screen paint
+      // — feels like the screen is showing the user "where they are" first.
+      const t = setTimeout(() => setActiveRole(user.role), 400);
+      return () => clearTimeout(t);
+    }
+  }, [user, hasSeen, setActiveRole]);
 
   if (isLoading) return <Splash />;
 
   const AuthedScreen = (user && ROLE_SCREENS[user.role]) ?? RoleHomeScreen;
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {user ? (
-          <Stack.Screen name="Home" component={AuthedScreen} />
-        ) : (
-          <Stack.Screen name="Login" component={LoginScreen} />
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+    <>
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {user ? (
+            <Stack.Screen name="Home" component={AuthedScreen} />
+          ) : (
+            <Stack.Screen name="Login" component={LoginScreen} />
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
+      <TutorialOverlay />
+    </>
   );
 }
 

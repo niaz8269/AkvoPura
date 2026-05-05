@@ -11,6 +11,7 @@ import { PricingProvider } from './src/pricing/state';
 import { AssignmentsProvider } from './src/assignments/state';
 import { EmployeesProvider } from './src/employees/state';
 import { ProductionProvider } from './src/production/state';
+import { TutorialProvider } from './src/tutorial/state';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 export default function App() {
@@ -26,7 +27,9 @@ export default function App() {
                     <ProductionProvider>
                       <ManagerProvider>
                         <CustomerProvider>
-                          <RootNavigator />
+                          <TutorialProvider>
+                            <RootNavigator />
+                          </TutorialProvider>
                         </CustomerProvider>
                       </ManagerProvider>
                     </ProductionProvider>
