@@ -18,6 +18,7 @@ import { RoleHomeScreen } from '../screens/RoleHomeScreen';
 import { CGSalesmanNavigator } from '../cg/navigator';
 import { PetsSalesmanNavigator } from '../pets/navigator';
 import { ManagerNavigator } from '../manager/navigator';
+import { OwnerNavigator } from '../owner/navigator';
 import { colors, fontSizes, spacing } from '../theme';
 import { strings } from '../i18n/strings';
 import type { Role } from '../auth/types';
@@ -33,6 +34,7 @@ const ROLE_SCREENS: Partial<Record<Role, React.ComponentType<any>>> = {
   cans_gallons_salesman: CGSalesmanNavigator,
   pets_salesman: PetsSalesmanNavigator,
   manager: ManagerNavigator,
+  owner: OwnerNavigator,
 };
 
 export function RootNavigator() {
