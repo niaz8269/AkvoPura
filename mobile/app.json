@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "AkvoPura",
+    "slug": "akvopura",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/brand/akvopura-brand.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/brand/akvopura-brand.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F4FAFE"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.akvopura.app"
+    },
+    "android": {
+      "package": "com.akvopura.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/brand/akvopura-brand.png",
+        "backgroundColor": "#F4FAFE"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
