@@ -6,7 +6,7 @@
  * Pending orders can be cancelled here.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -16,6 +16,9 @@ import { useAuth } from '../../auth/AuthContext';
 import { useCGSalesman } from '../../cg/state';
 import { useCustomerPortal } from '../state';
 import type { CustomerOrder, CustomerOrderStatus } from '../types';
+import { generateAndShareBill, type BillItem } from '../../billing/pdf';
+import type { DeliveryEntry } from '../../cg/types';
+import type { CGCustomer } from '../../cg/types';
 
 export function CustomerHistoryScreen() {
   const { user } = useAuth();
@@ -24,6 +27,9 @@ export function CustomerHistoryScreen() {
 
   const myOrders = user ? portal.ordersForUser(user.id) : [];
 
+  const cgRecord = user?.linkedCgCustomerId
+    ? cg.customerById(user.linkedCgCustomerId)
+    : undefined;
   const myDeliveries = user?.linkedCgCustomerId
     ? cg.deliveriesForCustomer(user.linkedCgCustomerId)
     : [];
@@ -70,27 +76,95 @@ export function CustomerHistoryScreen() {
           <Empty text="No deliveries logged yet." />
         ) : (
           orderedDeliveries.map((d) => (
-            <View key={d.id} style={styles.billRow}>
-              <View style={styles.billIcon}>
-                <Ionicons name="receipt-outline" size={20} color={colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.billLine}>
-                  {d.cansDelivered} cans • {d.gallonsDelivered} gallons
-                </Text>
-                <Text style={styles.billSub}>
-                  Rs {d.amountBilled.toLocaleString()} billed •{' '}
-                  {d.cashCollected < d.amountBilled
-                    ? `Rs ${(d.amountBilled - d.cashCollected).toLocaleString()} on credit`
-                    : 'Paid in full'}
-                </Text>
-              </View>
-              <Text style={styles.billTime}>{formatDateTime(d.timestamp)}</Text>
-            </View>
+            <BillRow key={d.id} delivery={d} customer={cgRecord} branch={user?.branch} />
           ))
         )}
       </ScrollView>
     </Screen>
+  );
+}
+
+function BillRow({
+  delivery,
+  customer,
+  branch,
+}: {
+  delivery: DeliveryEntry;
+  customer?: CGCustomer;
+  branch?: string;
+}) {
+  const [sharing, setSharing] = useState(false);
+
+  const onShare = async () => {
+    if (!customer) return;
+    setSharing(true);
+    try {
+      const items: BillItem[] = [];
+      if (delivery.cansDelivered > 0) {
+        items.push({
+          name: '14 L can',
+          qty: delivery.cansDelivered,
+          unitPrice: customer.pricePerCan,
+        });
+      }
+      if (delivery.gallonsDelivered > 0) {
+        items.push({
+          name: '19 L gallon',
+          qty: delivery.gallonsDelivered,
+          unitPrice: customer.pricePerGallon,
+        });
+      }
+      const ok = await generateAndShareBill({
+        billNumber: delivery.id.slice(-6).toUpperCase(),
+        dateTime: delivery.timestamp,
+        customerName: customer.name,
+        customerAddress: customer.address,
+        customerPhone: customer.phone,
+        branchName: branch === 'shergarh' ? 'Shergarh' : 'Timergara',
+        items,
+        paid: delivery.cashCollected,
+        credit: delivery.amountBilled - delivery.cashCollected,
+      });
+      if (!ok) {
+        Alert.alert('Sharing unavailable', 'This device does not support sharing files.');
+      }
+    } catch (err) {
+      Alert.alert('Could not generate PDF', String(err));
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  return (
+    <View style={styles.billRow}>
+      <View style={styles.billIcon}>
+        <Ionicons name="receipt-outline" size={20} color={colors.primary} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.billLine}>
+          {delivery.cansDelivered} cans • {delivery.gallonsDelivered} gallons
+        </Text>
+        <Text style={styles.billSub}>
+          Rs {delivery.amountBilled.toLocaleString()} billed •{' '}
+          {delivery.cashCollected < delivery.amountBilled
+            ? `Rs ${(delivery.amountBilled - delivery.cashCollected).toLocaleString()} on credit`
+            : 'Paid in full'}
+        </Text>
+        <Text style={styles.billTime}>{formatDateTime(delivery.timestamp)}</Text>
+      </View>
+      <Pressable
+        onPress={onShare}
+        disabled={sharing || !customer}
+        style={({ pressed }) => [
+          styles.billShareBtn,
+          pressed ? { opacity: 0.7 } : null,
+          sharing ? { opacity: 0.5 } : null,
+        ]}
+        accessibilityLabel="Share bill PDF"
+      >
+        <Ionicons name="share-social" size={18} color={colors.primary} />
+      </Pressable>
+    </View>
   );
 }
 
@@ -287,5 +361,15 @@ const styles = StyleSheet.create({
   },
   billLine: { fontSize: fontSizes.body, fontWeight: '700', color: colors.text },
   billSub: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 2 },
-  billTime: { fontSize: fontSizes.xs, color: colors.textMuted },
+  billTime: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 2 },
+  billShareBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary + '15',
+    borderWidth: 1.5,
+    borderColor: colors.primary + '55',
+  },
 });

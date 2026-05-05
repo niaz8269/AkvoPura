@@ -24,6 +24,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Screen } from '../../components';
 import { QuantityStepper } from '../../components/QuantityStepper';
@@ -32,6 +33,8 @@ import { colors, fontSizes, radii, spacing } from '../../theme';
 import { useCGSalesman } from '../state';
 import { RouteTabs } from '../components/RouteTabs';
 import type { CGCustomer, CGRoute } from '../types';
+import { generateAndShareBill, type BillItem } from '../../billing/pdf';
+import { useAuth } from '../../auth/AuthContext';
 
 const canIcon = require('../../../assets/brand/14ltr-can.webp');
 const gallonIcon = require('../../../assets/brand/19ltr-gallon.webp');
@@ -114,6 +117,7 @@ export function CGDeliveryScreen() {
 }
 
 type DeliveryInput = Parameters<ReturnType<typeof useCGSalesman>['recordDelivery']>[0];
+type DeliveryEntry = NonNullable<ReturnType<ReturnType<typeof useCGSalesman>['recordDelivery']>>;
 
 function DeliveryRow({
   customer,
@@ -124,33 +128,37 @@ function DeliveryRow({
   customer: CGCustomer;
   todaysCans: number;
   todaysGallons: number;
-  onRecord: (input: DeliveryInput) => void;
+  onRecord: (input: DeliveryInput) => DeliveryEntry | null;
 }) {
+  const { user } = useAuth();
   const [cans, setCans] = useState(customer.usualCans);
   const [gallons, setGallons] = useState(customer.usualGallons);
   const [paid, setPaid] = useState(true);
   const [confirmed, setConfirmed] = useState(false);
   const [resetKey, setResetKey] = useState(0);
+  const [lastEntry, setLastEntry] = useState<DeliveryEntry | null>(null);
+  const [sharing, setSharing] = useState(false);
 
   const billed = cans * customer.pricePerCan + gallons * customer.pricePerGallon;
   const canSwipe = cans + gallons > 0;
 
-  // After a successful confirm, briefly show the green row, then reset steppers
-  // so the salesman can record another visit to the same customer.
+  // After a successful confirm, hold the green row + Share button for a while,
+  // then reset steppers so the salesman can record another visit.
   useEffect(() => {
     if (!confirmed) return;
     const t = setTimeout(() => {
       setConfirmed(false);
+      setLastEntry(null);
       setCans(customer.usualCans);
       setGallons(customer.usualGallons);
       setPaid(true);
       setResetKey((k) => k + 1);
-    }, 1600);
+    }, 7000);
     return () => clearTimeout(t);
   }, [confirmed, customer.usualCans, customer.usualGallons]);
 
   const onConfirm = () => {
-    onRecord({
+    const entry = onRecord({
       customerId: customer.id,
       cansDelivered: cans,
       gallonsDelivered: gallons,
@@ -158,7 +166,51 @@ function DeliveryRow({
       emptyGallonsCollected: 0,
       cashCollected: paid ? billed : 0,
     });
-    setConfirmed(true);
+    if (entry) {
+      setLastEntry(entry);
+      setConfirmed(true);
+    }
+  };
+
+  const onShare = async () => {
+    if (!lastEntry) return;
+    setSharing(true);
+    try {
+      const items: BillItem[] = [];
+      if (lastEntry.cansDelivered > 0) {
+        items.push({
+          name: '14 L can',
+          qty: lastEntry.cansDelivered,
+          unitPrice: customer.pricePerCan,
+        });
+      }
+      if (lastEntry.gallonsDelivered > 0) {
+        items.push({
+          name: '19 L gallon',
+          qty: lastEntry.gallonsDelivered,
+          unitPrice: customer.pricePerGallon,
+        });
+      }
+      const ok = await generateAndShareBill({
+        billNumber: lastEntry.id.slice(-6).toUpperCase(),
+        dateTime: lastEntry.timestamp,
+        customerName: customer.name,
+        customerAddress: customer.address,
+        customerPhone: customer.phone,
+        branchName: user?.branch === 'shergarh' ? 'Shergarh' : 'Timergara',
+        salesmanName: user?.name,
+        items,
+        paid: lastEntry.cashCollected,
+        credit: lastEntry.amountBilled - lastEntry.cashCollected,
+      });
+      if (!ok) {
+        Alert.alert('Sharing unavailable', 'This device does not support sharing files.');
+      }
+    } catch (err) {
+      Alert.alert('Could not generate PDF', String(err));
+    } finally {
+      setSharing(false);
+    }
   };
 
   return (
@@ -231,6 +283,23 @@ function DeliveryRow({
           onConfirm={onConfirm}
         />
       </View>
+
+      {confirmed && lastEntry ? (
+        <Pressable
+          onPress={onShare}
+          disabled={sharing}
+          style={({ pressed }) => [
+            styles.shareBtn,
+            pressed ? { opacity: 0.85 } : null,
+            sharing ? { opacity: 0.6 } : null,
+          ]}
+        >
+          <Ionicons name="share-social" size={18} color={colors.textInverse} />
+          <Text style={styles.shareBtnText}>
+            {sharing ? 'Generating PDF…' : 'Share bill (PDF / WhatsApp)'}
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -390,5 +459,21 @@ const styles = StyleSheet.create({
   },
   swipeWrap: {
     marginTop: spacing.sm,
+  },
+  shareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.success,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.md,
+    marginTop: spacing.md,
+  },
+  shareBtnText: {
+    color: colors.textInverse,
+    fontSize: fontSizes.sm,
+    fontWeight: '800',
   },
 });

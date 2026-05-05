@@ -19,6 +19,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Screen } from '../../components';
 import { QuantityStepper } from '../../components/QuantityStepper';
@@ -27,6 +28,8 @@ import { colors, fontSizes, radii, spacing } from '../../theme';
 import { CustomerPicker } from '../components/CustomerPicker';
 import { usePetsSalesman } from '../state';
 import type { PetCustomer } from '../types';
+import { generateAndShareBill, type BillItem } from '../../billing/pdf';
+import { useAuth } from '../../auth/AuthContext';
 
 export function PetsSellScreen() {
   const {
@@ -37,6 +40,7 @@ export function PetsSellScreen() {
     recordBill,
     undoLastBill,
   } = usePetsSalesman();
+  const { user } = useAuth();
 
   const [selected, setSelected] = useState<PetCustomer | null>(null);
   const [pet600, setPet600] = useState(0);
@@ -44,8 +48,10 @@ export function PetsSellScreen() {
   const [paid, setPaid] = useState(true);
   const [confirmed, setConfirmed] = useState(false);
   const [resetKey, setResetKey] = useState(0);
+  const [sharing, setSharing] = useState(false);
   const [lastReceipt, setLastReceipt] = useState<{
-    name: string;
+    billId: string;
+    customer: PetCustomer;
     pet600: number;
     pet1500: number;
     amount: number;
@@ -64,14 +70,16 @@ export function PetsSellScreen() {
 
   useEffect(() => {
     if (!confirmed) return;
+    // Longer auto-reset window so the user has time to tap Share PDF.
     const t = setTimeout(() => {
       setConfirmed(false);
       setSelected(null);
       setPet600(0);
       setPet1500(0);
       setPaid(true);
+      setLastReceipt(null);
       setResetKey((k) => k + 1);
-    }, 2200);
+    }, 7000);
     return () => clearTimeout(t);
   }, [confirmed]);
 
@@ -85,13 +93,55 @@ export function PetsSellScreen() {
     });
     if (entry) {
       setLastReceipt({
-        name: selected.name,
+        billId: entry.id,
+        customer: selected,
         pet600,
         pet1500,
         amount: billed,
         cash: paid ? billed : 0,
       });
       setConfirmed(true);
+    }
+  };
+
+  const onShareBill = async () => {
+    if (!lastReceipt) return;
+    setSharing(true);
+    try {
+      const items: BillItem[] = [];
+      if (lastReceipt.pet600 > 0) {
+        items.push({
+          name: '600 ml pack',
+          qty: lastReceipt.pet600,
+          unitPrice: priceFor(lastReceipt.customer, 'pet600'),
+        });
+      }
+      if (lastReceipt.pet1500 > 0) {
+        items.push({
+          name: '1.5 L pack',
+          qty: lastReceipt.pet1500,
+          unitPrice: priceFor(lastReceipt.customer, 'pet1500'),
+        });
+      }
+      const ok = await generateAndShareBill({
+        billNumber: lastReceipt.billId.slice(-6).toUpperCase(),
+        dateTime: Date.now(),
+        customerName: lastReceipt.customer.name,
+        customerAddress: lastReceipt.customer.address,
+        customerPhone: lastReceipt.customer.phone,
+        branchName: user?.branch === 'shergarh' ? 'Shergarh' : 'Timergara',
+        salesmanName: user?.name,
+        items,
+        paid: lastReceipt.cash,
+        credit: lastReceipt.amount - lastReceipt.cash,
+      });
+      if (!ok) {
+        Alert.alert('Sharing unavailable', 'This device does not support sharing files.');
+      }
+    } catch (err) {
+      Alert.alert('Could not generate PDF', String(err));
+    } finally {
+      setSharing(false);
     }
   };
 
@@ -228,7 +278,7 @@ export function PetsSellScreen() {
           {confirmed && lastReceipt ? (
             <View style={styles.receiptCard}>
               <Text style={styles.receiptTitle}>✓ Bill saved</Text>
-              <Text style={styles.receiptCustomer}>{lastReceipt.name}</Text>
+              <Text style={styles.receiptCustomer}>{lastReceipt.customer.name}</Text>
               <Text style={styles.receiptLine}>
                 {lastReceipt.pet600} × 600ml + {lastReceipt.pet1500} × 1.5L
               </Text>
@@ -236,7 +286,23 @@ export function PetsSellScreen() {
                 Rs {lastReceipt.amount.toLocaleString()}{' '}
                 {lastReceipt.cash < lastReceipt.amount ? '(on credit)' : '(paid)'}
               </Text>
-              <Text style={styles.receiptHint}>Resetting for next sale…</Text>
+
+              <Pressable
+                onPress={onShareBill}
+                disabled={sharing}
+                style={({ pressed }) => [
+                  styles.shareBtn,
+                  pressed ? { opacity: 0.85 } : null,
+                  sharing ? { opacity: 0.6 } : null,
+                ]}
+              >
+                <Ionicons name="share-social" size={20} color={colors.textInverse} />
+                <Text style={styles.shareBtnText}>
+                  {sharing ? 'Generating PDF…' : 'Share bill (PDF / WhatsApp)'}
+                </Text>
+              </Pressable>
+
+              <Text style={styles.receiptHint}>This screen resets in a few seconds…</Text>
             </View>
           ) : null}
         </ScrollView>
@@ -405,5 +471,22 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontStyle: 'italic',
     marginTop: spacing.sm,
+  },
+  shareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.success,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.md,
+    marginTop: spacing.md,
+    alignSelf: 'stretch',
+  },
+  shareBtnText: {
+    color: colors.textInverse,
+    fontSize: fontSizes.body,
+    fontWeight: '800',
   },
 });

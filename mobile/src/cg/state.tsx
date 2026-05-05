@@ -50,7 +50,7 @@ type CGSalesmanState = {
   deliveriesForCustomer: (id: string) => DeliveryEntry[];
   collectionsForCustomer: (id: string) => CollectionEntry[];
 
-  recordDelivery: (input: DeliveryInput) => void;
+  recordDelivery: (input: DeliveryInput) => DeliveryEntry | null;
   undoLastDelivery: () => DeliveryEntry | null;
   recordCollection: (input: CollectionInput) => void;
   undoLastCollection: () => CollectionEntry | null;
@@ -91,26 +91,34 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
     [collections]
   );
 
-  const recordDelivery = useCallback((input: DeliveryInput) => {
+  const recordDelivery = useCallback<CGSalesmanState['recordDelivery']>((input) => {
+    const customer = customers.find((c) => c.id === input.customerId);
+    if (!customer) return null;
+
+    const billed =
+      input.cansDelivered * customer.pricePerCan +
+      input.gallonsDelivered * customer.pricePerGallon;
+
     setCustomers((prev) =>
-      prev.map((c) => {
-        if (c.id !== input.customerId) return c;
-        const billed =
-          input.cansDelivered * c.pricePerCan +
-          input.gallonsDelivered * c.pricePerGallon;
-        return {
-          ...c,
-          // Customer keeps the new filled containers (treated as empties they
-          // will eventually return). Already-held empties picked up reduces.
-          emptyCansHeld:
-            c.emptyCansHeld + input.cansDelivered - input.emptyCansCollected,
-          emptyGallonsHeld:
-            c.emptyGallonsHeld +
-            input.gallonsDelivered -
-            input.emptyGallonsCollected,
-          outstandingDebt: Math.max(0, c.outstandingDebt + billed - input.cashCollected),
-        };
-      })
+      prev.map((c) =>
+        c.id !== input.customerId
+          ? c
+          : {
+              ...c,
+              // Customer keeps the new filled containers (treated as empties they
+              // will eventually return). Already-held empties picked up reduces.
+              emptyCansHeld:
+                c.emptyCansHeld + input.cansDelivered - input.emptyCansCollected,
+              emptyGallonsHeld:
+                c.emptyGallonsHeld +
+                input.gallonsDelivered -
+                input.emptyGallonsCollected,
+              outstandingDebt: Math.max(
+                0,
+                c.outstandingDebt + billed - input.cashCollected
+              ),
+            }
+      )
     );
 
     setVanLoad((prev) => ({
@@ -120,25 +128,19 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       emptyGallonsAboard: prev.emptyGallonsAboard + input.emptyGallonsCollected,
     }));
 
-    setDeliveries((prev) => {
-      const customer = customers.find((c) => c.id === input.customerId);
-      const billed = customer
-        ? input.cansDelivered * customer.pricePerCan +
-          input.gallonsDelivered * customer.pricePerGallon
-        : 0;
-      const entry: DeliveryEntry = {
-        id: nextId('d'),
-        customerId: input.customerId,
-        cansDelivered: input.cansDelivered,
-        gallonsDelivered: input.gallonsDelivered,
-        emptyCansCollected: input.emptyCansCollected,
-        emptyGallonsCollected: input.emptyGallonsCollected,
-        cashCollected: input.cashCollected,
-        amountBilled: billed,
-        timestamp: Date.now(),
-      };
-      return [...prev, entry];
-    });
+    const entry: DeliveryEntry = {
+      id: nextId('d'),
+      customerId: input.customerId,
+      cansDelivered: input.cansDelivered,
+      gallonsDelivered: input.gallonsDelivered,
+      emptyCansCollected: input.emptyCansCollected,
+      emptyGallonsCollected: input.emptyGallonsCollected,
+      cashCollected: input.cashCollected,
+      amountBilled: billed,
+      timestamp: Date.now(),
+    };
+    setDeliveries((prev) => [...prev, entry]);
+    return entry;
   }, [customers]);
 
   const undoLastDelivery = useCallback<CGSalesmanState['undoLastDelivery']>(() => {
