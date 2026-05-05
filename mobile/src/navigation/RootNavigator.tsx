@@ -19,6 +19,7 @@ import { CGSalesmanNavigator } from '../cg/navigator';
 import { PetsSalesmanNavigator } from '../pets/navigator';
 import { ManagerNavigator } from '../manager/navigator';
 import { OwnerNavigator } from '../owner/navigator';
+import { CustomerNavigator } from '../customer/navigator';
 import { colors, fontSizes, spacing } from '../theme';
 import { strings } from '../i18n/strings';
 import type { Role } from '../auth/types';
@@ -28,13 +29,14 @@ const brandLogo = require('../../assets/brand/akvopura-brand.png');
 const Stack = createNativeStackNavigator();
 
 // Map each role to its top-level component.
-// Roles without a dedicated dashboard yet fall back to RoleHomeScreen (the
-// Slice 1 stub) until their slice ships.
+// Every role now has a dedicated dashboard — RoleHomeScreen kept as a
+// fallback safety net.
 const ROLE_SCREENS: Partial<Record<Role, React.ComponentType<any>>> = {
   cans_gallons_salesman: CGSalesmanNavigator,
   pets_salesman: PetsSalesmanNavigator,
   manager: ManagerNavigator,
   owner: OwnerNavigator,
+  customer: CustomerNavigator,
 };
 
 export function RootNavigator() {

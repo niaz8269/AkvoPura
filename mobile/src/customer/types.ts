@@ -1,0 +1,56 @@
+/**
+ * Customer-portal domain types.
+ *
+ * Orders are placed by customers; deliveries (in CG/Pets state) are the
+ * salesman's fulfilment of orders. They're separate concepts — an order
+ * is a request, a delivery is the action.
+ */
+
+export type CustomerOrderStatus =
+  | 'pending'        // just placed, manager hasn't seen yet
+  | 'assigned'       // manager assigned a salesman
+  | 'in_transit'     // salesman is on the way
+  | 'delivered'      // delivered (linked to a delivery/bill record in real backend)
+  | 'cancelled';
+
+export type CustomerOrderItem = {
+  /** Maps onto either a CG product or a Pets product. */
+  productId: 'cans' | 'gallons' | 'pet600' | 'pet1500';
+  qty: number;
+  unitPrice: number;
+};
+
+export type CustomerOrder = {
+  id: string;
+  customerUserId: string;     // who placed it
+  items: CustomerOrderItem[];
+  totalAmount: number;
+  preferredTime?: string;     // free text from the customer ("by 6 PM today")
+  notes?: string;
+  status: CustomerOrderStatus;
+  placedAt: number;
+  updatedAt: number;
+};
+
+export type ComplaintCategory =
+  | 'delivery'
+  | 'product_quality'
+  | 'billing'
+  | 'salesman_behavior'
+  | 'other';
+
+export type ComplaintRecipient = 'salesman' | 'manager';
+
+export type ComplaintStatus = 'open' | 'in_review' | 'resolved';
+
+export type Complaint = {
+  id: string;
+  customerUserId: string;
+  category: ComplaintCategory;
+  recipient: ComplaintRecipient;
+  description: string;
+  status: ComplaintStatus;
+  rating?: number;             // 1-5 — only set after status === 'resolved'
+  filedAt: number;
+  resolvedAt?: number;
+};

@@ -191,4 +191,20 @@ export const demoCustomers: CGCustomer[] = [
     pricePerGallon: 220,
     notes: 'Domestic customer.',
   },
+
+  // Linked to the Customer test user (mockUsers.ts u-customer.linkedCgCustomerId).
+  {
+    id: 'c-test',
+    name: 'Test Customer',
+    phone: '0300-0000001',
+    address: 'House #7, Street 12',
+    route: 'others',
+    usualCans: 1,
+    usualGallons: 2,
+    emptyCansHeld: 1,
+    emptyGallonsHeld: 2,
+    outstandingDebt: 1500,
+    pricePerCan: 280,
+    pricePerGallon: 200,
+  },
 ];

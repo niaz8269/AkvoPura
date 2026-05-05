@@ -1,23 +1,29 @@
 /**
  * SwipeToConfirm — drag the thumb across to confirm an action.
  *
- * Per spec: "slide-to-confirm arrow (similar to swipe to unlock)" —
- * this is the gesture salesmen use to mark a delivery / collection done.
+ * Per spec: "slide-to-confirm arrow (similar to swipe to unlock)".
  *
- * Built with PanResponder (no extra deps). When the thumb crosses ~70% of the
- * track, onConfirm fires and the row turns green. Reset by setting `done={false}`.
+ * Uses react-native-gesture-handler's PanGestureHandler so the swipe is
+ * captured cleanly even when nested inside ScrollView / KeyboardAvoidingView
+ * (where React Native's built-in PanResponder loses the gesture race on the
+ * new architecture).
  */
 
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  PanResponder,
   StyleSheet,
   Text,
   View,
   type LayoutChangeEvent,
   type ViewStyle,
 } from 'react-native';
+import {
+  PanGestureHandler,
+  State,
+  type PanGestureHandlerGestureEvent,
+  type PanGestureHandlerStateChangeEvent,
+} from 'react-native-gesture-handler';
 
 import { colors, fontSizes, radii, spacing, tapTarget } from '../theme';
 
@@ -45,88 +51,83 @@ export function SwipeToConfirm({
   style,
 }: Props) {
   const [trackWidth, setTrackWidth] = useState(0);
-  const x = useRef(new Animated.Value(0)).current;
-  const xValueRef = useRef(0);
+  const translateX = useRef(new Animated.Value(0)).current;
+  const lastValue = useRef(0);
   const confirmedRef = useRef(false);
 
+  // Keep a JS copy of the animated value so we can read it on release.
   useEffect(() => {
-    const id = x.addListener((s) => {
-      xValueRef.current = s.value;
+    const id = translateX.addListener(({ value }) => {
+      lastValue.current = value;
     });
-    return () => x.removeListener(id);
-  }, [x]);
+    return () => translateX.removeListener(id);
+  }, [translateX]);
 
   // External `done` toggle — animate to the end position or reset.
   useEffect(() => {
+    const max = Math.max(0, trackWidth - THUMB);
     if (done) {
-      Animated.timing(x, {
-        toValue: Math.max(0, trackWidth - THUMB),
+      Animated.timing(translateX, {
+        toValue: max,
         duration: 200,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }).start();
       confirmedRef.current = true;
     } else {
-      Animated.timing(x, {
+      Animated.timing(translateX, {
         toValue: 0,
         duration: 200,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }).start();
       confirmedRef.current = false;
     }
-  }, [done, trackWidth, x]);
-
-  const responder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => !disabled,
-      onMoveShouldSetPanResponder: () => !disabled,
-      onPanResponderGrant: () => {
-        x.setOffset(xValueRef.current);
-        x.setValue(0);
-      },
-      onPanResponderMove: (_e, g) => {
-        if (disabled) return;
-        const max = Math.max(0, trackWidth - THUMB);
-        const next = Math.min(Math.max(g.dx, -xValueRef.current), max - xValueRef.current);
-        x.setValue(next);
-      },
-      onPanResponderRelease: () => {
-        x.flattenOffset();
-        const max = Math.max(0, trackWidth - THUMB);
-        const threshold = max * 0.7;
-
-        if (xValueRef.current >= threshold && !confirmedRef.current) {
-          confirmedRef.current = true;
-          Animated.timing(x, {
-            toValue: max,
-            duration: 120,
-            useNativeDriver: false,
-          }).start(() => onConfirm());
-        } else if (!confirmedRef.current) {
-          Animated.spring(x, {
-            toValue: 0,
-            useNativeDriver: false,
-            bounciness: 4,
-          }).start();
-        }
-      },
-      onPanResponderTerminate: () => {
-        x.flattenOffset();
-        if (!confirmedRef.current) {
-          Animated.spring(x, { toValue: 0, useNativeDriver: false }).start();
-        }
-      },
-    })
-  ).current;
+  }, [done, trackWidth, translateX]);
 
   const onLayout = (e: LayoutChangeEvent) => {
     setTrackWidth(e.nativeEvent.layout.width);
+  };
+
+  const onGestureEvent = (e: PanGestureHandlerGestureEvent) => {
+    if (disabled || confirmedRef.current) return;
+    const max = Math.max(0, trackWidth - THUMB);
+    const next = Math.min(Math.max(e.nativeEvent.translationX, 0), max);
+    translateX.setValue(next);
+  };
+
+  const onHandlerStateChange = (e: PanGestureHandlerStateChangeEvent) => {
+    if (disabled || confirmedRef.current) return;
+
+    const max = Math.max(0, trackWidth - THUMB);
+    const threshold = max * 0.7;
+
+    if (e.nativeEvent.state === State.END || e.nativeEvent.state === State.CANCELLED) {
+      if (lastValue.current >= threshold) {
+        confirmedRef.current = true;
+        Animated.timing(translateX, {
+          toValue: max,
+          duration: 120,
+          useNativeDriver: true,
+        }).start(() => onConfirm());
+      } else {
+        Animated.spring(translateX, {
+          toValue: 0,
+          useNativeDriver: true,
+          bounciness: 4,
+        }).start();
+      }
+    }
   };
 
   const isDone = !!done;
 
   return (
     <View
-      style={[styles.track, isDone ? styles.trackDone : null, disabled ? styles.disabled : null, style]}
+      style={[
+        styles.track,
+        isDone ? styles.trackDone : null,
+        disabled ? styles.disabled : null,
+        style,
+      ]}
       onLayout={onLayout}
     >
       <View style={styles.labelWrap} pointerEvents="none">
@@ -141,17 +142,24 @@ export function SwipeToConfirm({
       </View>
 
       {!isDone ? (
-        <Animated.View
-          {...responder.panHandlers}
-          style={[
-            styles.thumb,
-            {
-              transform: [{ translateX: x }],
-            },
-          ]}
+        <PanGestureHandler
+          enabled={!disabled}
+          onGestureEvent={onGestureEvent}
+          onHandlerStateChange={onHandlerStateChange}
+          activeOffsetX={[-10, 10]}
+          failOffsetY={[-10, 10]}
         >
-          <Text style={styles.thumbArrow}>›</Text>
-        </Animated.View>
+          <Animated.View
+            style={[
+              styles.thumb,
+              {
+                transform: [{ translateX }],
+              },
+            ]}
+          >
+            <Text style={styles.thumbArrow}>›</Text>
+          </Animated.View>
+        </PanGestureHandler>
       ) : (
         <View style={[styles.thumb, styles.thumbDone, { left: trackWidth - THUMB }]}>
           <Text style={styles.thumbCheck}>✓</Text>

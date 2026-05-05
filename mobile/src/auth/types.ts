@@ -18,4 +18,6 @@ export type User = {
   identifier: string;     // phone or email used to log in
   role: Role;
   branch?: Branch;        // owner has no branch (sees both); customers have one
+  /** For role === 'customer' — the Cans/Gallons customer record this user owns. */
+  linkedCgCustomerId?: string;
 };

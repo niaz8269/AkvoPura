@@ -72,6 +72,7 @@ export const mockAccounts: MockAccount[] = [
       identifier: 'customer',
       role: 'customer',
       branch: 'timergara',
+      linkedCgCustomerId: 'c-test',
     },
     password: 'customer',
   },
