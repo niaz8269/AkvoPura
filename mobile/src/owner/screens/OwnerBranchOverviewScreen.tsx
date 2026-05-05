@@ -5,8 +5,8 @@
  * customer / debt summary, expense status counts.
  */
 
-import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Screen } from '../../components';
@@ -14,6 +14,10 @@ import { colors, fontSizes, radii, spacing } from '../../theme';
 import { useOwnerData } from '../computed';
 import { useEmployees } from '../../employees/state';
 import { useProduction } from '../../production/state';
+import { useCGSalesman } from '../../cg/state';
+import { usePetsSalesman } from '../../pets/state';
+import { useManager } from '../../manager/state';
+import { generateAndShareDailyReport } from '../../analytics/dailyExport';
 import type { BranchKey, BranchSummary } from '../types';
 
 type Route = { params: { branch: BranchKey } };
@@ -27,6 +31,39 @@ export function OwnerBranchOverviewScreen({ route, navigation }: { route: Route;
   const { employeesByBranch, todayEntryForEmployee, totalsForEntry } = useEmployees();
   const branchEmployees = employeesByBranch(route.params.branch);
   const activeEmployees = branchEmployees.filter((e) => e.active);
+
+  const cg = useCGSalesman();
+  const pets = usePetsSalesman();
+  const manager = useManager();
+  const [exporting, setExporting] = useState(false);
+
+  const exportDay = async () => {
+    if (!isLive) {
+      Alert.alert('Not available', 'Day export only works on the live branch (Timergara).');
+      return;
+    }
+    setExporting(true);
+    try {
+      const ok = await generateAndShareDailyReport({
+        branchName: summary.name.en,
+        cgCustomers: cg.customers,
+        petCustomers: pets.customers,
+        deliveries: cg.deliveries,
+        collections: cg.collections,
+        bills: pets.bills,
+        returns: pets.returns,
+        expenses: manager.expenses,
+      });
+      if (!ok) {
+        Alert.alert('Sharing unavailable', 'This device does not support file sharing.');
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      Alert.alert('Export failed', msg);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // Production / raw materials are app-wide (not yet branch-scoped) — only
   // show real numbers on the live branch.
@@ -104,6 +141,25 @@ export function OwnerBranchOverviewScreen({ route, navigation }: { route: Route;
             Billed Rs {summary.amountBilledToday.toLocaleString()} • Credit Rs{' '}
             {(summary.amountBilledToday - summary.cashCollectedToday).toLocaleString()}
           </Text>
+        ) : null}
+        {isLive ? (
+          <Pressable
+            onPress={exporting ? undefined : exportDay}
+            style={({ pressed }) => [
+              styles.exportBtn,
+              pressed ? { opacity: 0.85 } : null,
+            ]}
+            accessibilityLabel="Export day report"
+          >
+            <Ionicons
+              name={exporting ? 'hourglass-outline' : 'share-outline'}
+              size={16}
+              color={colors.primaryDark}
+            />
+            <Text style={styles.exportBtnText}>
+              {exporting ? 'Generating PDF…' : 'Export day as PDF'}
+            </Text>
+          </Pressable>
         ) : null}
       </View>
 
@@ -407,6 +463,21 @@ const styles = StyleSheet.create({
   },
   agingLinkText: {
     flex: 1,
+    fontSize: fontSizes.sm,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  exportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.surface,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.md,
+  },
+  exportBtnText: {
     fontSize: fontSizes.sm,
     fontWeight: '800',
     color: colors.primaryDark,

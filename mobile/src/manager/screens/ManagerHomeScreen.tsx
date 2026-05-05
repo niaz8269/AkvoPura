@@ -6,8 +6,8 @@
  * recent activity feed, and quick-action buttons.
  */
 
-import React, { useMemo } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Screen } from '../../components';
@@ -19,6 +19,7 @@ import { useManager } from '../state';
 import { useAssignments } from '../../assignments/state';
 import { useCustomerPortal } from '../../customer/state';
 import { useProduction } from '../../production/state';
+import { generateAndShareDailyReport } from '../../analytics/dailyExport';
 import { strings } from '../../i18n/strings';
 import { HIGH_VALUE_THRESHOLD } from '../demoData';
 
@@ -30,7 +31,9 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
   const { user } = useAuth();
   const cg = useCGSalesman();
   const pets = usePetsSalesman();
-  const { pendingExpenses } = useManager();
+  const manager = useManager();
+  const { pendingExpenses } = manager;
+  const [exporting, setExporting] = useState(false);
   const assignments = useAssignments();
   const todayPets = assignments.petsSalesman();
   const todayCg = assignments.cgSalesman();
@@ -73,6 +76,30 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
       ? strings.branchTimergara
       : strings.branchShergarh
     : null;
+
+  const exportDay = async () => {
+    setExporting(true);
+    try {
+      const ok = await generateAndShareDailyReport({
+        branchName: user?.branch === 'shergarh' ? 'Shergarh' : 'Timergara',
+        cgCustomers: cg.customers,
+        petCustomers: pets.customers,
+        deliveries: cg.deliveries,
+        collections: cg.collections,
+        bills: pets.bills,
+        returns: pets.returns,
+        expenses: manager.expenses,
+      });
+      if (!ok) {
+        Alert.alert('Sharing unavailable', 'This device does not support file sharing.');
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      Alert.alert('Export failed', msg);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const recentActivity = useMemo(() => {
     type Item = { id: string; kind: string; line: string; time: number };
@@ -123,6 +150,23 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
             Pets Rs {petsCash.toLocaleString()} • Cans/Gallons Rs {cgCash.toLocaleString()}
           </Text>
         </View>
+        <Pressable
+          onPress={exporting ? undefined : exportDay}
+          style={({ pressed }) => [
+            styles.exportBtn,
+            pressed ? { opacity: 0.85 } : null,
+          ]}
+          accessibilityLabel="Export day report"
+        >
+          <Ionicons
+            name={exporting ? 'hourglass-outline' : 'share-outline'}
+            size={16}
+            color={colors.primaryDark}
+          />
+          <Text style={styles.exportBtnText}>
+            {exporting ? 'Generating PDF…' : 'Export day as PDF'}
+          </Text>
+        </Pressable>
       </View>
 
       <View style={styles.kpiRow}>
@@ -455,6 +499,21 @@ const styles = StyleSheet.create({
   },
   cashSplit: { marginTop: spacing.sm },
   cashSplitText: { color: 'rgba(255,255,255,0.85)', fontSize: fontSizes.sm },
+  exportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.surface,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.md,
+  },
+  exportBtnText: {
+    fontSize: fontSizes.sm,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
 
   kpiRow: {
     flexDirection: 'row',
