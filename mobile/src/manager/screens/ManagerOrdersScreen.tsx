@@ -149,7 +149,15 @@ function OrderCard({
         <Text style={styles.timeText}>{formatTime(order.placedAt)}</Text>
       </View>
 
-      <Text style={styles.customer}>{customerName}</Text>
+      <View style={styles.customerRow}>
+        <Text style={styles.customer}>{customerName}</Text>
+        {order.notes?.startsWith('From subscription') ? (
+          <View style={styles.subBadge}>
+            <Ionicons name="repeat" size={10} color={colors.primary} />
+            <Text style={styles.subBadgeText}>Subscription</Text>
+          </View>
+        ) : null}
+      </View>
 
       <View style={styles.itemsBlock}>
         {order.items.map((it, i) => (
@@ -372,10 +380,29 @@ const styles = StyleSheet.create({
   statusChipText: { fontSize: 10, fontWeight: '900' },
   timeText: { fontSize: fontSizes.xs, color: colors.textMuted },
 
+  customerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   customer: {
     fontSize: fontSizes.body,
     fontWeight: '800',
     color: colors.primaryDark,
+  },
+  subBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primary + '15',
+  },
+  subBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.primary,
   },
   itemsBlock: { marginTop: spacing.xs, marginBottom: spacing.xs },
   itemLine: { fontSize: fontSizes.sm, color: colors.text, marginTop: 2 },

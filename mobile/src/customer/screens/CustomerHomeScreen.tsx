@@ -35,6 +35,8 @@ export function CustomerHomeScreen({ navigation }: { navigation: Nav }) {
   const inFlight = myOrders.filter((o) =>
     ['pending', 'assigned', 'in_transit'].includes(o.status)
   );
+  const mySubscriptions = user ? portal.subscriptionsForUser(user.id) : [];
+  const activeSubs = mySubscriptions.filter((s) => s.active).length;
 
   const debt = cgRecord?.outstandingDebt ?? 0;
   const heldCans = cgRecord?.emptyCansHeld ?? 0;
@@ -88,6 +90,25 @@ export function CustomerHomeScreen({ navigation }: { navigation: Nav }) {
           <Text style={styles.ctaSub}>نیا آرڈر کریں — pets, cans, or gallons</Text>
         </View>
         <Ionicons name="arrow-forward-circle" size={32} color={colors.textInverse} />
+      </Pressable>
+
+      <Pressable
+        onPress={() => navigation.navigate('Subscriptions')}
+        style={({ pressed }) => [
+          styles.subsCard,
+          pressed ? { opacity: 0.9 } : null,
+        ]}
+      >
+        <Ionicons name="repeat-outline" size={22} color={colors.primary} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.subsTitle}>My subscriptions</Text>
+          <Text style={styles.subsSub}>
+            {activeSubs > 0
+              ? `${activeSubs} active recurring order${activeSubs === 1 ? '' : 's'}`
+              : 'Set up auto-orders for products you reorder regularly'}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.primary} />
       </Pressable>
 
       {inFlight.length > 0 ? (
@@ -278,6 +299,28 @@ const styles = StyleSheet.create({
     color: colors.textInverse,
   },
   ctaSub: { fontSize: fontSizes.xs, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+
+  subsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.primary + '15',
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginTop: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.primaryLight,
+  },
+  subsTitle: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  subsSub: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
 
   section: { marginTop: spacing.md },
   orderRow: {

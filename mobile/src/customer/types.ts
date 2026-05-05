@@ -36,6 +36,23 @@ export type CustomerOrder = {
   updatedAt: number;
 };
 
+export type SubscriptionFrequency = 'daily' | 'weekly';
+
+export type Subscription = {
+  id: string;
+  customerUserId: string;
+  items: CustomerOrderItem[];
+  totalAmount: number;
+  frequency: SubscriptionFrequency;
+  /** 0 = Sunday, 1 = Monday, ... 6 = Saturday. Only used for weekly. */
+  weekday?: number;
+  notes?: string;
+  active: boolean;
+  /** Last time the recurring order was created from this subscription. */
+  lastRunAt: number | null;
+  createdAt: number;
+};
+
 export type ComplaintCategory =
   | 'delivery'
   | 'product_quality'
