@@ -17,7 +17,7 @@ import { useProduction } from '../../production/state';
 import type { BranchKey, BranchSummary } from '../types';
 
 type Route = { params: { branch: BranchKey } };
-type Nav = { navigate: (screen: string) => void };
+type Nav = { navigate: (screen: string, params?: object) => void };
 
 export function OwnerBranchOverviewScreen({ route, navigation }: { route: Route; navigation: Nav }) {
   const { timergara, shergarh } = useOwnerData();
@@ -156,6 +156,19 @@ export function OwnerBranchOverviewScreen({ route, navigation }: { route: Route;
           warn={summary.totalDebt > 0}
           last
         />
+        {isLive ? (
+          <Pressable
+            onPress={() => navigation.navigate('AgingReport')}
+            style={({ pressed }) => [
+              styles.agingLink,
+              pressed ? { opacity: 0.85 } : null,
+            ]}
+          >
+            <Ionicons name="stats-chart" size={18} color={colors.danger} />
+            <Text style={styles.agingLinkText}>View aging report</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.primaryDark} />
+          </Pressable>
+        ) : null}
       </Section>
 
       <Section title="Employees" subtitle="ملازمین">
@@ -382,5 +395,20 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.xs,
     color: colors.textMuted,
     marginTop: 2,
+  },
+  agingLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.danger + '12',
+    borderRadius: radii.md,
+    padding: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  agingLinkText: {
+    flex: 1,
+    fontSize: fontSizes.sm,
+    fontWeight: '800',
+    color: colors.primaryDark,
   },
 });

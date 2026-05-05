@@ -18,6 +18,7 @@ import { OwnerForwardedScreen } from './screens/OwnerForwardedScreen';
 import { OwnerAuditScreen } from './screens/OwnerAuditScreen';
 import { OwnerSettingsScreen } from './screens/OwnerSettingsScreen';
 import { OwnerLeaderboardScreen } from './screens/OwnerLeaderboardScreen';
+import { AgingReportScreen } from '../analytics/screens/AgingReportScreen';
 import { useManager } from '../manager/state';
 import type { BranchKey } from './types';
 
@@ -26,6 +27,7 @@ export type OwnerStackParamList = {
   BranchOverview: { branch: BranchKey };
   Combined: undefined;
   Leaderboard: undefined;
+  AgingReport: undefined;
 };
 
 const Stack = createNativeStackNavigator<OwnerStackParamList>();
@@ -74,6 +76,11 @@ function BranchesStack() {
         name="Leaderboard"
         component={OwnerLeaderboardScreen}
         options={{ title: 'Leaderboard' }}
+      />
+      <Stack.Screen
+        name="AgingReport"
+        component={AgingReportScreen}
+        options={{ title: 'Aging report' }}
       />
     </Stack.Navigator>
   );

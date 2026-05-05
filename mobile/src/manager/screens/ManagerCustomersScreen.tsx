@@ -8,6 +8,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
@@ -31,7 +32,9 @@ type UnifiedCustomer = {
   lastActivityAt?: number;
 };
 
-export function ManagerCustomersScreen() {
+type Nav = { navigate: (screen: string) => void };
+
+export function ManagerCustomersScreen({ navigation }: { navigation: Nav }) {
   const cg = useCGSalesman();
   const pets = usePetsSalesman();
 
@@ -179,6 +182,21 @@ export function ManagerCustomersScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.list}>
+        <Pressable
+          onPress={() => navigation.navigate('AgingReport')}
+          style={({ pressed }) => [
+            styles.agingLink,
+            pressed ? { opacity: 0.85 } : null,
+          ]}
+        >
+          <Ionicons name="stats-chart" size={20} color={colors.danger} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.agingLinkTitle}>Aging report</Text>
+            <Text style={styles.agingLinkSub}>Debtors grouped by inactivity</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
+        </Pressable>
+
         {filtered.length === 0 ? (
           <Text style={styles.empty}>No matching customers.</Text>
         ) : (
@@ -479,4 +497,25 @@ const styles = StyleSheet.create({
   churnBadgeText: { fontSize: 10, fontWeight: '800' },
   churnBadgeTextRisk: { color: colors.danger },
   churnBadgeTextBorder: { color: colors.warning },
+  agingLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.danger + '12',
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.danger,
+  },
+  agingLinkTitle: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  agingLinkSub: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
 });

@@ -28,6 +28,7 @@ import { ManagerOrdersScreen } from './screens/ManagerOrdersScreen';
 import { ManagerComplaintsScreen } from './screens/ManagerComplaintsScreen';
 import { ManagerProductionScreen } from './screens/ManagerProductionScreen';
 import { ManagerContainerFeesScreen } from './screens/ManagerContainerFeesScreen';
+import { AgingReportScreen } from '../analytics/screens/AgingReportScreen';
 import { useManager } from './state';
 
 const Tab = createBottomTabNavigator();
@@ -105,6 +106,11 @@ function CustomersStack() {
         name="Landing"
         component={ManagerCustomersScreen}
         options={{ title: 'All customers' }}
+      />
+      <Stack.Screen
+        name="AgingReport"
+        component={AgingReportScreen}
+        options={{ title: 'Aging report' }}
       />
     </Stack.Navigator>
   );
