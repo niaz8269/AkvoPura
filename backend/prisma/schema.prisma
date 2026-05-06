@@ -16,12 +16,27 @@ enum Role {
   manager
   pets_salesman
   cans_gallons_salesman
+  production_worker
+  driver
+  helper
+  other
   customer
 }
 
-enum Branch {
-  timergara
-  shergarh
+/// A physical branch / depot. Slug is the stable identifier used in
+/// URLs and JWT payloads (e.g., 'timergara'). New branches can be added
+/// at any time without code changes.
+model Branch {
+  slug      String   @id
+  name      String
+  nameUr    String?
+  location  String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+
+  @@map("branches")
 }
 
 model User {
@@ -30,7 +45,12 @@ model User {
   name         String
   passwordHash String
   role         Role
-  branch       Branch?
+
+  branchSlug   String?
+  branch       Branch?  @relation(fields: [branchSlug], references: [slug])
+
+  /// Soft-delete flag. When false, login is blocked.
+  active       Boolean  @default(true)
 
   // Customer-role users link to a CG customer record (placeholder until
   // the Customer table exists in a later slice).

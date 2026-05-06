@@ -6,6 +6,7 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
@@ -16,6 +17,7 @@ type Nav = {
 };
 
 export function PetsCustomersScreen({ navigation }: { navigation: Nav }) {
+  const tabBarHeight = useBottomTabBarHeight();
   const { customers, vanLoad, billsForCustomer, currentTripNumber } = usePetsSalesman();
   const [query, setQuery] = useState('');
 
@@ -112,7 +114,11 @@ export function PetsCustomersScreen({ navigation }: { navigation: Nav }) {
 
       <Pressable
         onPress={() => navigation.navigate('AddCustomer')}
-        style={({ pressed }) => [styles.fab, pressed ? { opacity: 0.85 } : null]}
+        style={({ pressed }) => [
+          styles.fab,
+          { bottom: tabBarHeight + spacing.md },
+          pressed ? { opacity: 0.85 } : null,
+        ]}
         accessibilityLabel="Add customer"
       >
         <Ionicons name="add" size={28} color={colors.textInverse} />

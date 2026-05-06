@@ -17,17 +17,24 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
 import { listUsers, type ApiUser } from '../../api/users';
 import { ApiError } from '../../api/client';
 
+
 const ROLE_LABELS: Record<string, string> = {
   owner: 'Owner',
   manager: 'Manager',
   pets_salesman: 'Pets Salesman',
   cans_gallons_salesman: 'Cans / Gallons Salesman',
+  production_worker: 'Production Worker',
+  driver: 'Driver',
+  helper: 'Helper',
+  other: 'Other',
   customer: 'Customer',
 };
 
@@ -36,10 +43,16 @@ const ROLE_COLORS: Record<string, string> = {
   manager: colors.primary,
   pets_salesman: colors.accent,
   cans_gallons_salesman: colors.info,
+  production_worker: colors.success,
+  driver: colors.warning,
+  helper: colors.primary,
+  other: colors.textMuted,
   customer: colors.warning,
 };
 
-export function ManagerStaffAccountsScreen() {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function ManagerStaffAccountsScreen({ navigation }: any) {
+  const tabBarHeight = useBottomTabBarHeight();
   const [users, setUsers] = useState<ApiUser[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,6 +80,14 @@ export function ManagerStaffAccountsScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Refresh whenever the screen regains focus (e.g. after creating /
+  // updating an account in a pushed screen).
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -125,7 +146,15 @@ export function ManagerStaffAccountsScreen() {
         ) : null}
 
         {users?.map((u) => (
-          <View key={u.id} style={styles.card}>
+          <Pressable
+            key={u.id}
+            onPress={() => navigation.navigate('StaffAccountDetail', { userId: u.id })}
+            style={({ pressed }) => [
+              styles.card,
+              !u.active ? styles.cardInactive : null,
+              pressed ? { opacity: 0.85 } : null,
+            ]}
+          >
             <View
               style={[
                 styles.avatar,
@@ -142,7 +171,12 @@ export function ManagerStaffAccountsScreen() {
               </Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.name} numberOfLines={1}>{u.name}</Text>
+              <Text
+                style={[styles.name, !u.active ? styles.nameInactive : null]}
+                numberOfLines={1}
+              >
+                {u.name}
+              </Text>
               <Text style={styles.identifier}>@{u.identifier}</Text>
               <View style={styles.metaRow}>
                 <View
@@ -160,18 +194,32 @@ export function ManagerStaffAccountsScreen() {
                     {ROLE_LABELS[u.role] ?? u.role}
                   </Text>
                 </View>
-                {u.branch ? (
-                  <Text style={styles.branchText}>· {u.branch}</Text>
+                {u.branchSlug ? (
+                  <Text style={styles.branchText}>· {u.branchSlug}</Text>
+                ) : null}
+                {!u.active ? (
+                  <View style={styles.inactiveChip}>
+                    <Text style={styles.inactiveChipText}>Deactivated</Text>
+                  </View>
                 ) : null}
               </View>
             </View>
-          </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </Pressable>
         ))}
-
-        <Text style={styles.footnote}>
-          Creating new accounts ships in the next slice.
-        </Text>
       </ScrollView>
+
+      <Pressable
+        onPress={() => navigation.navigate('AddStaffAccount')}
+        style={({ pressed }) => [
+          styles.fab,
+          { bottom: tabBarHeight + spacing.md },
+          pressed ? { opacity: 0.85 } : null,
+        ]}
+        accessibilityLabel="Add staff account"
+      >
+        <Ionicons name="add" size={28} color={colors.textInverse} />
+      </Pressable>
     </Screen>
   );
 }
@@ -253,11 +301,36 @@ const styles = StyleSheet.create({
   roleChipText: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase' },
   branchText: { fontSize: fontSizes.xs, color: colors.textMuted, fontWeight: '700' },
 
-  footnote: {
-    fontSize: fontSizes.xs,
-    color: colors.textMuted,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    marginTop: spacing.lg,
+  cardInactive: { backgroundColor: colors.surfaceMuted, opacity: 0.7 },
+  nameInactive: { color: colors.textMuted },
+  inactiveChip: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.pill,
+    backgroundColor: colors.warning + '22',
+  },
+  inactiveChipText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.warning,
+    textTransform: 'uppercase',
+  },
+
+  fab: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: spacing.xl,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+    elevation: 8,
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
   },
 });

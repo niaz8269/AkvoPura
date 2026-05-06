@@ -8,9 +8,21 @@ export type Role =
   | 'manager'
   | 'pets_salesman'
   | 'cans_gallons_salesman'
+  | 'production_worker'
+  | 'driver'
+  | 'helper'
+  | 'other'
   | 'customer';
 
-export type Branch = 'timergara' | 'shergarh';
+/**
+ * Branch identifier (slug). Loaded dynamically from the backend's
+ * /branches endpoint — was a literal union before backend B-5 to allow
+ * adding branches without code changes.
+ *
+ * Code that historically compared `user.branch === 'timergara'` keeps
+ * working because it's still a string equality check.
+ */
+export type Branch = string;
 
 export type User = {
   id: string;

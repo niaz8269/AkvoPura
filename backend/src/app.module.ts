@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { BranchesModule } from './branches/branches.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -11,6 +12,7 @@ import { HealthController } from './health.controller';
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     UsersModule,
+    BranchesModule,
     AuthModule,
   ],
   controllers: [HealthController],

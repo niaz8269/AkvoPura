@@ -13,12 +13,16 @@ import { BilingualButton, Screen } from '../components';
 import { colors, fontSizes, radii, spacing } from '../theme';
 import { strings, type BilingualString } from '../i18n/strings';
 import { useAuth } from '../auth/AuthContext';
-import type { Branch, Role } from '../auth/types';
+import type { Role } from '../auth/types';
+
+function capitalise(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 const canIcon = require('../../assets/brand/14ltr-can.webp');
 const gallonIcon = require('../../assets/brand/19ltr-gallon.webp');
 
-const ROLE_LABEL: Record<Role, BilingualString> = {
+const ROLE_LABEL: Partial<Record<Role, BilingualString>> = {
   owner: strings.roleOwner,
   manager: strings.roleManager,
   pets_salesman: strings.rolePetsSalesman,
@@ -26,7 +30,11 @@ const ROLE_LABEL: Record<Role, BilingualString> = {
   customer: strings.roleCustomer,
 };
 
-const BRANCH_LABEL: Record<Branch, BilingualString> = {
+const FALLBACK_ROLE_LABEL: BilingualString = { en: 'Staff', ur: 'عملہ' };
+
+/** Built-in branch labels for the original two branches; for branches added
+ *  later we just show the slug capitalised. */
+const BRANCH_LABEL: Record<string, BilingualString> = {
   timergara: strings.branchTimergara,
   shergarh: strings.branchShergarh,
 };
@@ -36,8 +44,13 @@ export function RoleHomeScreen() {
 
   if (!user) return null;
 
-  const roleLabel = ROLE_LABEL[user.role];
-  const branchLabel = user.branch ? BRANCH_LABEL[user.branch] : null;
+  const roleLabel = ROLE_LABEL[user.role] ?? FALLBACK_ROLE_LABEL;
+  const branchLabel = user.branch
+    ? BRANCH_LABEL[user.branch] ?? {
+        en: capitalise(user.branch),
+        ur: capitalise(user.branch),
+      }
+    : null;
 
   return (
     <Screen scroll>
@@ -95,7 +108,11 @@ function RoleIcon({ role }: { role: Role }) {
 }
 
 function RoleSpecificStub({ role }: { role: Role }) {
-  const stub = STUB_CONTENT[role];
+  const stub = STUB_CONTENT[role] ?? {
+    titleEn: 'Portal coming soon',
+    titleUr: 'پورٹل جلد آرہا ہے',
+    points: ['Your role does not have a dedicated portal yet.'],
+  };
   return (
     <View style={styles.stubCard}>
       <Text style={styles.stubTitle}>{stub.titleEn}</Text>
@@ -114,10 +131,10 @@ function RoleSpecificStub({ role }: { role: Role }) {
   );
 }
 
-const STUB_CONTENT: Record<
+const STUB_CONTENT: Partial<Record<
   Role,
   { titleEn: string; titleUr: string; points: string[] }
-> = {
+>> = {
   owner: {
     titleEn: 'Owner Dashboard',
     titleUr: 'مالک کا ڈیش بورڈ',

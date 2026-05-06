@@ -25,6 +25,8 @@ import { ManagerEmployeesScreen } from './screens/ManagerEmployeesScreen';
 import { ManagerAttendanceScreen } from './screens/ManagerAttendanceScreen';
 import { ManagerEmployeeDetailScreen } from './screens/ManagerEmployeeDetailScreen';
 import { ManagerStaffAccountsScreen } from './screens/ManagerStaffAccountsScreen';
+import { ManagerAddStaffAccountScreen } from './screens/ManagerAddStaffAccountScreen';
+import { ManagerStaffAccountDetailScreen } from './screens/ManagerStaffAccountDetailScreen';
 import { ManagerOrdersScreen } from './screens/ManagerOrdersScreen';
 import { ManagerComplaintsScreen } from './screens/ManagerComplaintsScreen';
 import { ManagerProductionScreen } from './screens/ManagerProductionScreen';
@@ -187,6 +189,16 @@ function TeamStack() {
         name="StaffAccounts"
         component={ManagerStaffAccountsScreen}
         options={{ title: 'Staff accounts' }}
+      />
+      <Stack.Screen
+        name="AddStaffAccount"
+        component={ManagerAddStaffAccountScreen}
+        options={{ title: 'New staff account' }}
+      />
+      <Stack.Screen
+        name="StaffAccountDetail"
+        component={ManagerStaffAccountDetailScreen}
+        options={{ title: 'Staff account' }}
       />
     </Stack.Navigator>
   );

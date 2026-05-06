@@ -14,7 +14,7 @@ export type TutorialStep = {
   bodyUr: string;
 };
 
-export const TUTORIAL_STEPS: Record<Role, TutorialStep[]> = {
+export const TUTORIAL_STEPS: Partial<Record<Role, TutorialStep[]>> = {
   owner: [
     {
       icon: 'business-outline',
