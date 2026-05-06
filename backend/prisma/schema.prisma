@@ -1,0 +1,43 @@
+// AkvoPura backend schema.
+// Slice B-1: just users + branches so /auth/login works end-to-end.
+// Domain tables (customers, deliveries, etc.) come in later slices.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  owner
+  manager
+  pets_salesman
+  cans_gallons_salesman
+  customer
+}
+
+enum Branch {
+  timergara
+  shergarh
+}
+
+model User {
+  id           String   @id @default(cuid())
+  identifier   String   @unique
+  name         String
+  passwordHash String
+  role         Role
+  branch       Branch?
+
+  // Customer-role users link to a CG customer record (placeholder until
+  // the Customer table exists in a later slice).
+  linkedCgCustomerId String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}

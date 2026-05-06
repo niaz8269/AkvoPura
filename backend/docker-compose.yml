@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: akvopura-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: akvopura
+      POSTGRES_PASSWORD: akvopura_dev
+      POSTGRES_DB: akvopura
+    ports:
+      - "5432:5432"
+    volumes:
+      - akvopura_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U akvopura -d akvopura"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  akvopura_pgdata:
