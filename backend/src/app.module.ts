@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { BranchesModule } from './branches/branches.module';
 import { PricingModule } from './pricing/pricing.module';
+import { CGCustomersModule } from './cg-customers/cg-customers.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -15,6 +16,7 @@ import { HealthController } from './health.controller';
     UsersModule,
     BranchesModule,
     PricingModule,
+    CGCustomersModule,
     AuthModule,
   ],
   controllers: [HealthController],

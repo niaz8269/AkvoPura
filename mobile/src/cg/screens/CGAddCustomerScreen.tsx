@@ -66,21 +66,32 @@ export function CGAddCustomerScreen({ navigation }: { navigation: Nav }) {
     pricePerCan > 0 &&
     pricePerGallon > 0;
 
-  const submit = () => {
-    const created = addCustomer({
-      name: name.trim(),
-      phone: phone.trim(),
-      address: address.trim(),
-      route,
-      paymentCycle,
-      usualCans,
-      usualGallons,
-      pricePerCan,
-      pricePerGallon,
-      notes: notes.trim() || undefined,
-    });
-    Alert.alert('Customer added', `${created.name} added to ${route} route.`);
-    navigation.goBack();
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const created = await addCustomer({
+        name: name.trim(),
+        phone: phone.trim(),
+        address: address.trim(),
+        route,
+        paymentCycle,
+        usualCans,
+        usualGallons,
+        pricePerCan,
+        pricePerGallon,
+        notes: notes.trim() || undefined,
+      });
+      Alert.alert('Customer added', `${created.name} added to ${route} route.`);
+      navigation.goBack();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Could not save';
+      Alert.alert('Save failed', msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -245,9 +256,12 @@ export function CGAddCustomerScreen({ navigation }: { navigation: Nav }) {
           />
 
           <BilingualButton
-            label={{ en: 'Add customer', ur: 'کسٹمر شامل کریں' }}
+            label={{
+              en: submitting ? 'Adding…' : 'Add customer',
+              ur: 'کسٹمر شامل کریں',
+            }}
             onPress={submit}
-            disabled={!valid}
+            disabled={!valid || submitting}
             style={{ marginTop: spacing.lg }}
           />
         </ScrollView>

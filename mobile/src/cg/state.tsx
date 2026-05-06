@@ -1,21 +1,31 @@
 /**
  * CGSalesmanState — single source of truth for the salesman's day.
  *
- * Holds: customers (with mutable balances), van load, deliveries[], collections[].
- * Resets to demo data on every app start in Slice 2 (no persistence yet — added
- * with backend in a later slice).
+ * As of B-8 the customer list comes from the backend (/cg/customers).
+ * It loads on user change, falls back to baked-in demo data when offline,
+ * and pushes mutations (addCustomer / setPaymentCycle / chargeContainerLoss)
+ * through the API. Deliveries and collections still mutate local state
+ * only — they get their own endpoints in B-9.
  */
 
 import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type PropsWithChildren,
 } from 'react';
 
 import { demoCustomers, initialVanLoad } from './demoData';
+import { useAuth } from '../auth/AuthContext';
+import {
+  chargeCGCustomerLoss,
+  createCGCustomer,
+  listCGCustomers,
+  updateCGCustomer,
+} from '../api/cgCustomers';
 import type {
   CGCustomer,
   CGRoute,
@@ -43,7 +53,10 @@ type CollectionInput = {
 type AddCustomerInput = Omit<
   CGCustomer,
   'id' | 'emptyCansHeld' | 'emptyGallonsHeld' | 'outstandingDebt' | 'lastActivityAt'
->;
+> & {
+  /** Branch the customer belongs to. Defaults to the caller's branch. */
+  branchSlug?: string;
+};
 
 type CGSalesmanState = {
   customers: CGCustomer[];
@@ -58,8 +71,12 @@ type CGSalesmanState = {
   deliveriesForCustomer: (id: string) => DeliveryEntry[];
   collectionsForCustomer: (id: string) => CollectionEntry[];
 
-  /** Add a new customer to the list. Returns the created record (with id). */
-  addCustomer: (input: AddCustomerInput) => CGCustomer;
+  /** Add a new customer (POST to backend). Returns the created record. */
+  addCustomer: (input: AddCustomerInput) => Promise<CGCustomer>;
+  /** Force a fresh fetch of customers from the server. */
+  refreshCustomers: () => Promise<void>;
+  /** True while loading customers from the server. */
+  loading: boolean;
   recordDelivery: (input: DeliveryInput) => DeliveryEntry | null;
   undoLastDelivery: () => DeliveryEntry | null;
   recordCollection: (input: CollectionInput) => void;
@@ -89,10 +106,29 @@ function nextId(prefix: string) {
 }
 
 export function CGSalesmanProvider({ children }: PropsWithChildren) {
+  const { user } = useAuth();
   const [customers, setCustomers] = useState<CGCustomer[]>(demoCustomers);
+  const [loading, setLoading] = useState(false);
   const [vanLoad, setVanLoad] = useState<VanLoad>(initialVanLoad);
   const [deliveries, setDeliveries] = useState<DeliveryEntry[]>([]);
   const [collections, setCollections] = useState<CollectionEntry[]>([]);
+
+  const refreshCustomers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const fresh = await listCGCustomers();
+      setCustomers(fresh);
+    } catch {
+      // Network down — keep current in-memory list (works offline).
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Re-fetch customers whenever the logged-in user changes.
+  useEffect(() => {
+    if (user) refreshCustomers();
+  }, [user, refreshCustomers]);
   const [currentTripNumber, setCurrentTripNumber] = useState(1);
 
   const customerById = useCallback(
@@ -115,17 +151,27 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
     [collections]
   );
 
-  const addCustomer = useCallback<CGSalesmanState['addCustomer']>((input) => {
-    const created: CGCustomer = {
-      ...input,
-      id: nextId('cust'),
-      emptyCansHeld: 0,
-      emptyGallonsHeld: 0,
-      outstandingDebt: 0,
-    };
-    setCustomers((prev) => [...prev, created]);
-    return created;
-  }, []);
+  const addCustomer = useCallback<CGSalesmanState['addCustomer']>(
+    async (input) => {
+      const branchSlug = input.branchSlug ?? user?.branch ?? 'timergara';
+      const created = await createCGCustomer({
+        name: input.name,
+        phone: input.phone,
+        address: input.address,
+        branchSlug,
+        route: input.route,
+        paymentCycle: input.paymentCycle,
+        pricePerCan: input.pricePerCan,
+        pricePerGallon: input.pricePerGallon,
+        usualCans: input.usualCans,
+        usualGallons: input.usualGallons,
+        notes: input.notes,
+      });
+      setCustomers((prev) => [...prev, created]);
+      return created;
+    },
+    [user?.branch],
+  );
 
   const recordDelivery = useCallback<CGSalesmanState['recordDelivery']>((input) => {
     const customer = customers.find((c) => c.id === input.customerId);
@@ -278,15 +324,21 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
 
   const setPaymentCycle = useCallback<CGSalesmanState['setPaymentCycle']>(
     (customerId, cycle) => {
+      // Optimistic update; backend re-confirms.
       setCustomers((prev) =>
         prev.map((c) => (c.id === customerId ? { ...c, paymentCycle: cycle } : c))
       );
+      updateCGCustomer(customerId, { paymentCycle: cycle }).catch(() => {
+        // Roll back on failure.
+        refreshCustomers();
+      });
     },
-    []
+    [refreshCustomers]
   );
 
   const chargeContainerLoss = useCallback<CGSalesmanState['chargeContainerLoss']>(
     (customerId, cans, gallons, totalCharge) => {
+      // Optimistic; if the server rejects we re-fetch to recover.
       setCustomers((prev) =>
         prev.map((c) =>
           c.id === customerId
@@ -299,8 +351,11 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
             : c
         )
       );
+      chargeCGCustomerLoss(customerId, cans, gallons, totalCharge).catch(() => {
+        refreshCustomers();
+      });
     },
-    []
+    [refreshCustomers]
   );
 
   const startNewTrip = useCallback<CGSalesmanState['startNewTrip']>(
@@ -337,6 +392,8 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       deliveriesForCustomer,
       collectionsForCustomer,
       addCustomer,
+      refreshCustomers,
+      loading,
       recordDelivery,
       undoLastDelivery,
       recordCollection,
@@ -358,6 +415,8 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       deliveriesForCustomer,
       collectionsForCustomer,
       addCustomer,
+      refreshCustomers,
+      loading,
       recordDelivery,
       undoLastDelivery,
       recordCollection,

@@ -23,20 +23,78 @@ enum Role {
   customer
 }
 
+enum CGRoute {
+  hospital
+  bypass
+  others
+}
+
+enum PaymentCycle {
+  daily
+  weekly
+}
+
 /// A physical branch / depot. Slug is the stable identifier used in
 /// URLs and JWT payloads (e.g., 'timergara'). New branches can be added
 /// at any time without code changes.
 model Branch {
-  slug      String   @id
-  name      String
-  nameUr    String?
-  location  String?
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  users     User[]
+  slug         String       @id
+  name         String
+  nameUr       String?
+  location     String?
+  active       Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  users        User[]
+  cgCustomers  CGCustomer[]
 
   @@map("branches")
+}
+
+/// Cans / Gallons customer — a shop, hospital ward, or household that
+/// receives reusable filled cans and gallons. Mutable balance fields
+/// (empties held, outstanding debt) are updated by deliveries +
+/// collections in a later slice.
+model CGCustomer {
+  id            String       @id @default(cuid())
+  name          String
+  phone         String
+  address       String
+  branchSlug    String
+  branch        Branch       @relation(fields: [branchSlug], references: [slug])
+
+  route         CGRoute
+  paymentCycle  PaymentCycle
+
+  /// Hint quantities used to auto-fill the delivery sheet.
+  usualCans     Int          @default(0)
+  usualGallons  Int          @default(0)
+
+  /// Number of returnable empties currently with this customer.
+  emptyCansHeld    Int       @default(0)
+  emptyGallonsHeld Int       @default(0)
+
+  /// Outstanding amount the customer owes (PKR).
+  outstandingDebt Int        @default(0)
+
+  /// Per-customer override prices.
+  pricePerCan     Int
+  pricePerGallon  Int
+
+  /// Last delivery / activity timestamp. Null = never active.
+  lastActivityAt  DateTime?
+
+  /// Soft-delete flag. False = hidden from lists.
+  active          Boolean    @default(true)
+
+  notes           String?
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@index([branchSlug, active])
+  @@index([branchSlug, route])
+  @@map("cg_customers")
 }
 
 /// Global pricing + container fees. One row, scope='global'. Branch-
