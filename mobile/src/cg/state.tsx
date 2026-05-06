@@ -40,6 +40,11 @@ type CollectionInput = {
   gallonsCollected: number;
 };
 
+type AddCustomerInput = Omit<
+  CGCustomer,
+  'id' | 'emptyCansHeld' | 'emptyGallonsHeld' | 'outstandingDebt' | 'lastActivityAt'
+>;
+
 type CGSalesmanState = {
   customers: CGCustomer[];
   vanLoad: VanLoad;
@@ -53,6 +58,8 @@ type CGSalesmanState = {
   deliveriesForCustomer: (id: string) => DeliveryEntry[];
   collectionsForCustomer: (id: string) => CollectionEntry[];
 
+  /** Add a new customer to the list. Returns the created record (with id). */
+  addCustomer: (input: AddCustomerInput) => CGCustomer;
   recordDelivery: (input: DeliveryInput) => DeliveryEntry | null;
   undoLastDelivery: () => DeliveryEntry | null;
   recordCollection: (input: CollectionInput) => void;
@@ -107,6 +114,18 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
     (id: string) => collections.filter((c) => c.customerId === id),
     [collections]
   );
+
+  const addCustomer = useCallback<CGSalesmanState['addCustomer']>((input) => {
+    const created: CGCustomer = {
+      ...input,
+      id: nextId('cust'),
+      emptyCansHeld: 0,
+      emptyGallonsHeld: 0,
+      outstandingDebt: 0,
+    };
+    setCustomers((prev) => [...prev, created]);
+    return created;
+  }, []);
 
   const recordDelivery = useCallback<CGSalesmanState['recordDelivery']>((input) => {
     const customer = customers.find((c) => c.id === input.customerId);
@@ -317,6 +336,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       customersByRoute,
       deliveriesForCustomer,
       collectionsForCustomer,
+      addCustomer,
       recordDelivery,
       undoLastDelivery,
       recordCollection,
@@ -337,6 +357,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       customersByRoute,
       deliveriesForCustomer,
       collectionsForCustomer,
+      addCustomer,
       recordDelivery,
       undoLastDelivery,
       recordCollection,

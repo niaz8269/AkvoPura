@@ -119,11 +119,33 @@ export function ManagerCustomersScreen({ navigation }: { navigation: Nav }) {
     return r === 'at_risk' || r === 'never';
   }).length;
 
+  const openAddCustomer = () =>
+    Alert.alert('Add new customer', 'Which type?', [
+      { text: 'Cans / Gallons', onPress: () => navigation.navigate('AddCGCustomer') },
+      { text: 'Pets', onPress: () => navigation.navigate('AddPetCustomer') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+
   return (
     <Screen padded={false}>
       <View style={styles.header}>
-        <Text style={styles.title}>Customers</Text>
-        <Text style={styles.titleUr}>کسٹمرز</Text>
+        <View style={styles.titleRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Customers</Text>
+            <Text style={styles.titleUr}>کسٹمرز</Text>
+          </View>
+          <Pressable
+            onPress={openAddCustomer}
+            style={({ pressed }) => [
+              styles.addBtn,
+              pressed ? { opacity: 0.85 } : null,
+            ]}
+            accessibilityLabel="Add customer"
+          >
+            <Ionicons name="add" size={18} color={colors.textInverse} />
+            <Text style={styles.addBtnText}>Add</Text>
+          </Pressable>
+        </View>
 
         <View style={styles.kpiRow}>
           <KpiCard label="Total" value={all.length} />
@@ -181,7 +203,7 @@ export function ManagerCustomersScreen({ navigation }: { navigation: Nav }) {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.list}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.list}>
         <Pressable
           onPress={() => navigation.navigate('AgingReport')}
           style={({ pressed }) => [
@@ -213,6 +235,7 @@ export function ManagerCustomersScreen({ navigation }: { navigation: Nav }) {
           ))
         )}
       </ScrollView>
+
     </Screen>
   );
 }
@@ -517,5 +540,23 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.xs,
     color: colors.textMuted,
     marginTop: 2,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.primary,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+  },
+  addBtnText: {
+    fontSize: fontSizes.sm,
+    fontWeight: '800',
+    color: colors.textInverse,
   },
 });

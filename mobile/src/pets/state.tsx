@@ -43,6 +43,11 @@ type ReturnInput = {
   reason?: string;
 };
 
+type AddPetCustomerInput = Omit<
+  PetCustomer,
+  'id' | 'outstandingDebt' | 'lastActivityAt'
+>;
+
 type State = {
   customers: PetCustomer[];
   products: PetProduct[];
@@ -55,6 +60,8 @@ type State = {
   returnsForCustomer: (id: string) => PetReturnEntry[];
   priceFor: (customer: PetCustomer, productId: PetProduct['id']) => number;
 
+  /** Add a new Pets customer. Returns the created record (with id). */
+  addCustomer: (input: AddPetCustomerInput) => PetCustomer;
   recordBill: (input: BillInput) => BillEntry | null;
   undoLastBill: () => BillEntry | null;
   recordReturn: (input: ReturnInput) => PetReturnEntry | null;
@@ -108,6 +115,16 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
     },
     [prices]
   );
+
+  const addCustomer = useCallback<State['addCustomer']>((input) => {
+    const created: PetCustomer = {
+      ...input,
+      id: nextId('cust'),
+      outstandingDebt: 0,
+    };
+    setCustomers((prev) => [...prev, created]);
+    return created;
+  }, []);
 
   const recordBill = useCallback<State['recordBill']>((input) => {
     const customer = customers.find((c) => c.id === input.customerId);
@@ -264,6 +281,7 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
       billsForCustomer,
       returnsForCustomer,
       priceFor,
+      addCustomer,
       recordBill,
       undoLastBill,
       recordReturn,
@@ -282,6 +300,7 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
       billsForCustomer,
       returnsForCustomer,
       priceFor,
+      addCustomer,
       recordBill,
       undoLastBill,
       recordReturn,

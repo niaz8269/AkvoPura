@@ -29,6 +29,8 @@ import { ManagerComplaintsScreen } from './screens/ManagerComplaintsScreen';
 import { ManagerProductionScreen } from './screens/ManagerProductionScreen';
 import { ManagerContainerFeesScreen } from './screens/ManagerContainerFeesScreen';
 import { AgingReportScreen } from '../analytics/screens/AgingReportScreen';
+import { CGAddCustomerScreen } from '../cg/screens/CGAddCustomerScreen';
+import { PetsAddCustomerScreen } from '../pets/screens/PetsAddCustomerScreen';
 import { useManager } from './state';
 
 const Tab = createBottomTabNavigator();
@@ -111,6 +113,16 @@ function CustomersStack() {
         name="AgingReport"
         component={AgingReportScreen}
         options={{ title: 'Aging report' }}
+      />
+      <Stack.Screen
+        name="AddCGCustomer"
+        component={CGAddCustomerScreen}
+        options={{ title: 'New C/G customer' }}
+      />
+      <Stack.Screen
+        name="AddPetCustomer"
+        component={PetsAddCustomerScreen}
+        options={{ title: 'New Pets customer' }}
       />
     </Stack.Navigator>
   );

@@ -5,12 +5,15 @@
 
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
 import { usePetsSalesman } from '../state';
 
-type Nav = { navigate: (screen: string, params?: { customerId: string }) => void };
+type Nav = {
+  navigate: (screen: string, params?: { customerId?: string }) => void;
+};
 
 export function PetsCustomersScreen({ navigation }: { navigation: Nav }) {
   const { customers, vanLoad, billsForCustomer, currentTripNumber } = usePetsSalesman();
@@ -106,6 +109,14 @@ export function PetsCustomersScreen({ navigation }: { navigation: Nav }) {
           <Text style={styles.empty}>No matching customers.</Text>
         ) : null}
       </ScrollView>
+
+      <Pressable
+        onPress={() => navigation.navigate('AddCustomer')}
+        style={({ pressed }) => [styles.fab, pressed ? { opacity: 0.85 } : null]}
+        accessibilityLabel="Add customer"
+      >
+        <Ionicons name="add" size={28} color={colors.textInverse} />
+      </Pressable>
     </Screen>
   );
 }
@@ -220,5 +231,21 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontStyle: 'italic',
     marginTop: spacing.xl,
+  },
+  fab: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: spacing.lg,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
   },
 });
