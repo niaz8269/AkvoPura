@@ -39,6 +39,27 @@ model Branch {
   @@map("branches")
 }
 
+/// Global pricing + container fees. One row, scope='global'. Branch-
+/// scoped overrides may come later — keep the scope column to leave the
+/// door open without future schema changes.
+model Pricing {
+  id            String   @id @default(cuid())
+  scope         String   @unique @default("global")
+
+  pet600Price   Int      @default(280)
+  pet1500Price  Int      @default(320)
+  canPrice      Int      @default(280)
+  gallonPrice   Int      @default(200)
+
+  lostCanFee    Int      @default(600)
+  lostGallonFee Int      @default(900)
+
+  updatedAt     DateTime @updatedAt
+  updatedBy     String?
+
+  @@map("pricing")
+}
+
 model User {
   id           String   @id @default(cuid())
   identifier   String   @unique

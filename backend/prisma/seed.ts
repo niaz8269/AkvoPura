@@ -35,6 +35,14 @@ const accounts: Seed[] = [
 ];
 
 async function main() {
+  console.log('Pricing:');
+  await prisma.pricing.upsert({
+    where: { scope: 'global' },
+    update: {},
+    create: { scope: 'global' },
+  });
+  console.log('  ✔ global (defaults)');
+
   console.log('Branches:');
   for (const b of branches) {
     await prisma.branch.upsert({
