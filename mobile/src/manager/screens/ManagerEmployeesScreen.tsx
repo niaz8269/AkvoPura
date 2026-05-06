@@ -38,7 +38,9 @@ const FILTER_ORDER: RoleFilter[] = [
   'helper',
 ];
 
-type Nav = { navigate: (screen: string, params?: { employeeId: string }) => void };
+type Nav = {
+  navigate: (screen: string, params?: { employeeId?: string }) => void;
+};
 
 export function ManagerEmployeesScreen({ navigation }: { navigation: Nav }) {
   const { user } = useAuth();
@@ -108,6 +110,21 @@ export function ManagerEmployeesScreen({ navigation }: { navigation: Nav }) {
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.list}>
+        <Pressable
+          onPress={() => navigation.navigate('StaffAccounts')}
+          style={({ pressed }) => [
+            styles.staffLink,
+            pressed ? { opacity: 0.85 } : null,
+          ]}
+        >
+          <Ionicons name="key-outline" size={20} color={colors.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.staffLinkTitle}>Staff accounts</Text>
+            <Text style={styles.staffLinkSub}>Who can log into the app (live from server)</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
+        </Pressable>
+
         {visible.length === 0 ? (
           <Text style={styles.empty}>No employees match this filter.</Text>
         ) : (
@@ -246,6 +263,27 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontStyle: 'italic',
     marginTop: spacing.xl,
+  },
+  staffLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.primary + '12',
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
+  },
+  staffLinkTitle: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  staffLinkSub: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    marginTop: 2,
   },
 
   row: {
