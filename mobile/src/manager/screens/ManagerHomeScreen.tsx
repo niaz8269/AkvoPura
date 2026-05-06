@@ -20,6 +20,7 @@ import { useAssignments } from '../../assignments/state';
 import { useCustomerPortal } from '../../customer/state';
 import { useProduction } from '../../production/state';
 import { generateAndShareDailyReport } from '../../analytics/dailyExport';
+import { runningOutSoon } from '../../analytics/inventoryForecast';
 import { strings } from '../../i18n/strings';
 import { HIGH_VALUE_THRESHOLD } from '../demoData';
 
@@ -43,7 +44,8 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
     (o) => o.status === 'assigned' || o.status === 'in_transit'
   ).length;
   const openComplaints = complaints.filter((c) => c.status === 'open').length;
-  const { batches, lowStock } = useProduction();
+  const { batches, lowStock, rawMaterials } = useProduction();
+  const runningOut = runningOutSoon(rawMaterials, batches, 7);
   const todayBatches = batches.filter((b) => {
     const d = new Date(b.loggedAt);
     const today = new Date();
@@ -262,7 +264,7 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
         <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
       </Pressable>
 
-      {pendingOrders > 0 || activeOrders > 0 || openComplaints > 0 || lowStockCount > 0 || pendingExpenses.length > 0 || totalDebt > 0 ? (
+      {pendingOrders > 0 || activeOrders > 0 || openComplaints > 0 || lowStockCount > 0 || runningOut.length > 0 || pendingExpenses.length > 0 || totalDebt > 0 ? (
         <View style={styles.alertSection}>
           {pendingOrders > 0 || activeOrders > 0 ? (
             <Pressable
@@ -315,6 +317,32 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
                 <Text style={styles.alertSub}>Tap to receive stock</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.danger} />
+            </Pressable>
+          ) : null}
+
+          {runningOut.length > 0 ? (
+            <Pressable
+              onPress={() => navigation.navigate('Production')}
+              style={({ pressed }) => [
+                styles.alertCard,
+                styles.alertWarn,
+                pressed ? styles.alertPressed : null,
+              ]}
+            >
+              <Ionicons name="trending-down-outline" size={28} color={colors.warning} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.alertTitle}>
+                  {runningOut.length} material{runningOut.length === 1 ? '' : 's'} running out soon
+                </Text>
+                <Text style={styles.alertSub}>
+                  {runningOut
+                    .slice(0, 2)
+                    .map((f) => `${f.name} ~${f.daysRemaining}d`)
+                    .join(' · ')}
+                  {runningOut.length > 2 ? '…' : ''}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.warning} />
             </Pressable>
           ) : null}
 

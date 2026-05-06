@@ -30,6 +30,10 @@ import {
   type ProductionBatch,
   type RawMaterial,
 } from '../../production/types';
+import {
+  forecastMaterial,
+  type MaterialForecast,
+} from '../../analytics/inventoryForecast';
 
 type Tab = 'today' | 'inventory';
 
@@ -321,7 +325,7 @@ function BatchRow({ batch }: { batch: ProductionBatch }) {
 }
 
 function InventoryPanel() {
-  const { rawMaterials, receiveStock } = useProduction();
+  const { rawMaterials, receiveStock, batches } = useProduction();
 
   const lowStock = rawMaterials.filter((r) => r.currentStock <= r.reorderThreshold);
   const okStock = rawMaterials.filter((r) => r.currentStock > r.reorderThreshold);
@@ -334,14 +338,24 @@ function InventoryPanel() {
             ⚠ Low stock ({lowStock.length})
           </Text>
           {lowStock.map((m) => (
-            <RawRow key={m.id} material={m} onReceive={(units) => receiveStock(m.id, units)} />
+            <RawRow
+              key={m.id}
+              material={m}
+              forecast={forecastMaterial(m, batches)}
+              onReceive={(units) => receiveStock(m.id, units)}
+            />
           ))}
         </>
       ) : null}
 
       <Text style={styles.sectionTitle}>All raw materials</Text>
       {okStock.map((m) => (
-        <RawRow key={m.id} material={m} onReceive={(units) => receiveStock(m.id, units)} />
+        <RawRow
+          key={m.id}
+          material={m}
+          forecast={forecastMaterial(m, batches)}
+          onReceive={(units) => receiveStock(m.id, units)}
+        />
       ))}
     </ScrollView>
   );
@@ -349,9 +363,11 @@ function InventoryPanel() {
 
 function RawRow({
   material,
+  forecast,
   onReceive,
 }: {
   material: RawMaterial;
+  forecast: MaterialForecast;
   onReceive: (units: number) => void;
 }) {
   const [adding, setAdding] = useState(false);
@@ -374,6 +390,8 @@ function RawRow({
           </View>
         ) : null}
       </View>
+
+      <ForecastBadge forecast={forecast} />
 
       {adding ? (
         <View style={styles.receiveRow}>
@@ -428,6 +446,59 @@ function RawRow({
           <Text style={styles.receiveOpenText}>Receive stock</Text>
         </Pressable>
       )}
+    </View>
+  );
+}
+
+function ForecastBadge({ forecast }: { forecast: MaterialForecast }) {
+  if (forecast.severity === 'idle') {
+    return (
+      <View style={[styles.forecastBadge, styles.forecastBadgeIdle]}>
+        <Ionicons name="pause-circle-outline" size={12} color={colors.textMuted} />
+        <Text style={[styles.forecastText, { color: colors.textMuted }]}>
+          No recent usage
+        </Text>
+      </View>
+    );
+  }
+
+  const color =
+    forecast.severity === 'critical'
+      ? colors.danger
+      : forecast.severity === 'warn'
+        ? colors.warning
+        : colors.success;
+  const bg =
+    forecast.severity === 'critical'
+      ? colors.danger + '18'
+      : forecast.severity === 'warn'
+        ? colors.warning + '22'
+        : colors.success + '18';
+
+  const days = forecast.daysRemaining ?? 0;
+  const label =
+    days <= 0
+      ? 'Out of stock'
+      : days === 1
+        ? '~1 day left'
+        : `~${days} days left`;
+
+  return (
+    <View style={[styles.forecastBadge, { backgroundColor: bg }]}>
+      <Ionicons
+        name={
+          forecast.severity === 'critical'
+            ? 'alert-circle'
+            : forecast.severity === 'warn'
+              ? 'time-outline'
+              : 'checkmark-circle-outline'
+        }
+        size={12}
+        color={color}
+      />
+      <Text style={[styles.forecastText, { color }]}>
+        {label} · uses ~{forecast.perDay}/day
+      </Text>
     </View>
   );
 }
@@ -646,4 +717,17 @@ const styles = StyleSheet.create({
   receiveBtnCancel: { backgroundColor: colors.surface, borderColor: colors.border },
   receiveBtnText: { color: colors.textInverse, fontSize: 12, fontWeight: '800' },
   receiveBtnTextCancel: { color: colors.textMuted, fontSize: 12, fontWeight: '700' },
+
+  forecastBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radii.pill,
+    marginTop: spacing.sm,
+  },
+  forecastBadgeIdle: { backgroundColor: colors.surfaceMuted },
+  forecastText: { fontSize: 11, fontWeight: '800' },
 });
