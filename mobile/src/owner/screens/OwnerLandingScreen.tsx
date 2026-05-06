@@ -84,6 +84,21 @@ export function OwnerLandingScreen({ navigation }: { navigation: Nav }) {
         </View>
         <Ionicons name="chevron-forward" size={20} color={colors.primaryDark} />
       </Pressable>
+
+      <Pressable
+        onPress={() => navigation.navigate('ManageBranches')}
+        style={({ pressed }) => [
+          styles.combinedBtn,
+          pressed ? { opacity: 0.85 } : null,
+        ]}
+      >
+        <Ionicons name="business-outline" size={22} color={colors.primaryDark} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.combinedTitle}>Manage branches</Text>
+          <Text style={styles.combinedSub}>Add or edit branches</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={colors.primaryDark} />
+      </Pressable>
     </Screen>
   );
 }

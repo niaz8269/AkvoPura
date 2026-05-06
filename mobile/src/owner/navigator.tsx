@@ -18,6 +18,9 @@ import { OwnerForwardedScreen } from './screens/OwnerForwardedScreen';
 import { OwnerAuditScreen } from './screens/OwnerAuditScreen';
 import { OwnerSettingsScreen } from './screens/OwnerSettingsScreen';
 import { OwnerLeaderboardScreen } from './screens/OwnerLeaderboardScreen';
+import { OwnerManageBranchesScreen } from './screens/OwnerManageBranchesScreen';
+import { OwnerAddBranchScreen } from './screens/OwnerAddBranchScreen';
+import { OwnerEditBranchScreen } from './screens/OwnerEditBranchScreen';
 import { AgingReportScreen } from '../analytics/screens/AgingReportScreen';
 import { useManager } from '../manager/state';
 import type { BranchKey } from './types';
@@ -28,6 +31,9 @@ export type OwnerStackParamList = {
   Combined: undefined;
   Leaderboard: undefined;
   AgingReport: undefined;
+  ManageBranches: undefined;
+  AddBranch: undefined;
+  EditBranch: { slug: string };
 };
 
 const Stack = createNativeStackNavigator<OwnerStackParamList>();
@@ -81,6 +87,21 @@ function BranchesStack() {
         name="AgingReport"
         component={AgingReportScreen}
         options={{ title: 'Aging report' }}
+      />
+      <Stack.Screen
+        name="ManageBranches"
+        component={OwnerManageBranchesScreen}
+        options={{ title: 'Manage branches' }}
+      />
+      <Stack.Screen
+        name="AddBranch"
+        component={OwnerAddBranchScreen}
+        options={{ title: 'New branch' }}
+      />
+      <Stack.Screen
+        name="EditBranch"
+        component={OwnerEditBranchScreen}
+        options={{ title: 'Edit branch' }}
       />
     </Stack.Navigator>
   );
