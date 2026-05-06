@@ -7,6 +7,8 @@ import { UsersModule } from './users/users.module';
 import { BranchesModule } from './branches/branches.module';
 import { PricingModule } from './pricing/pricing.module';
 import { CGCustomersModule } from './cg-customers/cg-customers.module';
+import { CGDeliveriesModule } from './cg-deliveries/cg-deliveries.module';
+import { CGCollectionsModule } from './cg-collections/cg-collections.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -17,6 +19,8 @@ import { HealthController } from './health.controller';
     BranchesModule,
     PricingModule,
     CGCustomersModule,
+    CGDeliveriesModule,
+    CGCollectionsModule,
     AuthModule,
   ],
   controllers: [HealthController],

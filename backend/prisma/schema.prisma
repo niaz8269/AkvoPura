@@ -51,6 +51,54 @@ model Branch {
   @@map("branches")
 }
 
+/// One delivery visit. Mutates the customer's empties + debt; the
+/// delivery row itself is the audit trail.
+model CGDelivery {
+  id                    String     @id @default(cuid())
+  customerId            String
+  customer              CGCustomer @relation(fields: [customerId], references: [id])
+  /// User who logged this delivery.
+  salesmanId            String
+  branchSlug            String
+
+  cansDelivered         Int
+  gallonsDelivered      Int
+  emptyCansCollected    Int
+  emptyGallonsCollected Int
+  cashCollected         Int
+  /// cans*price + gallons*price at delivery time, snapshotted.
+  amountBilled          Int
+  /// Which trip of the day (1, 2, ...).
+  tripNumber            Int        @default(1)
+
+  loggedAt              DateTime   @default(now())
+
+  @@index([branchSlug, loggedAt])
+  @@index([salesmanId, loggedAt])
+  @@index([customerId, loggedAt])
+  @@map("cg_deliveries")
+}
+
+/// One empties-collection visit (no money changes hands; only empties).
+model CGCollection {
+  id                String     @id @default(cuid())
+  customerId        String
+  customer          CGCustomer @relation(fields: [customerId], references: [id])
+  salesmanId        String
+  branchSlug        String
+
+  cansCollected     Int
+  gallonsCollected  Int
+  tripNumber        Int        @default(1)
+
+  loggedAt          DateTime   @default(now())
+
+  @@index([branchSlug, loggedAt])
+  @@index([salesmanId, loggedAt])
+  @@index([customerId, loggedAt])
+  @@map("cg_collections")
+}
+
 /// Cans / Gallons customer — a shop, hospital ward, or household that
 /// receives reusable filled cans and gallons. Mutable balance fields
 /// (empties held, outstanding debt) are updated by deliveries +
@@ -91,6 +139,9 @@ model CGCustomer {
 
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
+
+  deliveries      CGDelivery[]
+  collections     CGCollection[]
 
   @@index([branchSlug, active])
   @@index([branchSlug, route])

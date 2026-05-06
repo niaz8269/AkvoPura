@@ -26,6 +26,17 @@ import {
   listCGCustomers,
   updateCGCustomer,
 } from '../api/cgCustomers';
+import {
+  listCGDeliveries,
+  recordCGDelivery,
+  todayLocal,
+  undoCGDelivery,
+} from '../api/cgDeliveries';
+import {
+  listCGCollections,
+  recordCGCollection,
+  undoCGCollection,
+} from '../api/cgCollections';
 import type {
   CGCustomer,
   CGRoute,
@@ -125,10 +136,32 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
     }
   }, []);
 
-  // Re-fetch customers whenever the logged-in user changes.
+  /** Load today's deliveries + collections from the server so a salesman
+   *  who switches devices mid-day sees their previous activity. */
+  const refreshTodaysActivity = useCallback(async () => {
+    if (!user) return;
+    const date = todayLocal();
+    try {
+      const [todayDeliveries, todayCollections] = await Promise.all([
+        listCGDeliveries({ date, salesmanId: user.id }),
+        listCGCollections({ date, salesmanId: user.id }),
+      ]);
+      // Server returns most-recent-first; keep oldest-first order
+      // the rest of the app expects.
+      setDeliveries([...todayDeliveries].reverse());
+      setCollections([...todayCollections].reverse());
+    } catch {
+      // offline — leave whatever's in memory
+    }
+  }, [user]);
+
+  // Re-fetch customers + today's activity whenever the user changes.
   useEffect(() => {
-    if (user) refreshCustomers();
-  }, [user, refreshCustomers]);
+    if (user) {
+      refreshCustomers();
+      refreshTodaysActivity();
+    }
+  }, [user, refreshCustomers, refreshTodaysActivity]);
   const [currentTripNumber, setCurrentTripNumber] = useState(1);
 
   const customerById = useCallback(
@@ -181,14 +214,27 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       input.cansDelivered * customer.pricePerCan +
       input.gallonsDelivered * customer.pricePerGallon;
 
+    // Optimistic local update: customer balance + delivery row + van.
+    const tempId = nextId('d-pending');
+    const entry: DeliveryEntry = {
+      id: tempId,
+      customerId: input.customerId,
+      cansDelivered: input.cansDelivered,
+      gallonsDelivered: input.gallonsDelivered,
+      emptyCansCollected: input.emptyCansCollected,
+      emptyGallonsCollected: input.emptyGallonsCollected,
+      cashCollected: input.cashCollected,
+      amountBilled: billed,
+      tripNumber: currentTripNumber,
+      timestamp: Date.now(),
+    };
+
     setCustomers((prev) =>
       prev.map((c) =>
         c.id !== input.customerId
           ? c
           : {
               ...c,
-              // Customer keeps the new filled containers (treated as empties they
-              // will eventually return). Already-held empties picked up reduces.
               emptyCansHeld:
                 c.emptyCansHeld + input.cansDelivered - input.emptyCansCollected,
               emptyGallonsHeld:
@@ -211,26 +257,36 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       emptyGallonsAboard: prev.emptyGallonsAboard + input.emptyGallonsCollected,
     }));
 
-    const entry: DeliveryEntry = {
-      id: nextId('d'),
+    setDeliveries((prev) => [...prev, entry]);
+
+    // Fire-and-forget POST. On success swap our temp row for the real
+    // server one. On failure, refresh customers + today's activity from
+    // the server (rolls back the optimistic mutations).
+    recordCGDelivery({
       customerId: input.customerId,
       cansDelivered: input.cansDelivered,
       gallonsDelivered: input.gallonsDelivered,
       emptyCansCollected: input.emptyCansCollected,
       emptyGallonsCollected: input.emptyGallonsCollected,
       cashCollected: input.cashCollected,
-      amountBilled: billed,
       tripNumber: currentTripNumber,
-      timestamp: Date.now(),
-    };
-    setDeliveries((prev) => [...prev, entry]);
+    })
+      .then((real) => {
+        setDeliveries((prev) => prev.map((d) => (d.id === tempId ? real : d)));
+      })
+      .catch(() => {
+        refreshCustomers();
+        refreshTodaysActivity();
+      });
+
     return entry;
-  }, [customers, currentTripNumber]);
+  }, [customers, currentTripNumber, refreshCustomers, refreshTodaysActivity]);
 
   const undoLastDelivery = useCallback<CGSalesmanState['undoLastDelivery']>(() => {
     if (deliveries.length === 0) return null;
     const last = deliveries[deliveries.length - 1];
 
+    // Optimistic local rollback.
     setCustomers((prev) =>
       prev.map((c) => {
         if (c.id !== last.customerId) return c;
@@ -254,10 +310,31 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       emptyGallonsAboard: prev.emptyGallonsAboard - last.emptyGallonsCollected,
     }));
     setDeliveries((prev) => prev.slice(0, -1));
+
+    // Persist the undo. Server-side undo deletes the delivery row +
+    // reverses the customer balance. If it fails (e.g. row doesn't
+    // exist server-side because the original POST failed) we re-sync.
+    if (!last.id.startsWith('d-pending')) {
+      undoCGDelivery(last.id).catch(() => {
+        refreshCustomers();
+        refreshTodaysActivity();
+      });
+    }
+
     return last;
-  }, [deliveries]);
+  }, [deliveries, refreshCustomers, refreshTodaysActivity]);
 
   const recordCollection = useCallback((input: CollectionInput) => {
+    const tempId = nextId('c-pending');
+    const entry: CollectionEntry = {
+      id: tempId,
+      customerId: input.customerId,
+      cansCollected: input.cansCollected,
+      gallonsCollected: input.gallonsCollected,
+      tripNumber: currentTripNumber,
+      timestamp: Date.now(),
+    };
+
     setCustomers((prev) =>
       prev.map((c) => {
         if (c.id !== input.customerId) return c;
@@ -268,25 +345,27 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
         };
       })
     );
-
     setVanLoad((prev) => ({
       ...prev,
       emptyCansAboard: prev.emptyCansAboard + input.cansCollected,
       emptyGallonsAboard: prev.emptyGallonsAboard + input.gallonsCollected,
     }));
+    setCollections((prev) => [...prev, entry]);
 
-    setCollections((prev) => [
-      ...prev,
-      {
-        id: nextId('c'),
-        customerId: input.customerId,
-        cansCollected: input.cansCollected,
-        gallonsCollected: input.gallonsCollected,
-        tripNumber: currentTripNumber,
-        timestamp: Date.now(),
-      },
-    ]);
-  }, [currentTripNumber]);
+    recordCGCollection({
+      customerId: input.customerId,
+      cansCollected: input.cansCollected,
+      gallonsCollected: input.gallonsCollected,
+      tripNumber: currentTripNumber,
+    })
+      .then((real) => {
+        setCollections((prev) => prev.map((c) => (c.id === tempId ? real : c)));
+      })
+      .catch(() => {
+        refreshCustomers();
+        refreshTodaysActivity();
+      });
+  }, [currentTripNumber, refreshCustomers, refreshTodaysActivity]);
 
   const undoLastCollection = useCallback<CGSalesmanState['undoLastCollection']>(() => {
     if (collections.length === 0) return null;
@@ -308,8 +387,16 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       emptyGallonsAboard: prev.emptyGallonsAboard - last.gallonsCollected,
     }));
     setCollections((prev) => prev.slice(0, -1));
+
+    if (!last.id.startsWith('c-pending')) {
+      undoCGCollection(last.id).catch(() => {
+        refreshCustomers();
+        refreshTodaysActivity();
+      });
+    }
+
     return last;
-  }, [collections]);
+  }, [collections, refreshCustomers, refreshTodaysActivity]);
 
   const setFilledLoad = useCallback<CGSalesmanState['setFilledLoad']>(
     (filledCans, filledGallons) => {
