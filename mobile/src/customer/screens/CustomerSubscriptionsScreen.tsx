@@ -111,8 +111,8 @@ export function CustomerSubscriptionsScreen() {
               <SubscriptionCard
                 key={sub.id}
                 subscription={sub}
-                onRun={() => {
-                  const order = runSubscriptionNow(sub.id);
+                onRun={async () => {
+                  const order = await runSubscriptionNow(sub.id);
                   if (order) {
                     Alert.alert(
                       'Order placed',

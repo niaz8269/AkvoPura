@@ -26,6 +26,7 @@ import { CGCustomerDetailScreen } from './screens/CGCustomerDetailScreen';
 import { CGAddCustomerScreen } from './screens/CGAddCustomerScreen';
 import { SubmitExpenseScreen } from '../expenses/SubmitExpenseScreen';
 import { SalesmanExpensesScreen } from '../expenses/SalesmanExpensesScreen';
+import { SalesmanOrdersScreen } from '../orders/SalesmanOrdersScreen';
 
 export type CGStackParamList = {
   Tabs: undefined;
@@ -67,6 +68,7 @@ function Tabs() {
             Today: 'today-outline',
             Deliver: 'cube-outline',
             Collect: 'archive-outline',
+            Orders: 'clipboard-outline',
             Expenses: 'wallet-outline',
             EndOfDay: 'checkmark-done-outline',
           };
@@ -88,6 +90,11 @@ function Tabs() {
         name="Collect"
         component={CGCollectionScreen}
         options={{ title: 'Collect', headerTitle: 'Empty collection' }}
+      />
+      <Tab.Screen
+        name="Orders"
+        component={SalesmanOrdersScreen}
+        options={{ title: 'Orders', headerTitle: 'My orders' }}
       />
       <Tab.Screen
         name="Expenses"

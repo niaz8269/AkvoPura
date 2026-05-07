@@ -62,7 +62,7 @@ export function CustomerOrderScreen() {
     return () => clearTimeout(t);
   }, [confirmed]);
 
-  const onConfirm = () => {
+  const onConfirm = async () => {
     if (!user) return;
     const items = portal.catalog
       .filter((p) => (qtys[p.id] ?? 0) > 0)
@@ -71,14 +71,20 @@ export function CustomerOrderScreen() {
         qty: qtys[p.id] ?? 0,
         unitPrice: p.defaultPrice,
       }));
-    const order = portal.placeOrder({
-      customerUserId: user.id,
-      items,
-      preferredTime: preferredTime.trim() || undefined,
-      notes: notes.trim() || undefined,
-    });
-    setLastReceipt({ total: order.totalAmount, items: items.length });
-    setConfirmed(true);
+    try {
+      const order = await portal.placeOrder({
+        customerUserId: user.id,
+        items,
+        preferredTime: preferredTime.trim() || undefined,
+        notes: notes.trim() || undefined,
+      });
+      setLastReceipt({ total: order.totalAmount, items: items.length });
+      setConfirmed(true);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Could not place order';
+      // eslint-disable-next-line no-console
+      console.warn('placeOrder failed', msg);
+    }
   };
 
   return (

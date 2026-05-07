@@ -26,6 +26,7 @@ import { PetsCustomerDetailScreen } from './screens/PetsCustomerDetailScreen';
 import { PetsAddCustomerScreen } from './screens/PetsAddCustomerScreen';
 import { SubmitExpenseScreen } from '../expenses/SubmitExpenseScreen';
 import { SalesmanExpensesScreen } from '../expenses/SalesmanExpensesScreen';
+import { SalesmanOrdersScreen } from '../orders/SalesmanOrdersScreen';
 
 export type PetsStackParamList = {
   Tabs: undefined;
@@ -67,6 +68,7 @@ function Tabs() {
             Customers: 'people-outline',
             Sell: 'cash-outline',
             Returns: 'return-down-back-outline',
+            Orders: 'clipboard-outline',
             Expenses: 'wallet-outline',
             EndOfDay: 'checkmark-done-outline',
           };
@@ -88,6 +90,11 @@ function Tabs() {
         name="Returns"
         component={PetsReturnsScreen}
         options={{ title: 'Returns', headerTitle: 'Customer returns' }}
+      />
+      <Tab.Screen
+        name="Orders"
+        component={SalesmanOrdersScreen}
+        options={{ title: 'Orders', headerTitle: 'My orders' }}
       />
       <Tab.Screen
         name="Expenses"

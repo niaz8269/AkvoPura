@@ -9,15 +9,14 @@
  * (delivered or cancelled).
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
-import { useAuth } from '../../auth/AuthContext';
 import { useCustomerPortal } from '../../customer/state';
-import { mockAccounts } from '../../auth/mockUsers';
+import { listUsers, type ApiUser } from '../../api/users';
 import type {
   CustomerOrder,
   CustomerOrderItem,
@@ -44,6 +43,21 @@ export function ManagerOrdersScreen() {
   const { orders, assignOrder, markInTransit, markDelivered, managerCancelOrder } =
     useCustomerPortal();
   const [tab, setTab] = useState<Tab>('pending');
+  const [salesmen, setSalesmen] = useState<ApiUser[]>([]);
+
+  // Pull all branch salesmen for the assignment dropdown.
+  useEffect(() => {
+    Promise.all([
+      listUsers({ role: 'pets_salesman' }),
+      listUsers({ role: 'cans_gallons_salesman' }),
+    ])
+      .then(([pets, cg]) => {
+        setSalesmen([...pets, ...cg].filter((u) => u.active));
+      })
+      .catch(() => {
+        setSalesmen([]);
+      });
+  }, []);
 
   const counts = useMemo(() => {
     const c = { pending: 0, active: 0, done: 0 };
@@ -90,6 +104,7 @@ export function ManagerOrdersScreen() {
             <OrderCard
               key={o.id}
               order={o}
+              salesmen={salesmen}
               onAssign={(salesmanId) => assignOrder(o.id, salesmanId)}
               onInTransit={() => markInTransit(o.id)}
               onDelivered={() => markDelivered(o.id)}
@@ -104,12 +119,14 @@ export function ManagerOrdersScreen() {
 
 function OrderCard({
   order,
+  salesmen,
   onAssign,
   onInTransit,
   onDelivered,
   onCancel,
 }: {
   order: CustomerOrder;
+  salesmen: ApiUser[];
   onAssign: (salesmanId: string) => void;
   onInTransit: () => void;
   onDelivered: () => void;
@@ -120,23 +137,20 @@ function OrderCard({
   const hasCG = order.items.some((it) => it.productId === 'cans' || it.productId === 'gallons');
 
   const candidates = useMemo(() => {
-    return mockAccounts
-      .map((a) => a.user)
-      .filter((u) => {
-        if (hasPets && !hasCG) return u.role === 'pets_salesman';
-        if (hasCG && !hasPets) return u.role === 'cans_gallons_salesman';
-        // Mixed → either type
-        return u.role === 'pets_salesman' || u.role === 'cans_gallons_salesman';
-      });
-  }, [hasPets, hasCG]);
+    return salesmen.filter((u) => {
+      if (hasPets && !hasCG) return u.role === 'pets_salesman';
+      if (hasCG && !hasPets) return u.role === 'cans_gallons_salesman';
+      // Mixed → either type
+      return u.role === 'pets_salesman' || u.role === 'cans_gallons_salesman';
+    });
+  }, [hasPets, hasCG, salesmen]);
 
-  const assignedSalesman = order.assignedSalesmanId
-    ? mockAccounts.find((a) => a.user.id === order.assignedSalesmanId)?.user
-    : undefined;
+  const assignedSalesman =
+    order.assignedSalesmanName ??
+    salesmen.find((u) => u.id === order.assignedSalesmanId)?.name;
 
-  const customerName =
-    mockAccounts.find((a) => a.user.id === order.customerUserId)?.user.name ??
-    'Customer';
+  // Use the snapshotted name from the order; fall back to "Customer".
+  const customerName = order.customerName ?? 'Customer';
 
   const meta = STATUS_META[order.status];
 
@@ -186,7 +200,7 @@ function OrderCard({
         <View style={styles.assignedRow}>
           <Ionicons name="person-circle-outline" size={18} color={colors.primaryDark} />
           <Text style={styles.assignedText}>
-            Assigned to <Text style={styles.assignedTextBold}>{assignedSalesman.name}</Text>
+            Assigned to <Text style={styles.assignedTextBold}>{assignedSalesman}</Text>
           </Text>
         </View>
       ) : null}
@@ -236,7 +250,7 @@ function OrderCard({
         <View style={styles.actionRow}>
           <Pressable
             onPress={() =>
-              Alert.alert('Mark in-transit?', `Notify customer that ${assignedSalesman?.name ?? 'salesman'} is on the way?`, [
+              Alert.alert('Mark in-transit?', `Notify customer that ${assignedSalesman ?? 'salesman'} is on the way?`, [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Yes', onPress: onInTransit },
               ])
@@ -252,7 +266,7 @@ function OrderCard({
           </Pressable>
           <Pressable
             onPress={() =>
-              Alert.alert('Mark delivered?', `Confirm ${assignedSalesman?.name ?? 'salesman'} delivered this order?`, [
+              Alert.alert('Mark delivered?', `Confirm ${assignedSalesman ?? 'salesman'} delivered this order?`, [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Mark delivered', onPress: onDelivered },
               ])

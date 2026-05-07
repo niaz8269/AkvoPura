@@ -63,6 +63,14 @@ enum RawMaterialUnit {
   rolls
 }
 
+enum CustomerOrderStatus {
+  pending
+  assigned
+  in_transit
+  delivered
+  cancelled
+}
+
 /// A physical branch / depot. Slug is the stable identifier used in
 /// URLs and JWT payloads (e.g., 'timergara'). New branches can be added
 /// at any time without code changes.
@@ -79,8 +87,50 @@ model Branch {
   petCustomers  PetCustomer[]
   expenses      Expense[]
   productionBatches ProductionBatch[]
+  customerOrders CustomerOrder[]
 
   @@map("branches")
+}
+
+/// Customer-placed order. Items are stored as a JSON snapshot of
+/// {productId, qty, unitPrice} so the order is self-contained and
+/// historical pricing is preserved. Status moves through pending →
+/// assigned → in_transit → delivered (or cancelled at any pre-delivery
+/// step).
+model CustomerOrder {
+  id                  String              @id @default(cuid())
+  branchSlug          String
+  branch              Branch              @relation(fields: [branchSlug], references: [slug])
+
+  customerUserId      String
+  /// Denormalised display name at order time.
+  customerName        String
+
+  /// JSON: Array<{ productId: 'cans'|'gallons'|'pet600'|'pet1500', qty: number, unitPrice: number }>
+  items               Json
+  totalAmount         Int
+
+  preferredTime       String?
+  notes               String?
+
+  status              CustomerOrderStatus @default(pending)
+  assignedSalesmanId  String?
+  /// Denormalised salesman name at assignment time.
+  assignedSalesmanName String?
+
+  /// Cancellation / decision note (manager).
+  managerNote         String?
+
+  placedAt            DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  /// Who last touched the row (customer cancel, manager decide,
+  /// salesman in-transit/delivered).
+  updatedById         String?
+
+  @@index([branchSlug, status])
+  @@index([customerUserId, placedAt])
+  @@index([assignedSalesmanId, status])
+  @@map("customer_orders")
 }
 
 /// Raw material inventory item (bottles, caps, stickers, wraps).

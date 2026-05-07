@@ -1,20 +1,28 @@
 /**
- * CustomerProvider — orders + complaints state for the customer portal.
+ * CustomerProvider — orders + complaints + subscriptions state.
  *
- * Scoped to the logged-in customer. In a real backend each customer's data
- * is filtered server-side; here we filter client-side by customerUserId.
+ * Orders are backed by the /orders endpoints (B-15). Complaints and
+ * subscriptions still live in local state — they move to the backend
+ * in the next slices.
  */
 
 import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type PropsWithChildren,
 } from 'react';
 
 import { demoComplaints, demoOrders, productCatalog } from './demoData';
+import { useAuth } from '../auth/AuthContext';
+import {
+  listOrders,
+  placeOrderApi,
+  updateOrderApi,
+} from '../api/orders';
 import type {
   Complaint,
   ComplaintCategory,
@@ -52,21 +60,23 @@ type State = {
   complaints: Complaint[];
   subscriptions: Subscription[];
   catalog: typeof productCatalog;
+  ordersLoading: boolean;
 
   ordersForUser: (userId: string) => CustomerOrder[];
   complaintsForUser: (userId: string) => Complaint[];
   subscriptionsForUser: (userId: string) => Subscription[];
 
-  placeOrder: (input: PlaceOrderInput) => CustomerOrder;
+  placeOrder: (input: PlaceOrderInput) => Promise<CustomerOrder>;
   cancelOrder: (id: string) => void;
   fileComplaint: (input: FileComplaintInput) => Complaint;
   rateComplaint: (id: string, rating: number) => void;
   createSubscription: (input: CreateSubscriptionInput) => Subscription;
   cancelSubscription: (id: string) => void;
   /** Place an order right now from a subscription (manual run for demo). */
-  runSubscriptionNow: (id: string) => CustomerOrder | null;
+  runSubscriptionNow: (id: string) => Promise<CustomerOrder | null>;
+  refreshOrders: () => Promise<void>;
 
-  // Manager-side workflow actions
+  // Manager + salesman workflow actions
   assignOrder: (orderId: string, salesmanId: string) => void;
   markInTransit: (orderId: string) => void;
   markDelivered: (orderId: string) => void;
@@ -82,51 +92,81 @@ function nextId(prefix: string) {
 }
 
 export function CustomerProvider({ children }: PropsWithChildren) {
+  const { user } = useAuth();
   const [orders, setOrders] = useState<CustomerOrder[]>(demoOrders);
+  const [ordersLoading, setOrdersLoading] = useState(false);
   const [complaints, setComplaints] = useState<Complaint[]>(demoComplaints);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
 
+  const refreshOrders = useCallback(async () => {
+    if (!user) return;
+    setOrdersLoading(true);
+    try {
+      // Backend scopes by role automatically:
+      //  - customer → their own orders
+      //  - manager  → branch
+      //  - salesman → assigned ones
+      //  - owner    → all
+      const fresh = await listOrders();
+      setOrders(fresh);
+    } catch {
+      // offline — keep current in-memory state
+    } finally {
+      setOrdersLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) refreshOrders();
+  }, [user, refreshOrders]);
+
   const ordersForUser = useCallback(
     (userId: string) => orders.filter((o) => o.customerUserId === userId),
-    [orders]
+    [orders],
   );
 
   const complaintsForUser = useCallback(
     (userId: string) => complaints.filter((c) => c.customerUserId === userId),
-    [complaints]
+    [complaints],
   );
 
   const subscriptionsForUser = useCallback(
     (userId: string) => subscriptions.filter((s) => s.customerUserId === userId),
-    [subscriptions]
+    [subscriptions],
   );
 
-  const placeOrder = useCallback<State['placeOrder']>((input) => {
-    const total = input.items.reduce((s, it) => s + it.qty * it.unitPrice, 0);
-    const order: CustomerOrder = {
-      id: nextId('o'),
-      customerUserId: input.customerUserId,
-      items: input.items,
-      totalAmount: total,
-      preferredTime: input.preferredTime,
-      notes: input.notes,
-      status: 'pending',
-      placedAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-    setOrders((prev) => [order, ...prev]);
-    return order;
-  }, []);
+  const placeOrder = useCallback<State['placeOrder']>(
+    async (input) => {
+      const real = await placeOrderApi({
+        items: input.items,
+        preferredTime: input.preferredTime,
+        notes: input.notes,
+      });
+      setOrders((prev) => [real, ...prev]);
+      return real;
+    },
+    [],
+  );
 
-  const cancelOrder = useCallback<State['cancelOrder']>((id) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === id && o.status === 'pending'
-          ? { ...o, status: 'cancelled', updatedAt: Date.now() }
-          : o
-      )
-    );
-  }, []);
+  const cancelOrder = useCallback<State['cancelOrder']>(
+    (id) => {
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === id && o.status === 'pending'
+            ? { ...o, status: 'cancelled', updatedAt: Date.now() }
+            : o,
+        ),
+      );
+      updateOrderApi(id, { status: 'cancelled' })
+        .then((real) => {
+          setOrders((prev) => prev.map((o) => (o.id === id ? real : o)));
+        })
+        .catch(() => {
+          refreshOrders();
+        });
+    },
+    [refreshOrders],
+  );
 
   const fileComplaint = useCallback<State['fileComplaint']>((input) => {
     const c: Complaint = {
@@ -145,62 +185,92 @@ export function CustomerProvider({ children }: PropsWithChildren) {
   const rateComplaint = useCallback<State['rateComplaint']>((id, rating) => {
     setComplaints((prev) =>
       prev.map((c) =>
-        c.id === id && c.status === 'resolved' ? { ...c, rating } : c
-      )
+        c.id === id && c.status === 'resolved' ? { ...c, rating } : c,
+      ),
     );
   }, []);
 
-  const assignOrder = useCallback<State['assignOrder']>((orderId, salesmanId) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId
-          ? {
-              ...o,
-              assignedSalesmanId: salesmanId,
-              status: 'assigned',
-              updatedAt: Date.now(),
-            }
-          : o
-      )
-    );
-  }, []);
+  const optimisticUpdate = useCallback(
+    (
+      orderId: string,
+      localPatch: (o: CustomerOrder) => CustomerOrder,
+      remote: () => Promise<CustomerOrder>,
+    ) => {
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? localPatch(o) : o)));
+      remote()
+        .then((real) => {
+          setOrders((prev) => prev.map((o) => (o.id === orderId ? real : o)));
+        })
+        .catch(() => {
+          refreshOrders();
+        });
+    },
+    [refreshOrders],
+  );
 
-  const markInTransit = useCallback<State['markInTransit']>((orderId) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId && (o.status === 'assigned' || o.status === 'pending')
-          ? { ...o, status: 'in_transit', updatedAt: Date.now() }
-          : o
-      )
-    );
-  }, []);
+  const assignOrder = useCallback<State['assignOrder']>(
+    (orderId, salesmanId) => {
+      optimisticUpdate(
+        orderId,
+        (o) => ({
+          ...o,
+          assignedSalesmanId: salesmanId,
+          status: 'assigned',
+          updatedAt: Date.now(),
+        }),
+        () => updateOrderApi(orderId, { assignedSalesmanId: salesmanId }),
+      );
+    },
+    [optimisticUpdate],
+  );
 
-  const markDelivered = useCallback<State['markDelivered']>((orderId) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId && o.status !== 'delivered' && o.status !== 'cancelled'
-          ? { ...o, status: 'delivered', updatedAt: Date.now() }
-          : o
-      )
-    );
-  }, []);
+  const markInTransit = useCallback<State['markInTransit']>(
+    (orderId) => {
+      optimisticUpdate(
+        orderId,
+        (o) =>
+          o.status === 'assigned' || o.status === 'pending'
+            ? { ...o, status: 'in_transit', updatedAt: Date.now() }
+            : o,
+        () => updateOrderApi(orderId, { status: 'in_transit' }),
+      );
+    },
+    [optimisticUpdate],
+  );
+
+  const markDelivered = useCallback<State['markDelivered']>(
+    (orderId) => {
+      optimisticUpdate(
+        orderId,
+        (o) =>
+          o.status !== 'delivered' && o.status !== 'cancelled'
+            ? { ...o, status: 'delivered', updatedAt: Date.now() }
+            : o,
+        () => updateOrderApi(orderId, { status: 'delivered' }),
+      );
+    },
+    [optimisticUpdate],
+  );
 
   const managerCancelOrder = useCallback<State['managerCancelOrder']>(
     (orderId, note) => {
-      setOrders((prev) =>
-        prev.map((o) =>
-          o.id === orderId && o.status !== 'delivered' && o.status !== 'cancelled'
+      optimisticUpdate(
+        orderId,
+        (o) =>
+          o.status !== 'delivered' && o.status !== 'cancelled'
             ? { ...o, status: 'cancelled', managerNote: note, updatedAt: Date.now() }
-            : o
-        )
+            : o,
+        () => updateOrderApi(orderId, { status: 'cancelled', managerNote: note }),
       );
     },
-    []
+    [optimisticUpdate],
   );
 
   const markComplaintInReview = useCallback<State['markComplaintInReview']>((id) => {
     setComplaints((prev) =>
-      prev.map((c) => (c.id === id && c.status === 'open' ? { ...c, status: 'in_review' } : c))
+      prev.map((c) =>
+        c.id === id && c.status === 'open' ? { ...c, status: 'in_review' } : c,
+      ),
     );
   }, []);
 
@@ -209,8 +279,8 @@ export function CustomerProvider({ children }: PropsWithChildren) {
       prev.map((c) =>
         c.id === id && c.status !== 'resolved'
           ? { ...c, status: 'resolved', resolvedAt: Date.now() }
-          : c
-      )
+          : c,
+      ),
     );
   }, []);
 
@@ -234,32 +304,29 @@ export function CustomerProvider({ children }: PropsWithChildren) {
 
   const cancelSubscription = useCallback<State['cancelSubscription']>((id) => {
     setSubscriptions((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, active: false } : s))
+      prev.map((s) => (s.id === id ? { ...s, active: false } : s)),
     );
   }, []);
 
   const runSubscriptionNow = useCallback<State['runSubscriptionNow']>(
-    (id) => {
+    async (id) => {
       const sub = subscriptions.find((s) => s.id === id);
       if (!sub || !sub.active) return null;
-      // Mint an order from the subscription, mark the run timestamp.
-      const order: CustomerOrder = {
-        id: nextId('o'),
-        customerUserId: sub.customerUserId,
-        items: sub.items,
-        totalAmount: sub.totalAmount,
-        notes: `From subscription · ${sub.frequency}${sub.notes ? ` · ${sub.notes}` : ''}`,
-        status: 'pending',
-        placedAt: Date.now(),
-        updatedAt: Date.now(),
-      };
-      setOrders((prev) => [order, ...prev]);
-      setSubscriptions((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, lastRunAt: Date.now() } : s))
-      );
-      return order;
+      try {
+        const real = await placeOrderApi({
+          items: sub.items,
+          notes: `From subscription · ${sub.frequency}${sub.notes ? ` · ${sub.notes}` : ''}`,
+        });
+        setOrders((prev) => [real, ...prev]);
+        setSubscriptions((prev) =>
+          prev.map((s) => (s.id === id ? { ...s, lastRunAt: Date.now() } : s)),
+        );
+        return real;
+      } catch {
+        return null;
+      }
     },
-    [subscriptions]
+    [subscriptions],
   );
 
   const value = useMemo<State>(
@@ -268,6 +335,7 @@ export function CustomerProvider({ children }: PropsWithChildren) {
       complaints,
       subscriptions,
       catalog: productCatalog,
+      ordersLoading,
       ordersForUser,
       complaintsForUser,
       subscriptionsForUser,
@@ -278,6 +346,7 @@ export function CustomerProvider({ children }: PropsWithChildren) {
       createSubscription,
       cancelSubscription,
       runSubscriptionNow,
+      refreshOrders,
       assignOrder,
       markInTransit,
       markDelivered,
@@ -289,6 +358,7 @@ export function CustomerProvider({ children }: PropsWithChildren) {
       orders,
       complaints,
       subscriptions,
+      ordersLoading,
       ordersForUser,
       complaintsForUser,
       subscriptionsForUser,
@@ -299,13 +369,14 @@ export function CustomerProvider({ children }: PropsWithChildren) {
       createSubscription,
       cancelSubscription,
       runSubscriptionNow,
+      refreshOrders,
       assignOrder,
       markInTransit,
       markDelivered,
       managerCancelOrder,
       markComplaintInReview,
       resolveComplaint,
-    ]
+    ],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

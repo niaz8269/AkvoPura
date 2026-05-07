@@ -23,6 +23,8 @@ export type CustomerOrderItem = {
 export type CustomerOrder = {
   id: string;
   customerUserId: string;     // who placed it
+  /** Display name snapshot at order time. */
+  customerName?: string;
   items: CustomerOrderItem[];
   totalAmount: number;
   preferredTime?: string;     // free text from the customer ("by 6 PM today")
@@ -30,6 +32,8 @@ export type CustomerOrder = {
   status: CustomerOrderStatus;
   /** Salesman the manager assigned this to. Null until assigned. */
   assignedSalesmanId?: string;
+  /** Salesman display name snapshot at assign time. */
+  assignedSalesmanName?: string;
   /** Optional manager note (e.g., reason for cancellation). */
   managerNote?: string;
   placedAt: number;
