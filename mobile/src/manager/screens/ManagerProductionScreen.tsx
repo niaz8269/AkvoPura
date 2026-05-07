@@ -110,9 +110,9 @@ function TodayPanel() {
     shortfall.length === 0 &&
     (!user || true);
 
-  const submit = () => {
+  const submit = async () => {
     if (!user) return;
-    const entry = recordBatch({
+    const entry = await recordBatch({
       branch: (user.branch as 'timergara' | 'shergarh') ?? 'timergara',
       product,
       unitsProduced: units,
@@ -124,7 +124,7 @@ function TodayPanel() {
       loggedBy: user.name,
     });
     if (!entry) {
-      Alert.alert('Insufficient raw materials', 'Check the inventory tab and receive stock first.');
+      Alert.alert('Could not save batch', 'Check raw materials availability and Wi-Fi.');
       return;
     }
     setUnits(10);
@@ -325,7 +325,7 @@ function BatchRow({ batch }: { batch: ProductionBatch }) {
 }
 
 function InventoryPanel() {
-  const { rawMaterials, receiveStock, batches } = useProduction();
+  const { rawMaterials, receiveStock, batches, setReorderThreshold } = useProduction();
 
   const lowStock = rawMaterials.filter((r) => r.currentStock <= r.reorderThreshold);
   const okStock = rawMaterials.filter((r) => r.currentStock > r.reorderThreshold);
@@ -343,6 +343,7 @@ function InventoryPanel() {
               material={m}
               forecast={forecastMaterial(m, batches)}
               onReceive={(units) => receiveStock(m.id, units)}
+              onSetThreshold={(t) => setReorderThreshold(m.id, t)}
             />
           ))}
         </>
@@ -355,6 +356,7 @@ function InventoryPanel() {
           material={m}
           forecast={forecastMaterial(m, batches)}
           onReceive={(units) => receiveStock(m.id, units)}
+          onSetThreshold={(t) => setReorderThreshold(m.id, t)}
         />
       ))}
     </ScrollView>
@@ -365,13 +367,17 @@ function RawRow({
   material,
   forecast,
   onReceive,
+  onSetThreshold,
 }: {
   material: RawMaterial;
   forecast: MaterialForecast;
   onReceive: (units: number) => void;
+  onSetThreshold: (threshold: number) => void;
 }) {
   const [adding, setAdding] = useState(false);
   const [addStr, setAddStr] = useState('');
+  const [editingThreshold, setEditingThreshold] = useState(false);
+  const [thresholdStr, setThresholdStr] = useState('');
   const low = material.currentStock <= material.reorderThreshold;
 
   return (
@@ -380,8 +386,7 @@ function RawRow({
         <View style={{ flex: 1 }}>
           <Text style={styles.rawName}>{material.name}</Text>
           <Text style={styles.rawMeta}>
-            {material.currentStock.toLocaleString()} {material.unit} · reorder ≤{' '}
-            {material.reorderThreshold}
+            {material.currentStock.toLocaleString()} {material.unit}
           </Text>
         </View>
         {low ? (
@@ -392,6 +397,76 @@ function RawRow({
       </View>
 
       <ForecastBadge forecast={forecast} />
+
+      {editingThreshold ? (
+        <View style={styles.thresholdEditBlock}>
+          <Text style={styles.thresholdEditLabel}>Low-stock alert at</Text>
+          <View style={styles.thresholdEditRow}>
+            <Text style={styles.thresholdPrefix}>≤</Text>
+            <TextInput
+              value={thresholdStr}
+              onChangeText={(t) => setThresholdStr(t.replace(/[^0-9]/g, ''))}
+              keyboardType="number-pad"
+              placeholder={String(material.reorderThreshold)}
+              placeholderTextColor={colors.textMuted}
+              style={styles.thresholdInput}
+              autoFocus
+              maxLength={7}
+            />
+            <Text style={styles.thresholdUnit}>{material.unit}</Text>
+          </View>
+          <View style={styles.thresholdBtnRow}>
+            <Pressable
+              onPress={() => {
+                setEditingThreshold(false);
+                setThresholdStr('');
+              }}
+              style={({ pressed }) => [
+                styles.thresholdBtn,
+                pressed ? { opacity: 0.85 } : null,
+              ]}
+            >
+              <Text style={styles.thresholdBtnText}>Cancel</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                const n = Number(thresholdStr);
+                if (!Number.isNaN(n) && n >= 0 && n !== material.reorderThreshold) {
+                  onSetThreshold(n);
+                }
+                setEditingThreshold(false);
+                setThresholdStr('');
+              }}
+              style={({ pressed }) => [
+                styles.thresholdBtn,
+                styles.thresholdBtnSave,
+                pressed ? { opacity: 0.85 } : null,
+              ]}
+            >
+              <Text style={styles.thresholdBtnTextSave}>Save</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.thresholdRow}>
+          <Text style={styles.thresholdLabel}>Low-stock alert at:</Text>
+          <Pressable
+            onPress={() => {
+              setThresholdStr(String(material.reorderThreshold));
+              setEditingThreshold(true);
+            }}
+            style={({ pressed }) => [
+              styles.thresholdValueBtn,
+              pressed ? { opacity: 0.85 } : null,
+            ]}
+          >
+            <Text style={styles.thresholdValueText}>
+              ≤ {material.reorderThreshold}
+            </Text>
+            <Ionicons name="create-outline" size={14} color={colors.primary} />
+          </Pressable>
+        </View>
+      )}
 
       {adding ? (
         <View style={styles.receiveRow}>
@@ -673,6 +748,104 @@ const styles = StyleSheet.create({
     backgroundColor: colors.danger + '22',
   },
   lowChipText: { fontSize: 10, fontWeight: '900', color: colors.danger },
+
+  thresholdRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: spacing.sm,
+    flexWrap: 'wrap',
+  },
+  thresholdLabel: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  thresholdValueBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.primary + '12',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radii.pill,
+  },
+  thresholdValueText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.primary,
+  },
+
+  // Edit mode — full-width block so the input is unmissable.
+  thresholdEditBlock: {
+    marginTop: spacing.sm,
+    backgroundColor: colors.primary + '08',
+    borderWidth: 1.5,
+    borderColor: colors.primaryLight,
+    borderRadius: radii.md,
+    padding: spacing.sm,
+  },
+  thresholdEditLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: spacing.sm,
+  },
+  thresholdEditRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  thresholdPrefix: {
+    fontSize: fontSizes.heading,
+    fontWeight: '900',
+    color: colors.primary,
+  },
+  thresholdInput: {
+    flex: 1,
+    height: 44,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    borderRadius: radii.md,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    fontSize: fontSizes.title,
+    fontWeight: '900',
+    color: colors.primaryDark,
+    textAlign: 'center',
+  },
+  thresholdUnit: {
+    fontSize: fontSizes.sm,
+    fontWeight: '700',
+    color: colors.textMuted,
+    minWidth: 50,
+  },
+  thresholdBtnRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    justifyContent: 'flex-end',
+  },
+  thresholdBtn: {
+    paddingHorizontal: spacing.lg,
+    height: 38,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  thresholdBtnSave: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primaryDark,
+  },
+  thresholdBtnText: { fontSize: fontSizes.sm, fontWeight: '800', color: colors.textMuted },
+  thresholdBtnTextSave: { fontSize: fontSizes.sm, fontWeight: '800', color: colors.textInverse },
 
   receiveOpenBtn: {
     flexDirection: 'row',

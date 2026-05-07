@@ -4,7 +4,13 @@
  * so re-running is safe.
  */
 
-import { PrismaClient, Role, CGRoute, PaymentCycle } from '@prisma/client';
+import {
+  PrismaClient,
+  Role,
+  CGRoute,
+  PaymentCycle,
+  RawMaterialUnit,
+} from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -12,6 +18,17 @@ const prisma = new PrismaClient();
 const branches = [
   { slug: 'timergara', name: 'Timergara', nameUr: 'تیمرگرہ' },
   { slug: 'shergarh',  name: 'Shergarh',  nameUr: 'شیر گڑھ' },
+];
+
+const rawMaterials = [
+  { id: 'bottle_600',   name: '600 ml empty bottles', nameUr: '۶۰۰ ملی خالی بوتلیں',  currentStock: 1800, reorderThreshold: 500, unit: RawMaterialUnit.pieces },
+  { id: 'bottle_1500',  name: '1.5 L empty bottles',  nameUr: '۱.۵ لیٹر خالی بوتلیں',  currentStock: 240,  reorderThreshold: 300, unit: RawMaterialUnit.pieces },
+  { id: 'cap_pet',      name: 'PET bottle caps',      nameUr: 'پیٹ بوتل ڈھکن',         currentStock: 3000, reorderThreshold: 800, unit: RawMaterialUnit.pieces },
+  { id: 'cap_gallon',   name: 'Gallon caps',          nameUr: 'گیلن ڈھکن',            currentStock: 90,   reorderThreshold: 100, unit: RawMaterialUnit.pieces },
+  { id: 'sticker_600',  name: '600 ml stickers',      nameUr: '۶۰۰ ملی سٹیکر',        currentStock: 2200, reorderThreshold: 500, unit: RawMaterialUnit.pieces },
+  { id: 'sticker_1500', name: '1.5 L stickers',       nameUr: '۱.۵ لیٹر سٹیکر',       currentStock: 800,  reorderThreshold: 300, unit: RawMaterialUnit.pieces },
+  { id: 'wrap_600',     name: '600 ml plastic wraps', nameUr: '۶۰۰ ملی پلاسٹک ریپ',   currentStock: 18,   reorderThreshold: 30,  unit: RawMaterialUnit.rolls },
+  { id: 'wrap_1500',    name: '1.5 L plastic wraps',  nameUr: '۱.۵ لیٹر پلاسٹک ریپ',  currentStock: 12,   reorderThreshold: 20,  unit: RawMaterialUnit.rolls },
 ];
 
 type Seed = {
@@ -116,6 +133,28 @@ async function main() {
     create: { scope: 'global' },
   });
   console.log('  ✔ global (defaults)');
+
+  console.log('Raw materials:');
+  // One-time cleanup: legacy IDs that have since been split or merged.
+  // Idempotent — does nothing once removed.
+  await prisma.rawMaterial.deleteMany({
+    where: { id: { in: ['wrap', 'cap_600', 'cap_1500'] } },
+  });
+  for (const m of rawMaterials) {
+    await prisma.rawMaterial.upsert({
+      where: { id: m.id },
+      update: {
+        name: m.name,
+        nameUr: m.nameUr,
+        reorderThreshold: m.reorderThreshold,
+        unit: m.unit,
+        // currentStock NOT updated on re-seed (so production deductions
+        // stay intact). Only created on first seed.
+      },
+      create: m,
+    });
+    console.log(`  ✔ ${m.id.padEnd(14)} ${m.name}`);
+  }
 
   console.log('Branches:');
   for (const b of branches) {

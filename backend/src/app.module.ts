@@ -13,6 +13,8 @@ import { PetCustomersModule } from './pet-customers/pet-customers.module';
 import { PetBillsModule } from './pet-bills/pet-bills.module';
 import { PetReturnsModule } from './pet-returns/pet-returns.module';
 import { ExpensesModule } from './expenses/expenses.module';
+import { RawMaterialsModule } from './raw-materials/raw-materials.module';
+import { ProductionModule } from './production/production.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -29,6 +31,8 @@ import { HealthController } from './health.controller';
     PetBillsModule,
     PetReturnsModule,
     ExpensesModule,
+    RawMaterialsModule,
+    ProductionModule,
     AuthModule,
   ],
   controllers: [HealthController],

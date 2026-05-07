@@ -23,19 +23,11 @@ export const initialRawMaterials: RawMaterial[] = [
     unit: 'pieces',
   },
   {
-    id: 'cap_600',
-    name: '600 ml caps',
-    nameUr: '۶۰۰ ملی ڈھکن',
-    currentStock: 2400,
-    reorderThreshold: 500,
-    unit: 'pieces',
-  },
-  {
-    id: 'cap_1500',
-    name: '1.5 L caps',
-    nameUr: '۱.۵ لیٹر ڈھکن',
-    currentStock: 600,
-    reorderThreshold: 300,
+    id: 'cap_pet',
+    name: 'PET bottle caps',
+    nameUr: 'پیٹ بوتل ڈھکن',
+    currentStock: 3000,           // combined stock from old 2400 + 600
+    reorderThreshold: 800,
     unit: 'pieces',
   },
   {
@@ -63,11 +55,19 @@ export const initialRawMaterials: RawMaterial[] = [
     unit: 'pieces',
   },
   {
-    id: 'wrap',
-    name: 'Plastic wraps',
-    nameUr: 'پلاسٹک ریپ',
+    id: 'wrap_600',
+    name: '600 ml plastic wraps',
+    nameUr: '۶۰۰ ملی پلاسٹک ریپ',
     currentStock: 18,
     reorderThreshold: 30,         // intentionally low
+    unit: 'rolls',
+  },
+  {
+    id: 'wrap_1500',
+    name: '1.5 L plastic wraps',
+    nameUr: '۱.۵ لیٹر پلاسٹک ریپ',
+    currentStock: 12,
+    reorderThreshold: 20,
     unit: 'rolls',
   },
 ];

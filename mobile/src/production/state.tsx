@@ -1,19 +1,20 @@
 /**
- * ProductionProvider — production batches + raw material stock.
+ * ProductionProvider — production batches + raw material stock, backed
+ * by /production/batches and /raw-materials.
  *
- * recordBatch consumes raw materials per the recipe; if stock is insufficient
- * it short-circuits and returns null so the UI can warn the manager.
+ * Boots from baked-in demo data so the UI works offline; refetches from
+ * the server on user change. recordBatch / receiveStock / setReorderThreshold
+ * are optimistic with refresh-on-failure rollback.
  *
- * receiveStock adds to a raw material's currentStock — used when a delivery
- * of bottles / caps / wraps arrives.
- *
- * Reorder thresholds are exposed for the Owner-side alerts.
+ * The local recipe / shortfallFor / lowStock helpers stay client-side
+ * so the UI can preview shortfalls before submitting.
  */
 
 import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type PropsWithChildren,
@@ -27,6 +28,17 @@ import {
   type RawMaterial,
   type RawMaterialId,
 } from './types';
+import { useAuth } from '../auth/AuthContext';
+import {
+  listRawMaterials,
+  receiveRawMaterial,
+  updateRawMaterial,
+} from '../api/rawMaterials';
+import {
+  listProductionBatches,
+  recordProductionBatch,
+} from '../api/production';
+import { ApiError } from '../api/client';
 
 type RecordBatchInput = {
   branch: 'timergara' | 'shergarh';
@@ -43,33 +55,54 @@ type RecordBatchInput = {
 type State = {
   rawMaterials: RawMaterial[];
   batches: ProductionBatch[];
+  loading: boolean;
 
   rawById: (id: RawMaterialId) => RawMaterial | undefined;
-  /** Returns the consumption shortfall by material — empty array if all good. */
   shortfallFor: (
     product: ProducedProduct,
-    unitsProduced: number
+    unitsProduced: number,
   ) => Array<{ id: RawMaterialId; need: number; have: number }>;
   lowStock: () => RawMaterial[];
 
-  recordBatch: (input: RecordBatchInput) => ProductionBatch | null;
+  recordBatch: (input: RecordBatchInput) => Promise<ProductionBatch | null>;
   receiveStock: (id: RawMaterialId, units: number) => void;
   setReorderThreshold: (id: RawMaterialId, threshold: number) => void;
+  refresh: () => Promise<void>;
 };
 
 const Ctx = createContext<State | undefined>(undefined);
 
-function nextId(prefix: string) {
-  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 9999)}`;
-}
-
 export function ProductionProvider({ children }: PropsWithChildren) {
+  const { user } = useAuth();
   const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>(initialRawMaterials);
   const [batches, setBatches] = useState<ProductionBatch[]>(initialBatches);
+  const [loading, setLoading] = useState(false);
+
+  const refresh = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const [freshMaterials, freshBatches] = await Promise.all([
+        listRawMaterials(),
+        listProductionBatches(),
+      ]);
+      setRawMaterials(freshMaterials);
+      // Server returns most-recent-first; keep that order (existing UI sorts itself).
+      setBatches(freshBatches);
+    } catch {
+      // offline — keep current in-memory state
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) refresh();
+  }, [user, refresh]);
 
   const rawById = useCallback(
     (id: RawMaterialId) => rawMaterials.find((r) => r.id === id),
-    [rawMaterials]
+    [rawMaterials],
   );
 
   const shortfallFor = useCallback<State['shortfallFor']>(
@@ -83,91 +116,106 @@ export function ProductionProvider({ children }: PropsWithChildren) {
       });
       return result;
     },
-    [rawMaterials]
+    [rawMaterials],
   );
 
   const lowStock = useCallback(
     () => rawMaterials.filter((r) => r.currentStock <= r.reorderThreshold),
-    [rawMaterials]
+    [rawMaterials],
   );
 
   const recordBatch = useCallback<State['recordBatch']>(
-    (input) => {
-      const shortfall = shortfallFor(input.product, input.unitsProduced);
-      if (shortfall.length > 0) return null;
-
-      const recipe = RECIPE[input.product];
-      // Deduct raw materials
-      setRawMaterials((prev) =>
-        prev.map((r) => {
-          const needPerUnit = recipe[r.id] ?? 0;
-          if (needPerUnit === 0) return r;
-          return {
-            ...r,
-            currentStock: Math.max(0, r.currentStock - needPerUnit * input.unitsProduced),
-          };
-        })
-      );
-
-      const batch: ProductionBatch = {
-        id: nextId('b'),
-        branch: input.branch,
-        product: input.product,
-        unitsProduced: input.unitsProduced,
-        batchNumber: input.batchNumber,
-        tdsPpm: input.tdsPpm,
-        phLevel: input.phLevel,
-        wastage: input.wastage ?? 0,
-        notes: input.notes,
-        loggedBy: input.loggedBy,
-        loggedAt: Date.now(),
-      };
-      setBatches((prev) => [batch, ...prev]);
-      return batch;
+    async (input) => {
+      try {
+        const batch = await recordProductionBatch({
+          product: input.product,
+          unitsProduced: input.unitsProduced,
+          batchNumber: input.batchNumber,
+          tdsPpm: input.tdsPpm,
+          phLevel: input.phLevel,
+          wastage: input.wastage,
+          notes: input.notes,
+          // Owner needs explicit branch; manager / production_worker default to own
+          // branch, which the server fills in when omitted.
+          branchSlug: input.branch,
+        });
+        // Refresh raw materials so the UI sees the deductions.
+        const freshMaterials = await listRawMaterials();
+        setRawMaterials(freshMaterials);
+        setBatches((prev) => [batch, ...prev]);
+        return batch;
+      } catch (e) {
+        if (e instanceof ApiError) {
+          // Surface the shortfall info to the caller via null + console.
+          // The UI shows its own shortfall banner before the user submits.
+          // eslint-disable-next-line no-console
+          console.warn('recordBatch failed:', e.code, e.message);
+        }
+        return null;
+      }
     },
-    [shortfallFor]
+    [],
   );
 
   const receiveStock = useCallback<State['receiveStock']>((id, units) => {
+    // Optimistic local bump.
     setRawMaterials((prev) =>
       prev.map((r) =>
-        r.id === id ? { ...r, currentStock: Math.max(0, r.currentStock + units) } : r
-      )
+        r.id === id ? { ...r, currentStock: Math.max(0, r.currentStock + units) } : r,
+      ),
     );
-  }, []);
+    receiveRawMaterial(id, units)
+      .then((real) => {
+        setRawMaterials((prev) => prev.map((r) => (r.id === id ? real : r)));
+      })
+      .catch(() => {
+        refresh();
+      });
+  }, [refresh]);
 
   const setReorderThreshold = useCallback<State['setReorderThreshold']>(
     (id, threshold) => {
       setRawMaterials((prev) =>
         prev.map((r) =>
-          r.id === id ? { ...r, reorderThreshold: Math.max(0, threshold) } : r
-        )
+          r.id === id ? { ...r, reorderThreshold: Math.max(0, threshold) } : r,
+        ),
       );
+      updateRawMaterial(id, { reorderThreshold: Math.max(0, threshold) })
+        .then((real) => {
+          setRawMaterials((prev) => prev.map((r) => (r.id === id ? real : r)));
+        })
+        .catch(() => {
+          refresh();
+        });
     },
-    []
+    [refresh],
   );
 
   const value = useMemo<State>(
     () => ({
       rawMaterials,
       batches,
+      loading,
       rawById,
       shortfallFor,
       lowStock,
       recordBatch,
       receiveStock,
       setReorderThreshold,
+      refresh,
     }),
     [
       rawMaterials,
       batches,
+      loading,
       rawById,
       shortfallFor,
       lowStock,
       recordBatch,
       receiveStock,
       setReorderThreshold,
-    ]
+      refresh,
+    ],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

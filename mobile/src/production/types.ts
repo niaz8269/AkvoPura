@@ -5,8 +5,9 @@
  * (TDS, pH, batch number) are recorded per batch for traceability.
  *
  * Per spec:
- *   600ml pet pack = 12 bottles + 12 caps + 12 stickers + 1 wrap
- *   1.5L pet pack  = 6 bottles + 6 caps + 6 stickers + 1 wrap
+ *   600ml pet pack = 12 bottles + 12 PET caps + 12 stickers + 1 wrap
+ *   1.5L pet pack  = 6 bottles + 6 PET caps + 6 stickers + 1 wrap
+ *   PET caps are interchangeable across 600ml + 1.5L bottles.
  *   Cans          = reusable, no raw material consumed on refill
  *   Gallons       = reusable, but cap is disposable (1 cap per refill)
  */
@@ -14,12 +15,12 @@
 export type RawMaterialId =
   | 'bottle_600'
   | 'bottle_1500'
-  | 'cap_600'
-  | 'cap_1500'
+  | 'cap_pet'
   | 'cap_gallon'
   | 'sticker_600'
   | 'sticker_1500'
-  | 'wrap';
+  | 'wrap_600'
+  | 'wrap_1500';
 
 export type RawMaterial = {
   id: RawMaterialId;
@@ -57,15 +58,15 @@ export const RECIPE: Record<
 > = {
   pet600: {
     bottle_600: 12,
-    cap_600: 12,
+    cap_pet: 12,
     sticker_600: 12,
-    wrap: 1,
+    wrap_600: 1,
   },
   pet1500: {
     bottle_1500: 6,
-    cap_1500: 6,
+    cap_pet: 6,
     sticker_1500: 6,
-    wrap: 1,
+    wrap_1500: 1,
   },
   can: {}, // reusable, no consumption
   gallon: {

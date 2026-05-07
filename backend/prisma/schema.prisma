@@ -51,6 +51,18 @@ enum ExpenseStatus {
   forwarded
 }
 
+enum ProducedProduct {
+  pet600
+  pet1500
+  can
+  gallon
+}
+
+enum RawMaterialUnit {
+  pieces
+  rolls
+}
+
 /// A physical branch / depot. Slug is the stable identifier used in
 /// URLs and JWT payloads (e.g., 'timergara'). New branches can be added
 /// at any time without code changes.
@@ -62,12 +74,59 @@ model Branch {
   active       Boolean      @default(true)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
-  users        User[]
-  cgCustomers  CGCustomer[]
-  petCustomers PetCustomer[]
-  expenses     Expense[]
+  users         User[]
+  cgCustomers   CGCustomer[]
+  petCustomers  PetCustomer[]
+  expenses      Expense[]
+  productionBatches ProductionBatch[]
 
   @@map("branches")
+}
+
+/// Raw material inventory item (bottles, caps, stickers, wraps).
+/// Currently global (no branch scope) — production happens at one
+/// factory per branch but inventory is a single pool. Add branchSlug
+/// later if needed.
+model RawMaterial {
+  id                String          @id
+  name              String
+  nameUr            String?
+  currentStock      Int             @default(0)
+  reorderThreshold  Int             @default(0)
+  unit              RawMaterialUnit @default(pieces)
+  updatedAt         DateTime        @updatedAt
+
+  @@map("raw_materials")
+}
+
+/// One production batch — packs of pet600/pet1500 or filled cans/gallons.
+/// On record, raw materials are deducted per the recipe in code (not in
+/// the schema, so the recipe stays editable in app code).
+model ProductionBatch {
+  id            String          @id @default(cuid())
+  branchSlug    String
+  branch        Branch          @relation(fields: [branchSlug], references: [slug])
+
+  product       ProducedProduct
+  unitsProduced Int
+  batchNumber   String
+
+  /// Quality-control checkpoint values.
+  tdsPpm        Int?
+  phLevel       Float?
+  /// Units lost / damaged in this batch.
+  wastage       Int             @default(0)
+  notes         String?
+
+  loggedById    String
+  /// Display name snapshot at log time.
+  loggedByName  String
+
+  loggedAt      DateTime        @default(now())
+
+  @@index([branchSlug, loggedAt])
+  @@index([branchSlug, product, loggedAt])
+  @@map("production_batches")
 }
 
 /// Expense submitted by a salesman or manager. Manager approves /
