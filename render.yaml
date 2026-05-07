@@ -1,0 +1,50 @@
+# Render Blueprint — provisions the AkvoPura backend + Postgres in one go.
+#
+# Usage:
+#   1. Push this repo to GitHub.
+#   2. On https://render.com → New + → Blueprint → connect this repo.
+#   3. Render reads this file, creates the database + web service, and
+#      asks you to set the JWT_SECRET secret.
+#   4. First deploy takes ~5 minutes. Subsequent deploys (on push to
+#      main) take ~2 minutes.
+#
+# Free-tier notes:
+#   - Web service sleeps after 15 minutes idle. To keep the daily 6 AM
+#     subscription cron firing, set up a free pinger like cron-job.org
+#     or UptimeRobot to hit /health every 10 minutes (see DEPLOYMENT.md).
+#   - Postgres expires after 90 days on free tier — back up via
+#     `pg_dump` before then or upgrade to a paid plan.
+
+databases:
+  - name: akvopura-postgres
+    databaseName: akvopura
+    user: akvopura
+    plan: free
+    region: singapore   # closest free region to Pakistan
+
+services:
+  - type: web
+    name: akvopura-backend
+    runtime: node
+    region: singapore
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    # `migrate deploy` applies any new migrations safely on every release;
+    # `start:prod` then boots the compiled NestJS app.
+    startCommand: npm run prisma:migrate:deploy && npm run start:prod
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: akvopura-postgres
+          property: connectionString
+      - key: JWT_SECRET
+        # Marked as a secret — Render asks you to provide this on first
+        # deploy. Generate with:
+        #   node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 30d
+      - key: NODE_ENV
+        value: production
