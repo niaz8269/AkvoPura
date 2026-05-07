@@ -29,6 +29,7 @@ import { ManagerAddStaffAccountScreen } from './screens/ManagerAddStaffAccountSc
 import { ManagerStaffAccountDetailScreen } from './screens/ManagerStaffAccountDetailScreen';
 import { ManagerOrdersScreen } from './screens/ManagerOrdersScreen';
 import { ManagerComplaintsScreen } from './screens/ManagerComplaintsScreen';
+import { ComplaintDetailScreen } from '../complaints/ComplaintDetailScreen';
 import { ManagerProductionScreen } from './screens/ManagerProductionScreen';
 import { ManagerContainerFeesScreen } from './screens/ManagerContainerFeesScreen';
 import { AgingReportScreen } from '../analytics/screens/AgingReportScreen';
@@ -91,6 +92,11 @@ function HomeStack() {
         options={{ title: 'Complaints' }}
       />
       <Stack.Screen
+        name="ComplaintDetail"
+        component={ComplaintDetailScreen}
+        options={{ title: 'Complaint' }}
+      />
+      <Stack.Screen
         name="Production"
         component={ManagerProductionScreen}
         options={{ title: 'Production' }}
@@ -150,6 +156,23 @@ function ExpensesStack() {
         name="Landing"
         component={ManagerExpensesScreen}
         options={{ title: 'Expense approvals' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function ComplaintsStack() {
+  return (
+    <Stack.Navigator screenOptions={baseStackOptions}>
+      <Stack.Screen
+        name="Landing"
+        component={ManagerComplaintsScreen}
+        options={{ title: 'Complaints' }}
+      />
+      <Stack.Screen
+        name="ComplaintDetail"
+        component={ComplaintDetailScreen}
+        options={{ title: 'Complaint' }}
       />
     </Stack.Navigator>
   );
@@ -219,6 +242,7 @@ export function ManagerNavigator() {
             Customers: focused ? 'people' : 'people-outline',
             Trips: focused ? 'map' : 'map-outline',
             Expenses: focused ? 'wallet' : 'wallet-outline',
+            Complaints: focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline',
             Team: focused ? 'briefcase' : 'briefcase-outline',
           };
           if (route.name === 'Expenses') {
@@ -245,6 +269,11 @@ export function ManagerNavigator() {
       />
       <Tab.Screen name="Trips" component={TripsStack} options={{ title: 'Trips' }} />
       <Tab.Screen name="Expenses" component={ExpensesStack} options={{ title: 'Expenses' }} />
+      <Tab.Screen
+        name="Complaints"
+        component={ComplaintsStack}
+        options={{ title: 'Complaints' }}
+      />
       <Tab.Screen name="Team" component={TeamStack} options={{ title: 'Team' }} />
     </Tab.Navigator>
   );

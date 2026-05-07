@@ -40,7 +40,7 @@ const STATUS_BUCKET: Record<CustomerOrderStatus, Tab> = {
 };
 
 export function ManagerOrdersScreen() {
-  const { orders, assignOrder, markInTransit, markDelivered, managerCancelOrder } =
+  const { orders, assignOrder, markInTransit, managerCancelOrder } =
     useCustomerPortal();
   const [tab, setTab] = useState<Tab>('pending');
   const [salesmen, setSalesmen] = useState<ApiUser[]>([]);
@@ -107,7 +107,6 @@ export function ManagerOrdersScreen() {
               salesmen={salesmen}
               onAssign={(salesmanId) => assignOrder(o.id, salesmanId)}
               onInTransit={() => markInTransit(o.id)}
-              onDelivered={() => markDelivered(o.id)}
               onCancel={(note) => managerCancelOrder(o.id, note)}
             />
           ))
@@ -122,14 +121,12 @@ function OrderCard({
   salesmen,
   onAssign,
   onInTransit,
-  onDelivered,
   onCancel,
 }: {
   order: CustomerOrder;
   salesmen: ApiUser[];
   onAssign: (salesmanId: string) => void;
   onInTransit: () => void;
-  onDelivered: () => void;
   onCancel: (note?: string) => void;
 }) {
   // Suggested salesman category based on items
@@ -264,45 +261,13 @@ function OrderCard({
             <Ionicons name="navigate-outline" size={16} color={colors.info} />
             <Text style={[styles.actionBtnText, { color: colors.info }]}>On the way</Text>
           </Pressable>
-          <Pressable
-            onPress={() =>
-              Alert.alert('Mark delivered?', `Confirm ${assignedSalesman ?? 'salesman'} delivered this order?`, [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Mark delivered', onPress: onDelivered },
-              ])
-            }
-            style={({ pressed }) => [
-              styles.actionBtn,
-              styles.actionSuccess,
-              pressed ? { opacity: 0.85 } : null,
-            ]}
-          >
-            <Ionicons name="checkmark-circle-outline" size={16} color={colors.success} />
-            <Text style={[styles.actionBtnText, { color: colors.success }]}>Delivered</Text>
-          </Pressable>
         </View>
       ) : null}
 
       {order.status === 'in_transit' ? (
-        <Pressable
-          onPress={() =>
-            Alert.alert('Mark delivered?', 'Confirm order has been delivered?', [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Mark delivered', onPress: onDelivered },
-            ])
-          }
-          style={({ pressed }) => [
-            styles.actionBtn,
-            styles.actionSuccess,
-            { alignSelf: 'stretch', marginTop: spacing.sm },
-            pressed ? { opacity: 0.85 } : null,
-          ]}
-        >
-          <Ionicons name="checkmark-circle-outline" size={16} color={colors.success} />
-          <Text style={[styles.actionBtnText, { color: colors.success }]}>
-            Mark delivered
-          </Text>
-        </Pressable>
+        <Text style={styles.awaitingHint}>
+          Awaiting salesman to confirm delivery (with payment + empties).
+        </Text>
       ) : null}
     </View>
   );
@@ -505,4 +470,11 @@ const styles = StyleSheet.create({
   actionInfo: { borderColor: colors.info, backgroundColor: colors.info + '10' },
   actionSuccess: { borderColor: colors.success, backgroundColor: colors.success + '10' },
   actionBtnText: { fontSize: 12, fontWeight: '800' },
+  awaitingHint: {
+    marginTop: spacing.sm,
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
 });

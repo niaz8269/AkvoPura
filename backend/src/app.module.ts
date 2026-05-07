@@ -16,6 +16,7 @@ import { ExpensesModule } from './expenses/expenses.module';
 import { RawMaterialsModule } from './raw-materials/raw-materials.module';
 import { ProductionModule } from './production/production.module';
 import { OrdersModule } from './orders/orders.module';
+import { ComplaintsModule } from './complaints/complaints.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -35,6 +36,7 @@ import { HealthController } from './health.controller';
     RawMaterialsModule,
     ProductionModule,
     OrdersModule,
+    ComplaintsModule,
     AuthModule,
   ],
   controllers: [HealthController],

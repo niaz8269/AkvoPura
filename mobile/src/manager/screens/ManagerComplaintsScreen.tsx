@@ -14,14 +14,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
 import { useCustomerPortal } from '../../customer/state';
-import { mockAccounts } from '../../auth/mockUsers';
 import type { Complaint, ComplaintStatus } from '../../customer/types';
 
-type Tab = 'open' | 'in_review' | 'resolved';
+/** Two-tab layout: anything not yet resolved is "Active" so a manager
+ *  doesn't lose track of a complaint when they flip its status. */
+type Tab = 'active' | 'resolved';
 
 const TAB_LABELS: Record<Tab, string> = {
-  open: 'Open',
-  in_review: 'In review',
+  active: 'Active',
   resolved: 'Resolved',
 };
 
@@ -39,26 +39,42 @@ const STATUS_META: Record<ComplaintStatus, { label: string; color: string }> = {
   resolved: { label: 'Resolved', color: colors.success },
 };
 
-export function ManagerComplaintsScreen() {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function ManagerComplaintsScreen({ navigation }: any) {
   const { complaints, markComplaintInReview, resolveComplaint } = useCustomerPortal();
-  const [tab, setTab] = useState<Tab>('open');
+  const [tab, setTab] = useState<Tab>('active');
 
   const counts = useMemo(() => {
-    const c = { open: 0, in_review: 0, resolved: 0 };
-    complaints.forEach((cmp) => c[cmp.status]++);
-    return c;
+    let active = 0;
+    let resolved = 0;
+    complaints.forEach((cmp) => {
+      if (cmp.status === 'resolved') resolved++;
+      else active++;
+    });
+    return { active, resolved };
   }, [complaints]);
 
   const visible = useMemo(
     () =>
-      complaints.filter((c) => c.status === tab).sort((a, b) => b.filedAt - a.filedAt),
-    [complaints, tab]
+      complaints
+        .filter((c) =>
+          tab === 'active' ? c.status !== 'resolved' : c.status === 'resolved',
+        )
+        // Within Active, show "Open" before "In review" so newer items
+        // surface first. Within Resolved, newest first.
+        .sort((a, b) => {
+          if (tab === 'active' && a.status !== b.status) {
+            return a.status === 'open' ? -1 : 1;
+          }
+          return b.filedAt - a.filedAt;
+        }),
+    [complaints, tab],
   );
 
   return (
     <Screen padded={false}>
       <View style={styles.tabRow}>
-        {(['open', 'in_review', 'resolved'] as Tab[]).map((t) => {
+        {(['active', 'resolved'] as Tab[]).map((t) => {
           const active = t === tab;
           return (
             <Pressable
@@ -86,6 +102,9 @@ export function ManagerComplaintsScreen() {
             <ComplaintCard
               key={c.id}
               complaint={c}
+              onPress={() =>
+                navigation.navigate('ComplaintDetail', { complaintId: c.id })
+              }
               onReview={() => markComplaintInReview(c.id)}
               onResolve={() => resolveComplaint(c.id)}
             />
@@ -98,20 +117,27 @@ export function ManagerComplaintsScreen() {
 
 function ComplaintCard({
   complaint,
+  onPress,
   onReview,
   onResolve,
 }: {
   complaint: Complaint;
+  onPress: () => void;
   onReview: () => void;
   onResolve: () => void;
 }) {
   const meta = STATUS_META[complaint.status];
-  const customerName =
-    mockAccounts.find((a) => a.user.id === complaint.customerUserId)?.user.name ??
-    'Customer';
+  const customerName = complaint.customerName ?? 'Customer';
 
   return (
-    <View style={[styles.card, { borderLeftColor: meta.color }]}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.card,
+        { borderLeftColor: meta.color },
+        pressed ? { opacity: 0.85 } : null,
+      ]}
+    >
       <View style={styles.cardHeader}>
         <View style={[styles.statusChip, { backgroundColor: meta.color + '22' }]}>
           <Text style={[styles.statusChipText, { color: meta.color }]}>{meta.label}</Text>
@@ -171,7 +197,7 @@ function ComplaintCard({
       ) : (
         <Text style={styles.noRating}>Awaiting customer rating</Text>
       )}
-    </View>
+    </Pressable>
   );
 }
 

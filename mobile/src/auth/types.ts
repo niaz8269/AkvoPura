@@ -30,6 +30,10 @@ export type User = {
   identifier: string;     // phone or email used to log in
   role: Role;
   branch?: Branch;        // owner has no branch (sees both); customers have one
-  /** For role === 'customer' — the Cans/Gallons customer record this user owns. */
+  /** For role === 'customer' — linked CG customer record (auto-created on
+   *  first CG order delivery if missing). */
   linkedCgCustomerId?: string;
+  /** Linked Pets customer record (auto-created on first Pets order
+   *  delivery if missing). */
+  linkedPetCustomerId?: string;
 };

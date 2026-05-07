@@ -71,6 +71,8 @@ export type ComplaintStatus = 'open' | 'in_review' | 'resolved';
 export type Complaint = {
   id: string;
   customerUserId: string;
+  /** Display name snapshot at file time. */
+  customerName?: string;
   category: ComplaintCategory;
   recipient: ComplaintRecipient;
   description: string;
@@ -78,4 +80,15 @@ export type Complaint = {
   rating?: number;             // 1-5 — only set after status === 'resolved'
   filedAt: number;
   resolvedAt?: number;
+};
+
+export type ComplaintComment = {
+  id: string;
+  complaintId: string;
+  authorId: string;
+  authorName: string;
+  /** Author role at post time — 'customer', 'manager', 'owner', etc. */
+  authorRole: string;
+  body: string;
+  postedAt: number;
 };

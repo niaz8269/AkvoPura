@@ -19,6 +19,7 @@ import { CustomerOrderScreen } from './screens/CustomerOrderScreen';
 import { CustomerHistoryScreen } from './screens/CustomerHistoryScreen';
 import { CustomerComplaintsScreen } from './screens/CustomerComplaintsScreen';
 import { CustomerSubscriptionsScreen } from './screens/CustomerSubscriptionsScreen';
+import { ComplaintDetailScreen } from '../complaints/ComplaintDetailScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -130,6 +131,11 @@ function WrappedComplaints() {
         name="Landing"
         component={CustomerComplaintsScreen}
         options={{ title: 'Complaints' }}
+      />
+      <Stack.Screen
+        name="ComplaintDetail"
+        component={ComplaintDetailScreen}
+        options={{ title: 'Complaint' }}
       />
     </Stack.Navigator>
   );

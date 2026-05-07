@@ -25,7 +25,11 @@ const USER_KEY = '@akvopura/auth/user';
 
 type LoginResponse = {
   token: string;
-  user: User & { branch: User['branch'] | null; linkedCgCustomerId: string | null };
+  user: User & {
+    branch: User['branch'] | null;
+    linkedCgCustomerId: string | null;
+    linkedPetCustomerId: string | null;
+  };
 };
 
 type AuthContextValue = {
@@ -50,6 +54,7 @@ function normaliseUser(raw: LoginResponse['user']): User {
     role: raw.role,
     branch: raw.branch ?? undefined,
     linkedCgCustomerId: raw.linkedCgCustomerId ?? undefined,
+    linkedPetCustomerId: raw.linkedPetCustomerId ?? undefined,
   };
 }
 

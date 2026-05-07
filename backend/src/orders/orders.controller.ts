@@ -22,6 +22,7 @@ import type { Request } from 'express';
 import { OrdersService } from './orders.service';
 import { PlaceOrderDto } from './dto/place-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { FulfillOrderDto } from './dto/fulfill-order.dto';
 import { UsersService } from '../users/users.service';
 import type { JwtPayload } from '../auth/jwt.strategy';
 
@@ -180,5 +181,38 @@ export class OrdersController {
     }
 
     throw new ForbiddenException('Insufficient privileges');
+  }
+
+  /** Salesman / manager / owner fulfills the order: creates the
+   *  CGDelivery / PetBill records and marks the order delivered. */
+  @Post(':id/fulfill')
+  async fulfill(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() dto: FulfillOrderDto,
+  ) {
+    const me = req.user as JwtPayload;
+    const target = await this.orders.findById(id);
+    if (!target) throw new NotFoundException('Order not found');
+
+    if (me.role !== Role.owner && me.branch !== target.branchSlug) {
+      throw new ForbiddenException('Order is in another branch');
+    }
+    if (
+      me.role !== Role.owner &&
+      me.role !== Role.manager &&
+      me.role !== Role.cans_gallons_salesman &&
+      me.role !== Role.pets_salesman
+    ) {
+      throw new ForbiddenException('Insufficient privileges');
+    }
+    if (
+      (me.role === Role.cans_gallons_salesman || me.role === Role.pets_salesman) &&
+      target.assignedSalesmanId !== me.sub
+    ) {
+      throw new ForbiddenException('Order is not assigned to you');
+    }
+
+    return this.orders.fulfill(id, me.sub, dto);
   }
 }

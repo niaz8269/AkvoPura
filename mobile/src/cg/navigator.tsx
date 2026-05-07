@@ -27,12 +27,14 @@ import { CGAddCustomerScreen } from './screens/CGAddCustomerScreen';
 import { SubmitExpenseScreen } from '../expenses/SubmitExpenseScreen';
 import { SalesmanExpensesScreen } from '../expenses/SalesmanExpensesScreen';
 import { SalesmanOrdersScreen } from '../orders/SalesmanOrdersScreen';
+import { OrderFulfillmentScreen } from '../orders/OrderFulfillmentScreen';
 
 export type CGStackParamList = {
   Tabs: undefined;
   CustomerDetail: { customerId: string };
   AddCustomer: undefined;
   SubmitExpense: undefined;
+  OrderFulfillment: { orderId: string };
 };
 
 const Stack = createNativeStackNavigator<CGStackParamList>();
@@ -138,6 +140,11 @@ export function CGSalesmanNavigator() {
         name="SubmitExpense"
         component={SubmitExpenseScreen}
         options={{ title: 'New expense' }}
+      />
+      <Stack.Screen
+        name="OrderFulfillment"
+        component={OrderFulfillmentScreen}
+        options={{ title: 'Confirm delivery' }}
       />
     </Stack.Navigator>
   );

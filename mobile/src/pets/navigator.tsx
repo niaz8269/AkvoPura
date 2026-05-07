@@ -27,12 +27,14 @@ import { PetsAddCustomerScreen } from './screens/PetsAddCustomerScreen';
 import { SubmitExpenseScreen } from '../expenses/SubmitExpenseScreen';
 import { SalesmanExpensesScreen } from '../expenses/SalesmanExpensesScreen';
 import { SalesmanOrdersScreen } from '../orders/SalesmanOrdersScreen';
+import { OrderFulfillmentScreen } from '../orders/OrderFulfillmentScreen';
 
 export type PetsStackParamList = {
   Tabs: undefined;
   PetCustomerDetail: { customerId: string };
   AddCustomer: undefined;
   SubmitExpense: undefined;
+  OrderFulfillment: { orderId: string };
 };
 
 const Stack = createNativeStackNavigator<PetsStackParamList>();
@@ -138,6 +140,11 @@ export function PetsSalesmanNavigator() {
         name="SubmitExpense"
         component={SubmitExpenseScreen}
         options={{ title: 'New expense' }}
+      />
+      <Stack.Screen
+        name="OrderFulfillment"
+        component={OrderFulfillmentScreen}
+        options={{ title: 'Confirm delivery' }}
       />
     </Stack.Navigator>
   );

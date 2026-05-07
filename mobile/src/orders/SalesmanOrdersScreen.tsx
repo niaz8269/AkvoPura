@@ -18,7 +18,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 import { Screen } from '../components';
 import { colors, fontSizes, radii, spacing } from '../theme';
@@ -51,7 +51,9 @@ const STATUS_LABEL: Record<CustomerOrderStatus, string> = {
 };
 
 export function SalesmanOrdersScreen() {
-  const { markInTransit, markDelivered } = useCustomerPortal();
+  const { markInTransit } = useCustomerPortal();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const navigation = useNavigation<any>();
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -146,14 +148,9 @@ export function SalesmanOrdersScreen() {
               ]);
             }}
             onDelivered={() => {
-              Alert.alert('Mark delivered?', 'This will close the order.', [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Delivered',
-                  style: 'default',
-                  onPress: () => markDelivered(o.id),
-                },
-              ]);
+              // Push to fulfillment screen — payment + empties + bill creation
+              // happens there atomically.
+              navigation.navigate('OrderFulfillment', { orderId: o.id });
             }}
           />
         ))}

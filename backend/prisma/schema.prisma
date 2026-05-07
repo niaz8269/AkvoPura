@@ -71,6 +71,25 @@ enum CustomerOrderStatus {
   cancelled
 }
 
+enum ComplaintCategory {
+  delivery
+  product_quality
+  billing
+  salesman_behavior
+  other
+}
+
+enum ComplaintRecipient {
+  salesman
+  manager
+}
+
+enum ComplaintStatus {
+  open
+  in_review
+  resolved
+}
+
 /// A physical branch / depot. Slug is the stable identifier used in
 /// URLs and JWT payloads (e.g., 'timergara'). New branches can be added
 /// at any time without code changes.
@@ -88,8 +107,62 @@ model Branch {
   expenses      Expense[]
   productionBatches ProductionBatch[]
   customerOrders CustomerOrder[]
+  complaints    Complaint[]
 
   @@map("branches")
+}
+
+/// Customer complaint — filed by a customer, addressed to either the
+/// salesman who served them or the branch manager. Manager moves it
+/// through review → resolved; the customer can rate after resolved.
+model Complaint {
+  id              String              @id @default(cuid())
+  branchSlug      String
+  branch          Branch              @relation(fields: [branchSlug], references: [slug])
+
+  customerUserId  String
+  /// Display-name snapshot at file time.
+  customerName    String
+
+  category        ComplaintCategory
+  recipient       ComplaintRecipient
+  description     String
+
+  status          ComplaintStatus     @default(open)
+  /// Customer rating 1-5, only set after resolved.
+  rating          Int?
+
+  filedAt         DateTime            @default(now())
+  resolvedAt      DateTime?
+  /// Manager / owner who decided.
+  decidedById     String?
+  updatedAt       DateTime            @updatedAt
+
+  comments        ComplaintComment[]
+
+  @@index([branchSlug, status])
+  @@index([customerUserId, filedAt])
+  @@map("complaints")
+}
+
+/// One reply on a complaint thread. Customer (own complaint) +
+/// manager + owner can post.
+model ComplaintComment {
+  id           String     @id @default(cuid())
+  complaintId  String
+  complaint    Complaint  @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+
+  authorId     String
+  /// Display-name snapshot at post time.
+  authorName   String
+  authorRole   Role
+
+  body         String
+
+  postedAt     DateTime   @default(now())
+
+  @@index([complaintId, postedAt])
+  @@map("complaint_comments")
 }
 
 /// Customer-placed order. Items are stored as a JSON snapshot of
@@ -446,9 +519,10 @@ model User {
   /// Soft-delete flag. When false, login is blocked.
   active       Boolean  @default(true)
 
-  // Customer-role users link to a CG customer record (placeholder until
-  // the Customer table exists in a later slice).
-  linkedCgCustomerId String?
+  // Customer-role users link to a CG customer record + a Pets customer
+  // record. Auto-populated when an order is fulfilled if missing.
+  linkedCgCustomerId  String?
+  linkedPetCustomerId String?
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

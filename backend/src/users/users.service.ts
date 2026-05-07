@@ -33,6 +33,7 @@ const PUBLIC_FIELDS = {
   branchSlug: true,
   active: true,
   linkedCgCustomerId: true,
+  linkedPetCustomerId: true,
   createdAt: true,
   updatedAt: true,
 } as const;

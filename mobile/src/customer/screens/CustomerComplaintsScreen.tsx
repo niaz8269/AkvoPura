@@ -38,7 +38,8 @@ const CATEGORIES: { id: ComplaintCategory; en: string; ur: string; icon: keyof t
   { id: 'other', en: 'Other', ur: 'دیگر', icon: 'ellipsis-horizontal-outline' },
 ];
 
-export function CustomerComplaintsScreen() {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function CustomerComplaintsScreen({ navigation }: any) {
   const { user } = useAuth();
   const portal = useCustomerPortal();
 
@@ -49,20 +50,25 @@ export function CustomerComplaintsScreen() {
   const myComplaints = user ? portal.complaintsForUser(user.id) : [];
   const ordered = [...myComplaints].sort((a, b) => b.filedAt - a.filedAt);
 
-  const submit = () => {
+  const submit = async () => {
     if (!user) return;
     if (description.trim().length < 5) {
       Alert.alert('Too short', 'Please describe the issue in at least a few words.');
       return;
     }
-    portal.fileComplaint({
-      customerUserId: user.id,
-      category,
-      recipient,
-      description: description.trim(),
-    });
-    setDescription('');
-    Alert.alert('Filed', `Complaint sent to ${recipient}. They will review it shortly.`);
+    try {
+      await portal.fileComplaint({
+        customerUserId: user.id,
+        category,
+        recipient,
+        description: description.trim(),
+      });
+      setDescription('');
+      Alert.alert('Filed', `Complaint sent to ${recipient}. They will review it shortly.`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Could not file';
+      Alert.alert('Failed', msg);
+    }
   };
 
   return (
@@ -146,10 +152,20 @@ export function CustomerComplaintsScreen() {
           </View>
 
           <Text style={styles.sectionTitle}>Your complaint history</Text>
+          <Text style={styles.tapHint}>Tap any to view replies & follow up.</Text>
           {ordered.length === 0 ? (
             <Text style={styles.empty}>No complaints filed yet.</Text>
           ) : (
-            ordered.map((c) => <ComplaintCard key={c.id} complaint={c} />)
+            ordered.map((c) => (
+              <ComplaintCard
+                key={c.id}
+                complaint={c}
+                onPress={() =>
+                  navigation.navigate('ComplaintDetail', { complaintId: c.id })
+                }
+                onRate={(r) => portal.rateComplaint(c.id, r)}
+              />
+            ))
           )}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -192,11 +208,26 @@ function RecipientPill({
   );
 }
 
-function ComplaintCard({ complaint }: { complaint: Complaint }) {
+function ComplaintCard({
+  complaint,
+  onPress,
+  onRate,
+}: {
+  complaint: Complaint;
+  onPress: () => void;
+  onRate: (rating: number) => void;
+}) {
   const meta = STATUS_META[complaint.status];
   const cat = CATEGORIES.find((c) => c.id === complaint.category);
   return (
-    <View style={[styles.complaintCard, { borderLeftColor: meta.color }]}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.complaintCard,
+        { borderLeftColor: meta.color },
+        pressed ? { opacity: 0.85 } : null,
+      ]}
+    >
       <View style={styles.complaintHeader}>
         <View style={[styles.statusChip, { backgroundColor: meta.color + '22' }]}>
           <Text style={[styles.statusChipText, { color: meta.color }]}>{meta.label}</Text>
@@ -210,7 +241,42 @@ function ComplaintCard({ complaint }: { complaint: Complaint }) {
 
       <Text style={styles.complaintCategory}>{cat?.en ?? complaint.category}</Text>
       <Text style={styles.complaintDesc}>{complaint.description}</Text>
-    </View>
+
+      {complaint.status === 'resolved' ? (
+        <View style={styles.ratingBlock}>
+          <Text style={styles.ratingLabel}>
+            {complaint.rating
+              ? 'Your rating'
+              : 'How was the resolution? Tap a star.'}
+          </Text>
+          <View style={styles.ratingStars}>
+            {[1, 2, 3, 4, 5].map((n) => {
+              const filled = (complaint.rating ?? 0) >= n;
+              return (
+                <Pressable
+                  key={n}
+                  onPress={() => onRate(n)}
+                  style={({ pressed }) => [
+                    styles.starBtn,
+                    pressed ? { opacity: 0.6 } : null,
+                  ]}
+                  accessibilityLabel={`Rate ${n} star${n > 1 ? 's' : ''}`}
+                >
+                  <Ionicons
+                    name={filled ? 'star' : 'star-outline'}
+                    size={28}
+                    color={filled ? colors.warning : colors.textMuted}
+                  />
+                </Pressable>
+              );
+            })}
+          </View>
+          {complaint.rating ? (
+            <Text style={styles.ratingHint}>Tap again to change.</Text>
+          ) : null}
+        </View>
+      ) : null}
+    </Pressable>
   );
 }
 
@@ -340,6 +406,12 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.body,
     fontWeight: '800',
     color: colors.primaryDark,
+    marginBottom: 2,
+  },
+  tapHint: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    fontStyle: 'italic',
     marginBottom: spacing.sm,
   },
   empty: {
@@ -390,5 +462,33 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginTop: spacing.xs,
     lineHeight: 20,
+  },
+
+  ratingBlock: {
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    alignItems: 'center',
+  },
+  ratingLabel: {
+    fontSize: fontSizes.sm,
+    fontWeight: '700',
+    color: colors.text,
+    textAlign: 'center',
+  },
+  ratingStars: {
+    flexDirection: 'row',
+    gap: 4,
+    marginTop: spacing.sm,
+  },
+  starBtn: {
+    padding: 4,
+  },
+  ratingHint: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    fontStyle: 'italic',
+    marginTop: 2,
   },
 });

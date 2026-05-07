@@ -23,6 +23,11 @@ import {
   placeOrderApi,
   updateOrderApi,
 } from '../api/orders';
+import {
+  fileComplaintApi,
+  listComplaints,
+  updateComplaintApi,
+} from '../api/complaints';
 import type {
   Complaint,
   ComplaintCategory,
@@ -68,7 +73,7 @@ type State = {
 
   placeOrder: (input: PlaceOrderInput) => Promise<CustomerOrder>;
   cancelOrder: (id: string) => void;
-  fileComplaint: (input: FileComplaintInput) => Complaint;
+  fileComplaint: (input: FileComplaintInput) => Promise<Complaint>;
   rateComplaint: (id: string, rating: number) => void;
   createSubscription: (input: CreateSubscriptionInput) => Subscription;
   cancelSubscription: (id: string) => void;
@@ -116,9 +121,23 @@ export function CustomerProvider({ children }: PropsWithChildren) {
     }
   }, [user]);
 
+  const refreshComplaints = useCallback(async () => {
+    if (!user) return;
+    try {
+      // Same role-based scoping as orders.
+      const fresh = await listComplaints();
+      setComplaints(fresh);
+    } catch {
+      // offline — keep current in-memory state
+    }
+  }, [user]);
+
   useEffect(() => {
-    if (user) refreshOrders();
-  }, [user, refreshOrders]);
+    if (user) {
+      refreshOrders();
+      refreshComplaints();
+    }
+  }, [user, refreshOrders, refreshComplaints]);
 
   const ordersForUser = useCallback(
     (userId: string) => orders.filter((o) => o.customerUserId === userId),
@@ -168,27 +187,36 @@ export function CustomerProvider({ children }: PropsWithChildren) {
     [refreshOrders],
   );
 
-  const fileComplaint = useCallback<State['fileComplaint']>((input) => {
-    const c: Complaint = {
-      id: nextId('cp'),
-      customerUserId: input.customerUserId,
-      category: input.category,
-      recipient: input.recipient,
-      description: input.description,
-      status: 'open',
-      filedAt: Date.now(),
-    };
-    setComplaints((prev) => [c, ...prev]);
-    return c;
-  }, []);
+  const fileComplaint = useCallback<State['fileComplaint']>(
+    async (input) => {
+      const real = await fileComplaintApi({
+        category: input.category,
+        recipient: input.recipient,
+        description: input.description,
+      });
+      setComplaints((prev) => [real, ...prev]);
+      return real;
+    },
+    [],
+  );
 
-  const rateComplaint = useCallback<State['rateComplaint']>((id, rating) => {
-    setComplaints((prev) =>
-      prev.map((c) =>
-        c.id === id && c.status === 'resolved' ? { ...c, rating } : c,
-      ),
-    );
-  }, []);
+  const rateComplaint = useCallback<State['rateComplaint']>(
+    (id, rating) => {
+      setComplaints((prev) =>
+        prev.map((c) =>
+          c.id === id && c.status === 'resolved' ? { ...c, rating } : c,
+        ),
+      );
+      updateComplaintApi(id, { rating })
+        .then((real) => {
+          setComplaints((prev) => prev.map((c) => (c.id === id ? real : c)));
+        })
+        .catch(() => {
+          refreshComplaints();
+        });
+    },
+    [refreshComplaints],
+  );
 
   const optimisticUpdate = useCallback(
     (
@@ -266,23 +294,43 @@ export function CustomerProvider({ children }: PropsWithChildren) {
     [optimisticUpdate],
   );
 
-  const markComplaintInReview = useCallback<State['markComplaintInReview']>((id) => {
-    setComplaints((prev) =>
-      prev.map((c) =>
-        c.id === id && c.status === 'open' ? { ...c, status: 'in_review' } : c,
-      ),
-    );
-  }, []);
+  const markComplaintInReview = useCallback<State['markComplaintInReview']>(
+    (id) => {
+      setComplaints((prev) =>
+        prev.map((c) =>
+          c.id === id && c.status === 'open' ? { ...c, status: 'in_review' } : c,
+        ),
+      );
+      updateComplaintApi(id, { status: 'in_review' })
+        .then((real) => {
+          setComplaints((prev) => prev.map((c) => (c.id === id ? real : c)));
+        })
+        .catch(() => {
+          refreshComplaints();
+        });
+    },
+    [refreshComplaints],
+  );
 
-  const resolveComplaint = useCallback<State['resolveComplaint']>((id) => {
-    setComplaints((prev) =>
-      prev.map((c) =>
-        c.id === id && c.status !== 'resolved'
-          ? { ...c, status: 'resolved', resolvedAt: Date.now() }
-          : c,
-      ),
-    );
-  }, []);
+  const resolveComplaint = useCallback<State['resolveComplaint']>(
+    (id) => {
+      setComplaints((prev) =>
+        prev.map((c) =>
+          c.id === id && c.status !== 'resolved'
+            ? { ...c, status: 'resolved', resolvedAt: Date.now() }
+            : c,
+        ),
+      );
+      updateComplaintApi(id, { status: 'resolved' })
+        .then((real) => {
+          setComplaints((prev) => prev.map((c) => (c.id === id ? real : c)));
+        })
+        .catch(() => {
+          refreshComplaints();
+        });
+    },
+    [refreshComplaints],
+  );
 
   const createSubscription = useCallback<State['createSubscription']>((input) => {
     const total = input.items.reduce((s, it) => s + it.qty * it.unitPrice, 0);

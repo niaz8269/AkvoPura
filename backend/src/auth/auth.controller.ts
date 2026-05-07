@@ -44,6 +44,7 @@ export class AuthController {
       branch: user.branchSlug,
       active: user.active,
       linkedCgCustomerId: user.linkedCgCustomerId,
+      linkedPetCustomerId: user.linkedPetCustomerId,
     };
   }
 }

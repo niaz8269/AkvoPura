@@ -90,3 +90,22 @@ export async function updateOrderApi(id: string, input: UpdateOrderInput) {
   });
   return toCustomerOrder(row);
 }
+
+export type FulfillOrderInput = {
+  cashCollected?: number;
+  bankCollected?: number;
+  paymentReference?: string;
+  emptyCansCollected?: number;
+  emptyGallonsCollected?: number;
+  discount?: number;
+};
+
+/** Salesman fulfills an order: backend creates the matching delivery /
+ *  bill records and marks the order delivered atomically. */
+export async function fulfillOrderApi(id: string, input: FulfillOrderInput) {
+  const row = await apiRequest<ApiCustomerOrder>(`/orders/${id}/fulfill`, {
+    method: 'POST',
+    body: input,
+  });
+  return toCustomerOrder(row);
+}

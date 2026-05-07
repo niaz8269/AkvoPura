@@ -12,6 +12,7 @@ export type AuthenticatedUser = {
   branch: string | null;
   active: boolean;
   linkedCgCustomerId: string | null;
+  linkedPetCustomerId: string | null;
 };
 
 @Injectable()
@@ -37,6 +38,7 @@ export class AuthService {
       branch: user.branchSlug,
       active: user.active,
       linkedCgCustomerId: user.linkedCgCustomerId,
+      linkedPetCustomerId: user.linkedPetCustomerId,
     };
 
     const token = await this.jwt.signAsync({
