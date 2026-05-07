@@ -42,6 +42,14 @@ export class ExpensesService {
     });
   }
 
+  /** All expenses submitted by the given user, newest first. */
+  listMine(submittedById: string) {
+    return this.prisma.expense.findMany({
+      where: { submittedById },
+      orderBy: { submittedAt: 'desc' },
+    });
+  }
+
   findById(id: string) {
     return this.prisma.expense.findUnique({ where: { id } });
   }

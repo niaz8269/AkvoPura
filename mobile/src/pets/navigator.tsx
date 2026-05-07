@@ -25,6 +25,7 @@ import { PetsEndOfDayScreen } from './screens/PetsEndOfDayScreen';
 import { PetsCustomerDetailScreen } from './screens/PetsCustomerDetailScreen';
 import { PetsAddCustomerScreen } from './screens/PetsAddCustomerScreen';
 import { SubmitExpenseScreen } from '../expenses/SubmitExpenseScreen';
+import { SalesmanExpensesScreen } from '../expenses/SalesmanExpensesScreen';
 
 export type PetsStackParamList = {
   Tabs: undefined;
@@ -66,6 +67,7 @@ function Tabs() {
             Customers: 'people-outline',
             Sell: 'cash-outline',
             Returns: 'return-down-back-outline',
+            Expenses: 'wallet-outline',
             EndOfDay: 'checkmark-done-outline',
           };
           return <Ionicons name={map[route.name] ?? 'ellipse-outline'} size={size} color={color} />;
@@ -86,6 +88,11 @@ function Tabs() {
         name="Returns"
         component={PetsReturnsScreen}
         options={{ title: 'Returns', headerTitle: 'Customer returns' }}
+      />
+      <Tab.Screen
+        name="Expenses"
+        component={SalesmanExpensesScreen}
+        options={{ title: 'Expenses', headerTitle: 'My expenses' }}
       />
       <Tab.Screen
         name="EndOfDay"

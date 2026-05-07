@@ -52,6 +52,12 @@ export async function listExpenses(filter: ListExpensesFilter = {}) {
   return rows.map(toExpense);
 }
 
+/** The current user's own submitted expenses, regardless of status. */
+export async function listMyExpenses() {
+  const rows = await apiRequest<ApiExpense[]>('/expenses/mine');
+  return rows.map(toExpense);
+}
+
 export type SubmitExpenseInput = {
   category: ExpenseCategory;
   amount: number;

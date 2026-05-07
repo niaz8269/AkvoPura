@@ -47,6 +47,13 @@ export class ExpensesController {
     return me.branch;
   }
 
+  /** Caller's own submitted expenses across all statuses. */
+  @Get('mine')
+  listMine(@Req() req: Request) {
+    const me = req.user as JwtPayload;
+    return this.expenses.listMine(me.sub);
+  }
+
   @Get()
   list(
     @Req() req: Request,

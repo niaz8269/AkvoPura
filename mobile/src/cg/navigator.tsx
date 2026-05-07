@@ -25,6 +25,7 @@ import { CGEndOfDayScreen } from './screens/CGEndOfDayScreen';
 import { CGCustomerDetailScreen } from './screens/CGCustomerDetailScreen';
 import { CGAddCustomerScreen } from './screens/CGAddCustomerScreen';
 import { SubmitExpenseScreen } from '../expenses/SubmitExpenseScreen';
+import { SalesmanExpensesScreen } from '../expenses/SalesmanExpensesScreen';
 
 export type CGStackParamList = {
   Tabs: undefined;
@@ -66,6 +67,7 @@ function Tabs() {
             Today: 'today-outline',
             Deliver: 'cube-outline',
             Collect: 'archive-outline',
+            Expenses: 'wallet-outline',
             EndOfDay: 'checkmark-done-outline',
           };
           return <Ionicons name={map[route.name] ?? 'ellipse-outline'} size={size} color={color} />;
@@ -86,6 +88,11 @@ function Tabs() {
         name="Collect"
         component={CGCollectionScreen}
         options={{ title: 'Collect', headerTitle: 'Empty collection' }}
+      />
+      <Tab.Screen
+        name="Expenses"
+        component={SalesmanExpensesScreen}
+        options={{ title: 'Expenses', headerTitle: 'My expenses' }}
       />
       <Tab.Screen
         name="EndOfDay"
