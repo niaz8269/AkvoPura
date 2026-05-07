@@ -34,6 +34,23 @@ enum PaymentCycle {
   weekly
 }
 
+enum ExpenseCategory {
+  fuel
+  food
+  repairs
+  utilities
+  salary
+  raw_material
+  other
+}
+
+enum ExpenseStatus {
+  pending
+  approved
+  rejected
+  forwarded
+}
+
 /// A physical branch / depot. Slug is the stable identifier used in
 /// URLs and JWT payloads (e.g., 'timergara'). New branches can be added
 /// at any time without code changes.
@@ -48,8 +65,40 @@ model Branch {
   users        User[]
   cgCustomers  CGCustomer[]
   petCustomers PetCustomer[]
+  expenses     Expense[]
 
   @@map("branches")
+}
+
+/// Expense submitted by a salesman or manager. Manager approves /
+/// rejects / forwards to the owner; owner sees forwarded items and
+/// makes the final call.
+model Expense {
+  id              String          @id @default(cuid())
+  branchSlug      String
+  branch          Branch          @relation(fields: [branchSlug], references: [slug])
+
+  submittedById   String
+  /// Denormalised display name at submit time so the inbox renders
+  /// without an extra join.
+  submittedByName String
+  submittedByRole Role
+
+  category        ExpenseCategory
+  amount          Int
+  notes           String?
+
+  status          ExpenseStatus   @default(pending)
+  decisionNote    String?
+  decidedById     String?
+
+  submittedAt     DateTime        @default(now())
+  decidedAt       DateTime?
+  updatedAt       DateTime        @updatedAt
+
+  @@index([branchSlug, status])
+  @@index([branchSlug, submittedAt])
+  @@map("expenses")
 }
 
 /// Pets customer — usually a small shop or domestic household that buys

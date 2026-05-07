@@ -60,25 +60,31 @@ export function SubmitExpenseScreen({ navigation }: any) {
   const amount = Number(amountStr) || 0;
   const valid = amount > 0;
 
-  const submit = () => {
+  const submit = async () => {
     if (!user || !valid) return;
     setSubmitting(true);
-    submitExpense({
-      submittedBy: user.name,
-      submittedByRole:
-        user.role === 'pets_salesman' || user.role === 'cans_gallons_salesman'
-          ? user.role
-          : 'manager',
-      category,
-      amount,
-      notes: notes.trim() || undefined,
-    });
-    setSubmitting(false);
-    Alert.alert(
-      'Expense submitted',
-      `Rs ${amount.toLocaleString()} sent to your manager for approval.`,
-      [{ text: 'OK', onPress: () => navigation.goBack() }]
-    );
+    try {
+      await submitExpense({
+        submittedBy: user.name,
+        submittedByRole:
+          user.role === 'pets_salesman' || user.role === 'cans_gallons_salesman'
+            ? user.role
+            : 'manager',
+        category,
+        amount,
+        notes: notes.trim() || undefined,
+      });
+      Alert.alert(
+        'Expense submitted',
+        `Rs ${amount.toLocaleString()} sent to your manager for approval.`,
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Could not submit';
+      Alert.alert('Submit failed', msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

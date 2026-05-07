@@ -12,6 +12,7 @@ import { CGCollectionsModule } from './cg-collections/cg-collections.module';
 import { PetCustomersModule } from './pet-customers/pet-customers.module';
 import { PetBillsModule } from './pet-bills/pet-bills.module';
 import { PetReturnsModule } from './pet-returns/pet-returns.module';
+import { ExpensesModule } from './expenses/expenses.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -27,6 +28,7 @@ import { HealthController } from './health.controller';
     PetCustomersModule,
     PetBillsModule,
     PetReturnsModule,
+    ExpensesModule,
     AuthModule,
   ],
   controllers: [HealthController],
