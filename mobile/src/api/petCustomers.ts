@@ -51,6 +51,13 @@ export async function listPetCustomers(filter: ListPetCustomersFilter = {}) {
   return rows.map(toPetCustomer);
 }
 
+/** Customer self-service: fetch the calling customer's own linked Pets
+ *  record. Returns null if no Pets order has been fulfilled for them. */
+export async function getMyPetCustomer(): Promise<PetCustomer | null> {
+  const row = await apiRequest<ApiPetCustomer | null>('/pets/customers/me');
+  return row ? toPetCustomer(row) : null;
+}
+
 export type CreatePetCustomerInput = {
   name: string;
   phone: string;

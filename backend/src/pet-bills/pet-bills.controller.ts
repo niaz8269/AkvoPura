@@ -33,6 +33,17 @@ export class PetBillsController {
     return me.branch;
   }
 
+  /** Customer self-service: bills for the calling customer's linked
+   *  Pets record. */
+  @Get('mine')
+  mine(@Req() req: Request) {
+    const me = req.user as JwtPayload;
+    if (me.role !== 'customer') {
+      throw new ForbiddenException('Customers only');
+    }
+    return this.bills.findForUser(me.sub);
+  }
+
   @Get()
   list(
     @Req() req: Request,

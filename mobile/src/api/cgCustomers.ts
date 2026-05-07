@@ -67,6 +67,14 @@ export async function listCGCustomers(filter: ListFilter = {}): Promise<CGCustom
   return rows.map(toCGCustomer);
 }
 
+/** Customer self-service: fetch the calling customer's own linked CG
+ *  record (debt, empties held). Returns null if no CG order has ever
+ *  been fulfilled for them. */
+export async function getMyCGCustomer(): Promise<CGCustomer | null> {
+  const row = await apiRequest<ApiCGCustomer | null>('/cg/customers/me');
+  return row ? toCGCustomer(row) : null;
+}
+
 export type CreateCGCustomerInput = {
   name: string;
   phone: string;

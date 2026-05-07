@@ -26,6 +26,17 @@ const ALLOWED_ROLES = new Set(['owner', 'manager', 'pets_salesman']);
 export class PetCustomersController {
   constructor(private readonly customers: PetCustomersService) {}
 
+  /** Customer self-service: fetch the calling customer's own linked
+   *  Pets customer record. Returns null if not linked yet. */
+  @Get('me')
+  myRecord(@Req() req: Request) {
+    const me = req.user as JwtPayload;
+    if (me.role !== 'customer') {
+      throw new ForbiddenException('Customers only');
+    }
+    return this.customers.findForUser(me.sub);
+  }
+
   private assertCanAccess(me: JwtPayload) {
     if (!ALLOWED_ROLES.has(me.role)) {
       throw new ForbiddenException('Insufficient privileges');

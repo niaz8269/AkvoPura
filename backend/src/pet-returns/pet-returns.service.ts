@@ -39,6 +39,20 @@ export class PetReturnsService {
     });
   }
 
+  /** Customer self-service: list returns for the calling customer's
+   *  linked Pets record. */
+  async findForUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { linkedPetCustomerId: true },
+    });
+    if (!user?.linkedPetCustomerId) return [];
+    return this.prisma.petReturn.findMany({
+      where: { customerId: user.linkedPetCustomerId },
+      orderBy: { loggedAt: 'desc' },
+    });
+  }
+
   /** Atomic: insert return row + credit refund against customer debt. */
   async record(params: RecordReturnParams) {
     return this.prisma.$transaction(async (tx) => {

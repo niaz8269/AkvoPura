@@ -65,6 +65,13 @@ export async function listCGDeliveries(filter: ListDeliveriesFilter = {}) {
   return rows.map(toDeliveryEntry);
 }
 
+/** Customer self-service: deliveries logged for the calling customer's
+ *  linked CG record. */
+export async function listMyCGDeliveries() {
+  const rows = await apiRequest<ApiCGDelivery[]>('/cg/deliveries/mine');
+  return rows.map(toDeliveryEntry);
+}
+
 export type RecordDeliveryInput = {
   customerId: string;
   cansDelivered: number;

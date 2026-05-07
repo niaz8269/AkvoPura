@@ -60,6 +60,13 @@ export async function listPetBills(filter: ListPetBillsFilter = {}) {
   return rows.map(toBillEntry);
 }
 
+/** Customer self-service: bills logged for the calling customer's
+ *  linked Pets record. */
+export async function listMyPetBills() {
+  const rows = await apiRequest<ApiPetBill[]>('/pets/bills/mine');
+  return rows.map(toBillEntry);
+}
+
 export type RecordBillInput = {
   customerId: string;
   pet600Packs: number;

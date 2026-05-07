@@ -49,6 +49,13 @@ export async function listCGCollections(filter: ListCollectionsFilter = {}) {
   return rows.map(toCollectionEntry);
 }
 
+/** Customer self-service: empties-collection visits for the calling
+ *  customer's linked CG record. */
+export async function listMyCGCollections() {
+  const rows = await apiRequest<ApiCGCollection[]>('/cg/collections/mine');
+  return rows.map(toCollectionEntry);
+}
+
 export type RecordCollectionInput = {
   customerId: string;
   cansCollected: number;

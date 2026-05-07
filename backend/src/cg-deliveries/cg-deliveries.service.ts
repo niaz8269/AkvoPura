@@ -46,6 +46,20 @@ export class CGDeliveriesService {
     });
   }
 
+  /** Customer self-service: list deliveries for the calling customer's
+   *  linked CG record (returns [] if no record is linked). */
+  async findForUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { linkedCgCustomerId: true },
+    });
+    if (!user?.linkedCgCustomerId) return [];
+    return this.prisma.cGDelivery.findMany({
+      where: { customerId: user.linkedCgCustomerId },
+      orderBy: { loggedAt: 'desc' },
+    });
+  }
+
   /** Atomic: insert delivery row + mutate the customer's balance. */
   async record(params: RecordDeliveryParams) {
     return this.prisma.$transaction(async (tx) => {

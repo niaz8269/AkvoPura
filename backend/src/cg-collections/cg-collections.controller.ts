@@ -33,6 +33,17 @@ export class CGCollectionsController {
     return me.branch;
   }
 
+  /** Customer self-service: collections for the calling customer's
+   *  linked CG record. */
+  @Get('mine')
+  mine(@Req() req: Request) {
+    const me = req.user as JwtPayload;
+    if (me.role !== 'customer') {
+      throw new ForbiddenException('Customers only');
+    }
+    return this.collections.findForUser(me.sub);
+  }
+
   @Get()
   list(
     @Req() req: Request,

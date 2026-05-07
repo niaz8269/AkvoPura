@@ -34,6 +34,17 @@ export class CGDeliveriesController {
     return me.branch;
   }
 
+  /** Customer self-service: deliveries for the calling customer's
+   *  linked CG record. */
+  @Get('mine')
+  mine(@Req() req: Request) {
+    const me = req.user as JwtPayload;
+    if (me.role !== 'customer') {
+      throw new ForbiddenException('Customers only');
+    }
+    return this.deliveries.findForUser(me.sub);
+  }
+
   @Get()
   list(
     @Req() req: Request,

@@ -13,7 +13,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
 import { useAuth } from '../../auth/AuthContext';
-import { useCGSalesman } from '../../cg/state';
 import { useCustomerPortal } from '../state';
 
 const brandLogo = require('../../../assets/brand/akvopura-brand.png');
@@ -24,12 +23,12 @@ type Nav = { navigate: (screen: string) => void };
 
 export function CustomerHomeScreen({ navigation }: { navigation: Nav }) {
   const { user } = useAuth();
-  const cg = useCGSalesman();
   const portal = useCustomerPortal();
 
-  const cgRecord = user?.linkedCgCustomerId
-    ? cg.customerById(user.linkedCgCustomerId)
-    : undefined;
+  // Backend-sourced (B-20). Sums BOTH CG + Pets sides so a customer
+  // who owes Rs 100 on cans and Rs 140 on Pets sees the real Rs 240.
+  const cgRecord = portal.myCgRecord;
+  const petRecord = portal.myPetRecord;
 
   const myOrders = user ? portal.ordersForUser(user.id) : [];
   const inFlight = myOrders.filter((o) =>
@@ -38,7 +37,7 @@ export function CustomerHomeScreen({ navigation }: { navigation: Nav }) {
   const mySubscriptions = user ? portal.subscriptionsForUser(user.id) : [];
   const activeSubs = mySubscriptions.filter((s) => s.active).length;
 
-  const debt = cgRecord?.outstandingDebt ?? 0;
+  const debt = (cgRecord?.outstandingDebt ?? 0) + (petRecord?.outstandingDebt ?? 0);
   const heldCans = cgRecord?.emptyCansHeld ?? 0;
   const heldGallons = cgRecord?.emptyGallonsHeld ?? 0;
 

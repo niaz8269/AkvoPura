@@ -35,6 +35,14 @@ import {
   listMySubscriptions,
   updateSubscriptionApi,
 } from '../api/subscriptions';
+import { getMyCGCustomer } from '../api/cgCustomers';
+import { listMyCGDeliveries } from '../api/cgDeliveries';
+import { listMyCGCollections } from '../api/cgCollections';
+import { getMyPetCustomer } from '../api/petCustomers';
+import { listMyPetBills } from '../api/petBills';
+import { listMyPetReturns } from '../api/petReturns';
+import type { CGCustomer, CollectionEntry, DeliveryEntry } from '../cg/types';
+import type { BillEntry, PetCustomer, PetReturnEntry } from '../pets/types';
 import type {
   Complaint,
   ComplaintCategory,
@@ -74,6 +82,17 @@ type State = {
   catalog: typeof productCatalog;
   ordersLoading: boolean;
 
+  /** Customer self-service: the calling customer's own linked CG +
+   *  Pets records and their bill / delivery / collection / return
+   *  history. All come back from /me + /mine endpoints; null/[] when
+   *  the customer hasn't had any orders fulfilled in that side yet. */
+  myCgRecord: CGCustomer | null;
+  myPetRecord: PetCustomer | null;
+  myCgDeliveries: DeliveryEntry[];
+  myCgCollections: CollectionEntry[];
+  myPetBills: BillEntry[];
+  myPetReturns: PetReturnEntry[];
+
   ordersForUser: (userId: string) => CustomerOrder[];
   complaintsForUser: (userId: string) => Complaint[];
   subscriptionsForUser: (userId: string) => Subscription[];
@@ -90,6 +109,10 @@ type State = {
   runSubscriptionNow: (id: string) => Promise<CustomerOrder | null>;
   refreshOrders: () => Promise<void>;
   refreshSubscriptions: () => Promise<void>;
+  /** Refresh the customer's own CG + Pets records + bills/deliveries.
+   *  Called automatically after placeOrder + on first mount; the
+   *  history screen also calls it on pull-to-refresh. */
+  refreshMyData: () => Promise<void>;
 
   // Manager + salesman workflow actions
   assignOrder: (orderId: string, salesmanId: string) => void;
@@ -108,6 +131,15 @@ export function CustomerProvider({ children }: PropsWithChildren) {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [complaints, setComplaints] = useState<Complaint[]>(demoComplaints);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+
+  // Customer self-service state — populated for customer-role users by
+  // refreshMyData. Empty/null for non-customer roles.
+  const [myCgRecord, setMyCgRecord] = useState<CGCustomer | null>(null);
+  const [myPetRecord, setMyPetRecord] = useState<PetCustomer | null>(null);
+  const [myCgDeliveries, setMyCgDeliveries] = useState<DeliveryEntry[]>([]);
+  const [myCgCollections, setMyCgCollections] = useState<CollectionEntry[]>([]);
+  const [myPetBills, setMyPetBills] = useState<BillEntry[]>([]);
+  const [myPetReturns, setMyPetReturns] = useState<PetReturnEntry[]>([]);
 
   const refreshOrders = useCallback(async () => {
     if (!user) return;
@@ -148,13 +180,35 @@ export function CustomerProvider({ children }: PropsWithChildren) {
     }
   }, [user]);
 
+  const refreshMyData = useCallback(async () => {
+    if (!user || user.role !== 'customer') return;
+    // Fan out in parallel — six small endpoints, all branch-scoped
+    // to this user. Tolerate partial failure: a 404 / network blip
+    // for one shouldn't blank the whole screen.
+    const settled = await Promise.allSettled([
+      getMyCGCustomer(),
+      getMyPetCustomer(),
+      listMyCGDeliveries(),
+      listMyCGCollections(),
+      listMyPetBills(),
+      listMyPetReturns(),
+    ]);
+    if (settled[0].status === 'fulfilled') setMyCgRecord(settled[0].value);
+    if (settled[1].status === 'fulfilled') setMyPetRecord(settled[1].value);
+    if (settled[2].status === 'fulfilled') setMyCgDeliveries(settled[2].value);
+    if (settled[3].status === 'fulfilled') setMyCgCollections(settled[3].value);
+    if (settled[4].status === 'fulfilled') setMyPetBills(settled[4].value);
+    if (settled[5].status === 'fulfilled') setMyPetReturns(settled[5].value);
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       refreshOrders();
       refreshComplaints();
       refreshSubscriptions();
+      refreshMyData();
     }
-  }, [user, refreshOrders, refreshComplaints, refreshSubscriptions]);
+  }, [user, refreshOrders, refreshComplaints, refreshSubscriptions, refreshMyData]);
 
   const ordersForUser = useCallback(
     (userId: string) => orders.filter((o) => o.customerUserId === userId),
@@ -179,9 +233,12 @@ export function CustomerProvider({ children }: PropsWithChildren) {
         notes: input.notes,
       });
       setOrders((prev) => [real, ...prev]);
+      // Pull fresh balances + bill history in the background so the Home
+      // and History screens reflect the new order on next render.
+      refreshMyData();
       return real;
     },
-    [],
+    [refreshMyData],
   );
 
   const cancelOrder = useCallback<State['cancelOrder']>(
@@ -409,6 +466,12 @@ export function CustomerProvider({ children }: PropsWithChildren) {
       subscriptions,
       catalog: productCatalog,
       ordersLoading,
+      myCgRecord,
+      myPetRecord,
+      myCgDeliveries,
+      myCgCollections,
+      myPetBills,
+      myPetReturns,
       ordersForUser,
       complaintsForUser,
       subscriptionsForUser,
@@ -421,6 +484,7 @@ export function CustomerProvider({ children }: PropsWithChildren) {
       runSubscriptionNow,
       refreshOrders,
       refreshSubscriptions,
+      refreshMyData,
       assignOrder,
       markInTransit,
       markDelivered,
@@ -433,6 +497,12 @@ export function CustomerProvider({ children }: PropsWithChildren) {
       complaints,
       subscriptions,
       ordersLoading,
+      myCgRecord,
+      myPetRecord,
+      myCgDeliveries,
+      myCgCollections,
+      myPetBills,
+      myPetReturns,
       ordersForUser,
       complaintsForUser,
       subscriptionsForUser,
@@ -445,6 +515,7 @@ export function CustomerProvider({ children }: PropsWithChildren) {
       runSubscriptionNow,
       refreshOrders,
       refreshSubscriptions,
+      refreshMyData,
       assignOrder,
       markInTransit,
       markDelivered,

@@ -26,6 +26,19 @@ export class PetCustomersService {
     return this.prisma.petCustomer.findUnique({ where: { id } });
   }
 
+  /** Resolve the linked Pets customer record for a customer-role user.
+   *  Returns null if the user has no linked Pets record yet. */
+  async findForUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { linkedPetCustomerId: true },
+    });
+    if (!user?.linkedPetCustomerId) return null;
+    return this.prisma.petCustomer.findUnique({
+      where: { id: user.linkedPetCustomerId },
+    });
+  }
+
   private async assertBranchExists(slug: string) {
     const exists = await this.prisma.branch.findUnique({ where: { slug } });
     if (!exists) throw new BadRequestException(`Unknown branch: ${slug}`);

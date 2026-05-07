@@ -27,6 +27,18 @@ const ALLOWED_ROLES = new Set(['owner', 'manager', 'cans_gallons_salesman']);
 export class CGCustomersController {
   constructor(private readonly customers: CGCustomersService) {}
 
+  /** Customer self-service: fetch the calling customer's own linked CG
+   *  customer record (debt, empties held, etc.). Returns null if no CG
+   *  record is linked yet. */
+  @Get('me')
+  myRecord(@Req() req: Request) {
+    const me = req.user as JwtPayload;
+    if (me.role !== 'customer') {
+      throw new ForbiddenException('Customers only');
+    }
+    return this.customers.findForUser(me.sub);
+  }
+
   private assertCanAccess(me: JwtPayload) {
     if (!ALLOWED_ROLES.has(me.role)) {
       throw new ForbiddenException('Insufficient privileges');

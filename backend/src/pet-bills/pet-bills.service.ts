@@ -42,6 +42,20 @@ export class PetBillsService {
     });
   }
 
+  /** Customer self-service: list bills for the calling customer's
+   *  linked Pets record (returns [] if no record is linked). */
+  async findForUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { linkedPetCustomerId: true },
+    });
+    if (!user?.linkedPetCustomerId) return [];
+    return this.prisma.petBill.findMany({
+      where: { customerId: user.linkedPetCustomerId },
+      orderBy: { loggedAt: 'desc' },
+    });
+  }
+
   /** Atomic: insert bill row + add unpaid balance to customer debt. */
   async record(params: RecordBillParams) {
     return this.prisma.$transaction(async (tx) => {

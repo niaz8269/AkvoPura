@@ -26,6 +26,20 @@ export class CGCustomersService {
     return this.prisma.cGCustomer.findUnique({ where: { id } });
   }
 
+  /** Resolve the linked CG customer record for a customer-role user.
+   *  Returns null if the user has no linked CG record yet (i.e., no CG
+   *  order has ever been fulfilled for them). */
+  async findForUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { linkedCgCustomerId: true },
+    });
+    if (!user?.linkedCgCustomerId) return null;
+    return this.prisma.cGCustomer.findUnique({
+      where: { id: user.linkedCgCustomerId },
+    });
+  }
+
   private async assertBranchExists(slug: string) {
     const exists = await this.prisma.branch.findUnique({ where: { slug } });
     if (!exists) throw new BadRequestException(`Unknown branch: ${slug}`);

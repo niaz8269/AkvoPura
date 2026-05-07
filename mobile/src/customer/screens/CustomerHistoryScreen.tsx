@@ -2,40 +2,68 @@
  * CustomerHistoryScreen — past orders + actual deliveries/bills.
  *
  * Two sections: "Orders" (what the customer requested) and "Bills" (what
- * the salesman actually delivered, drawn from the CG provider).
- * Pending orders can be cancelled here.
+ * the salesman actually delivered). Bills mix both CG deliveries and
+ * Pets bills, sorted newest-first. Pending orders can be cancelled here.
+ *
+ * All data comes from the backend self-service endpoints (B-20):
+ * /orders/mine, /cg/deliveries/mine, /pets/bills/mine. Pull-to-refresh
+ * calls portal.refreshMyData() to get up-to-date balances.
  */
 
-import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import {
+  Alert,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
 import { useAuth } from '../../auth/AuthContext';
-import { useCGSalesman } from '../../cg/state';
 import { useCustomerPortal } from '../state';
 import type { CustomerOrder, CustomerOrderStatus } from '../types';
 import { generateAndShareBill, type BillItem } from '../../billing/pdf';
-import type { DeliveryEntry } from '../../cg/types';
-import type { CGCustomer } from '../../cg/types';
+import type { CGCustomer, DeliveryEntry } from '../../cg/types';
+import type { BillEntry, PetCustomer } from '../../pets/types';
+
+/** Unified bill-feed item — discriminated union for sort + render. */
+type FeedItem =
+  | { kind: 'cg'; ts: number; row: DeliveryEntry }
+  | { kind: 'pet'; ts: number; row: BillEntry };
 
 export function CustomerHistoryScreen() {
   const { user } = useAuth();
-  const cg = useCGSalesman();
   const portal = useCustomerPortal();
 
   const myOrders = user ? portal.ordersForUser(user.id) : [];
 
-  const cgRecord = user?.linkedCgCustomerId
-    ? cg.customerById(user.linkedCgCustomerId)
-    : undefined;
-  const myDeliveries = user?.linkedCgCustomerId
-    ? cg.deliveriesForCustomer(user.linkedCgCustomerId)
-    : [];
+  const cgRecord = portal.myCgRecord;
+  const petRecord = portal.myPetRecord;
+  const myCgDeliveries = portal.myCgDeliveries;
+  const myPetBills = portal.myPetBills;
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([portal.refreshOrders(), portal.refreshMyData()]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [portal]);
 
   const orderedOrders = [...myOrders].sort((a, b) => b.placedAt - a.placedAt);
-  const orderedDeliveries = [...myDeliveries].sort((a, b) => b.timestamp - a.timestamp);
+
+  // Merge CG + Pets bills, sorted newest first.
+  const feed: FeedItem[] = [
+    ...myCgDeliveries.map<FeedItem>((d) => ({ kind: 'cg', ts: d.timestamp, row: d })),
+    ...myPetBills.map<FeedItem>((b) => ({ kind: 'pet', ts: b.timestamp, row: b })),
+  ].sort((a, b) => b.ts - a.ts);
 
   return (
     <Screen padded={false}>
@@ -44,7 +72,10 @@ export function CustomerHistoryScreen() {
         <Text style={styles.titleUr}>تاریخ</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView
+        contentContainerStyle={styles.body}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         <SectionTitle text="Your orders" subtitle="آپ کے آرڈر" />
         {orderedOrders.length === 0 ? (
           <Empty text="No orders yet. Tap Order to place one." />
@@ -72,19 +103,33 @@ export function CustomerHistoryScreen() {
         )}
 
         <SectionTitle text="Bills you've received" subtitle="آپ کے بل" />
-        {orderedDeliveries.length === 0 ? (
-          <Empty text="No deliveries logged yet." />
+        {feed.length === 0 ? (
+          <Empty text="No bills yet. Bills appear here once a delivery is completed." />
         ) : (
-          orderedDeliveries.map((d) => (
-            <BillRow key={d.id} delivery={d} customer={cgRecord} branch={user?.branch} />
-          ))
+          feed.map((item) =>
+            item.kind === 'cg' ? (
+              <CGBillRow
+                key={`cg-${item.row.id}`}
+                delivery={item.row}
+                customer={cgRecord ?? undefined}
+                branch={user?.branch}
+              />
+            ) : (
+              <PetBillRow
+                key={`pet-${item.row.id}`}
+                bill={item.row}
+                customer={petRecord ?? undefined}
+                branch={user?.branch}
+              />
+            )
+          )
         )}
       </ScrollView>
     </Screen>
   );
 }
 
-function BillRow({
+function CGBillRow({
   delivery,
   customer,
   branch,
@@ -151,6 +196,100 @@ function BillRow({
             : 'Paid in full'}
         </Text>
         <Text style={styles.billTime}>{formatDateTime(delivery.timestamp)}</Text>
+      </View>
+      <Pressable
+        onPress={onShare}
+        disabled={sharing || !customer}
+        style={({ pressed }) => [
+          styles.billShareBtn,
+          pressed ? { opacity: 0.7 } : null,
+          sharing ? { opacity: 0.5 } : null,
+        ]}
+        accessibilityLabel="Share bill PDF"
+      >
+        <Ionicons name="share-social" size={18} color={colors.primary} />
+      </Pressable>
+    </View>
+  );
+}
+
+function PetBillRow({
+  bill,
+  customer,
+  branch,
+}: {
+  bill: BillEntry;
+  customer?: PetCustomer;
+  branch?: string;
+}) {
+  const [sharing, setSharing] = useState(false);
+  const credit = bill.amountBilled - bill.cashCollected - bill.bankCollected;
+
+  const onShare = async () => {
+    if (!customer) return;
+    setSharing(true);
+    try {
+      const items: BillItem[] = [];
+      // Reconstruct unit prices from the snapshotted subtotal so the
+      // PDF matches what was actually billed even if pricing has
+      // changed since.
+      const total600 = bill.pet600Packs;
+      const total1500 = bill.pet1500Packs;
+      // Fall back to current pricing if we can't infer (e.g., one of
+      // the qty fields is 0).
+      const price600 =
+        total600 > 0 && total1500 === 0
+          ? bill.subtotal / total600
+          : (customer.pricePet600 ?? 0);
+      const price1500 =
+        total1500 > 0 && total600 === 0
+          ? bill.subtotal / total1500
+          : (customer.pricePet1500 ?? 0);
+      if (total600 > 0) {
+        items.push({ name: '600 ml pack', qty: total600, unitPrice: Math.round(price600) });
+      }
+      if (total1500 > 0) {
+        items.push({ name: '1.5 L pack', qty: total1500, unitPrice: Math.round(price1500) });
+      }
+      const ok = await generateAndShareBill({
+        billNumber: bill.id.slice(-6).toUpperCase(),
+        dateTime: bill.timestamp,
+        customerName: customer.name,
+        customerAddress: customer.address,
+        customerPhone: customer.phone,
+        branchName: branch === 'shergarh' ? 'Shergarh' : 'Timergara',
+        items,
+        paid: bill.cashCollected + bill.bankCollected,
+        credit: Math.max(0, credit),
+      });
+      if (!ok) {
+        Alert.alert('Sharing unavailable', 'This device does not support sharing files.');
+      }
+    } catch (err) {
+      Alert.alert('Could not generate PDF', String(err));
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  return (
+    <View style={styles.billRow}>
+      <View style={styles.billIcon}>
+        <Ionicons name="receipt-outline" size={20} color={colors.primary} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.billLine}>
+          {bill.pet600Packs > 0 ? `${bill.pet600Packs} × 600ml ` : ''}
+          {bill.pet1500Packs > 0 ? `${bill.pet1500Packs} × 1.5L` : ''}
+        </Text>
+        <Text style={styles.billSub}>
+          Rs {bill.amountBilled.toLocaleString()} billed •{' '}
+          {credit > 0
+            ? `Rs ${credit.toLocaleString()} on credit`
+            : 'Paid in full'}
+          {bill.discount > 0 ? ` • Rs ${bill.discount} discount` : ''}
+        </Text>
+        <Text style={styles.billTime}>{formatDateTime(bill.timestamp)}</Text>
       </View>
       <Pressable
         onPress={onShare}

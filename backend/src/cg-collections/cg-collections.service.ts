@@ -42,6 +42,20 @@ export class CGCollectionsService {
     });
   }
 
+  /** Customer self-service: list collections for the calling customer's
+   *  linked CG record. */
+  async findForUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { linkedCgCustomerId: true },
+    });
+    if (!user?.linkedCgCustomerId) return [];
+    return this.prisma.cGCollection.findMany({
+      where: { customerId: user.linkedCgCustomerId },
+      orderBy: { loggedAt: 'desc' },
+    });
+  }
+
   /** Atomic: insert collection row + decrement customer's empties + reduce
    *  customer's outstanding debt by cash + bank received. */
   async record(params: RecordCollectionParams) {

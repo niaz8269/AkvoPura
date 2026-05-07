@@ -47,6 +47,13 @@ export async function listPetReturns(filter: ListPetReturnsFilter = {}) {
   return rows.map(toReturnEntry);
 }
 
+/** Customer self-service: returns logged for the calling customer's
+ *  linked Pets record. */
+export async function listMyPetReturns() {
+  const rows = await apiRequest<ApiPetReturn[]>('/pets/returns/mine');
+  return rows.map(toReturnEntry);
+}
+
 export type RecordReturnInput = {
   customerId: string;
   pet600Packs: number;
