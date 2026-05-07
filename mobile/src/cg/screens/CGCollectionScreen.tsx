@@ -17,6 +17,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 
@@ -42,40 +43,62 @@ export function CGCollectionScreen() {
 
   const [cycle, setCycle] = useState<CycleFilterValue>('all');
 
-  const customersWithEmpties = useMemo(
-    () => customers.filter((c) => c.emptyCansHeld + c.emptyGallonsHeld > 0),
-    [customers]
+  // Now that collection also captures payment, show customers who EITHER
+  // hold empties to return OR have outstanding debt to settle.
+  const customersToVisit = useMemo(
+    () =>
+      customers.filter(
+        (c) => c.emptyCansHeld + c.emptyGallonsHeld > 0 || c.outstandingDebt > 0,
+      ),
+    [customers],
   );
 
   const visibleEmpties = useMemo(
     () =>
       cycle === 'all'
-        ? customersWithEmpties
-        : customersWithEmpties.filter((c) => c.paymentCycle === cycle),
-    [customersWithEmpties, cycle]
+        ? customersToVisit
+        : customersToVisit.filter((c) => c.paymentCycle === cycle),
+    [customersToVisit, cycle]
   );
 
   const countByCycle = useMemo(
     () => ({
-      all: customersWithEmpties.length,
-      daily: customersWithEmpties.filter((c) => c.paymentCycle === 'daily').length,
-      weekly: customersWithEmpties.filter((c) => c.paymentCycle === 'weekly').length,
+      all: customersToVisit.length,
+      daily: customersToVisit.filter((c) => c.paymentCycle === 'daily').length,
+      weekly: customersToVisit.filter((c) => c.paymentCycle === 'weekly').length,
     }),
-    [customersWithEmpties]
+    [customersToVisit]
   );
 
   const totalCansCollected = collections.reduce((s, c) => s + c.cansCollected, 0);
   const totalGallonsCollected = collections.reduce((s, c) => s + c.gallonsCollected, 0);
+  const totalCashCollected = collections.reduce(
+    (s, c) => s + c.cashCollected + c.bankCollected,
+    0,
+  );
 
   return (
     <Screen padded={false}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerStat}>
-          Today: <Text style={styles.headerStatVal}>{totalCansCollected}🥫 · {totalGallonsCollected}💧</Text>
-        </Text>
-        <Text style={styles.headerStatMuted}>
-          On van: {vanLoad.emptyCansAboard}🥫 · {vanLoad.emptyGallonsAboard}💧
-        </Text>
+        <View style={styles.headerStatRow}>
+          <Text style={styles.headerStatLead}>Today:</Text>
+          <Text style={styles.headerStatVal}>{totalCansCollected}</Text>
+          <Image source={canIcon} style={styles.headerIcon} resizeMode="contain" />
+          <Text style={styles.headerStatSep}>·</Text>
+          <Text style={styles.headerStatVal}>{totalGallonsCollected}</Text>
+          <Image source={gallonIcon} style={styles.headerIcon} resizeMode="contain" />
+          {totalCashCollected > 0 ? (
+            <Text style={styles.headerStatMoney}>· Rs {totalCashCollected.toLocaleString()}</Text>
+          ) : null}
+        </View>
+        <View style={styles.headerStatRow}>
+          <Text style={styles.headerStatMuted}>On van:</Text>
+          <Text style={styles.headerStatMutedVal}>{vanLoad.emptyCansAboard}</Text>
+          <Image source={canIcon} style={styles.headerIconSm} resizeMode="contain" />
+          <Text style={styles.headerStatMuted}>·</Text>
+          <Text style={styles.headerStatMutedVal}>{vanLoad.emptyGallonsAboard}</Text>
+          <Image source={gallonIcon} style={styles.headerIconSm} resizeMode="contain" />
+        </View>
         {collections.length > 0 ? (
           <Pressable
             onPress={() => {
@@ -97,20 +120,23 @@ export function CGCollectionScreen() {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.list}>
         {visibleEmpties.length === 0 ? (
           <Text style={styles.empty}>
-            {customersWithEmpties.length === 0
-              ? 'No customers are holding empties right now. Nothing to collect.'
-              : `No ${cycle} customers are holding empties.`}
+            {customersToVisit.length === 0
+              ? 'Nothing to collect — no empties or debts outstanding.'
+              : `No ${cycle} customers with empties or debt.`}
           </Text>
         ) : (
           visibleEmpties.map((c) => (
             <CollectionRow
               key={c.id}
               customer={c}
-              onRecord={(cans, gallons) =>
+              onRecord={(input) =>
                 recordCollection({
                   customerId: c.id,
-                  cansCollected: cans,
-                  gallonsCollected: gallons,
+                  cansCollected: input.cans,
+                  gallonsCollected: input.gallons,
+                  cashCollected: input.cash,
+                  bankCollected: input.bank,
+                  paymentReference: input.ref,
                 })
               }
             />
@@ -121,79 +147,236 @@ export function CGCollectionScreen() {
   );
 }
 
+type CollectionPayload = {
+  cans: number;
+  gallons: number;
+  cash: number;
+  bank: number;
+  ref?: string;
+};
+
 function CollectionRow({
   customer,
   onRecord,
 }: {
   customer: CGCustomer;
-  onRecord: (cans: number, gallons: number) => void;
+  onRecord: (input: CollectionPayload) => void;
 }) {
-  const [cans, setCans] = useState(customer.emptyCansHeld);
-  const [gallons, setGallons] = useState(customer.emptyGallonsHeld);
+  // Both cans + gallons default to 0. Salesman MUST actively bump them
+  // up as they physically pick up empties — auto-defaulting to "all held"
+  // would wrongly clear the customer's empties record on a cash-only swipe.
+  const [cans, setCans] = useState(0);
+  const [gallons, setGallons] = useState(0);
+  const [cashStr, setCashStr] = useState<string | null>(null);
+  const [bankStr, setBankStr] = useState('');
+  const [paymentRef, setPaymentRef] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [resetKey, setResetKey] = useState(0);
 
-  // Whenever held quantities change (after a previous collection), refresh defaults.
-  useEffect(() => {
-    if (!confirmed) {
-      setCans(customer.emptyCansHeld);
-      setGallons(customer.emptyGallonsHeld);
-    }
-  }, [customer.emptyCansHeld, customer.emptyGallonsHeld, confirmed]);
-
-  // Auto-reset after a successful confirmation.
+  // Auto-reset after a successful confirmation — back to all-zero so the
+  // next visit starts fresh.
   useEffect(() => {
     if (!confirmed) return;
     const t = setTimeout(() => {
       setConfirmed(false);
+      setCans(0);
+      setGallons(0);
+      setCashStr(null);
+      setBankStr('');
+      setPaymentRef('');
       setResetKey((k) => k + 1);
     }, 1400);
     return () => clearTimeout(t);
   }, [confirmed]);
 
-  const canSwipe = cans + gallons > 0;
+  const debt = customer.outstandingDebt;
+  // Both cash + bank default to 0. Salesman MUST type any amount they
+  // actually received — otherwise an accidental empties-only swipe could
+  // wrongly mark the debt as settled.
+  const cashAmt = useMemo(() => {
+    const n = Number(cashStr ?? '') || 0;
+    return Math.max(0, Math.min(debt, n));
+  }, [cashStr, debt]);
+  const bankAmt = useMemo(() => {
+    const n = Number(bankStr) || 0;
+    return Math.max(0, Math.min(debt - cashAmt, n));
+  }, [bankStr, debt, cashAmt]);
+  const remainingDebt = Math.max(0, debt - cashAmt - bankAmt);
+
+  const canSwipe = cans + gallons + cashAmt + bankAmt > 0;
 
   return (
     <View style={styles.row}>
       <View style={styles.rowHeader}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.rowName} numberOfLines={1}>
-            {customer.name}
-          </Text>
-          <Text style={styles.rowHeld}>
-            Holding: {customer.emptyCansHeld} cans • {customer.emptyGallonsHeld} gallons
-          </Text>
+        <Text style={styles.rowName} numberOfLines={1}>
+          {customer.name}
+        </Text>
+
+        <View style={styles.statusRow}>
+          <View
+            style={[
+              styles.statusPill,
+              customer.emptyCansHeld + customer.emptyGallonsHeld > 0
+                ? styles.statusPillWarn
+                : styles.statusPillOk,
+            ]}
+          >
+            <Text
+              style={[
+                styles.statusPillLabel,
+                customer.emptyCansHeld + customer.emptyGallonsHeld > 0
+                  ? styles.statusPillLabelWarn
+                  : styles.statusPillLabelOk,
+              ]}
+            >
+              CUSTOMER IS HOLDING
+            </Text>
+            <View style={styles.statusPillIconRow}>
+              <Text
+                style={[
+                  styles.statusPillValue,
+                  customer.emptyCansHeld + customer.emptyGallonsHeld > 0
+                    ? styles.statusPillValueWarn
+                    : styles.statusPillValueOk,
+                ]}
+              >
+                {customer.emptyCansHeld}
+              </Text>
+              <Image
+                source={canIcon}
+                style={styles.statusPillImg}
+                resizeMode="contain"
+              />
+              <Text
+                style={[
+                  styles.statusPillValue,
+                  customer.emptyCansHeld + customer.emptyGallonsHeld > 0
+                    ? styles.statusPillValueWarn
+                    : styles.statusPillValueOk,
+                ]}
+              >
+                {' · '}{customer.emptyGallonsHeld}
+              </Text>
+              <Image
+                source={gallonIcon}
+                style={styles.statusPillImg}
+                resizeMode="contain"
+              />
+            </View>
+          </View>
+          <View
+            style={[
+              styles.statusPill,
+              debt > 0 ? styles.statusPillDanger : styles.statusPillOk,
+            ]}
+          >
+            <Text
+              style={[
+                styles.statusPillLabel,
+                debt > 0 ? styles.statusPillLabelDanger : styles.statusPillLabelOk,
+              ]}
+            >
+              CUSTOMER OWES
+            </Text>
+            <Text
+              style={[
+                styles.statusPillValue,
+                debt > 0 ? styles.statusPillValueDanger : styles.statusPillValueOk,
+              ]}
+            >
+              Rs {debt.toLocaleString()}
+            </Text>
+          </View>
         </View>
       </View>
 
       <QuantityStepper
-        label="Cans to collect"
-        labelUr="کین جمع کرنے ہیں"
+        label="Cans collected"
+        labelUr="کین جمع کیے"
         value={cans}
         onChange={setCans}
         max={customer.emptyCansHeld}
         icon={canIcon}
       />
       <QuantityStepper
-        label="Gallons to collect"
-        labelUr="گیلن جمع کرنے ہیں"
+        label="Gallons collected"
+        labelUr="گیلن جمع کیے"
         value={gallons}
         onChange={setGallons}
         max={customer.emptyGallonsHeld}
         icon={gallonIcon}
       />
 
+      {debt > 0 ? (
+        <View style={styles.paymentBox}>
+          <View style={styles.payRow}>
+            <Text style={styles.payLabel}>Cash</Text>
+            <View style={styles.payInputWrap}>
+              <Text style={styles.payCurrency}>Rs</Text>
+              <TextInput
+                value={cashStr ?? ''}
+                onChangeText={(t) => setCashStr(t.replace(/[^0-9]/g, ''))}
+                keyboardType="number-pad"
+                placeholder="0"
+                placeholderTextColor={colors.textMuted}
+                style={styles.payInput}
+                maxLength={7}
+              />
+            </View>
+            <Text style={styles.payLabel}>Bank</Text>
+            <View style={styles.payInputWrap}>
+              <Text style={styles.payCurrency}>Rs</Text>
+              <TextInput
+                value={bankStr}
+                onChangeText={(t) => setBankStr(t.replace(/[^0-9]/g, ''))}
+                keyboardType="number-pad"
+                placeholder="0"
+                placeholderTextColor={colors.textMuted}
+                style={styles.payInput}
+                maxLength={7}
+              />
+            </View>
+          </View>
+          {bankAmt > 0 ? (
+            <TextInput
+              value={paymentRef}
+              onChangeText={setPaymentRef}
+              placeholder="Reference / TXN id (optional)"
+              placeholderTextColor={colors.textMuted}
+              style={styles.refInput}
+            />
+          ) : null}
+          <View style={styles.creditRow}>
+            <Text style={styles.creditLabel}>Remaining debt</Text>
+            <Text
+              style={[
+                styles.creditValue,
+                remainingDebt > 0 ? styles.creditValueDanger : null,
+              ]}
+            >
+              Rs {remainingDebt.toLocaleString()}
+            </Text>
+          </View>
+        </View>
+      ) : null}
+
       <View style={styles.swipeWrap}>
         <SwipeToConfirm
           key={resetKey}
-          labelEn="Swipe to collect  ›››"
-          labelUr="جمع کرنے کے لیے سوائپ کریں"
-          doneLabelEn="Collected ✓"
-          doneLabelUr="جمع ہو گیا"
+          labelEn="Swipe to record  ›››"
+          labelUr="ریکارڈ کرنے کے لیے سوائپ کریں"
+          doneLabelEn="Recorded ✓"
+          doneLabelUr="ریکارڈ ہو گیا"
           done={confirmed}
           disabled={!canSwipe}
           onConfirm={() => {
-            onRecord(cans, gallons);
+            onRecord({
+              cans,
+              gallons,
+              cash: cashAmt,
+              bank: bankAmt,
+              ref: paymentRef.trim() || undefined,
+            });
             setConfirmed(true);
           }}
         />
@@ -217,8 +400,14 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   headerStat: { fontSize: 12, color: colors.textMuted, fontWeight: '600' },
-  headerStatVal: { color: colors.primaryDark, fontWeight: '800' },
+  headerStatRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  headerStatLead: { fontSize: 12, color: colors.textMuted, fontWeight: '600' },
+  headerStatVal: { color: colors.primaryDark, fontWeight: '800', fontSize: 13 },
+  headerStatSep: { color: colors.textMuted, fontSize: 12 },
   headerStatMuted: { fontSize: 11, color: colors.textMuted },
+  headerStatMutedVal: { fontSize: 12, color: colors.primaryDark, fontWeight: '700' },
+  headerIcon: { width: 14, height: 14 },
+  headerIconSm: { width: 12, height: 12 },
   undoBtn: {
     paddingVertical: 4,
     paddingHorizontal: spacing.sm,
@@ -255,11 +444,133 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.primaryDark,
   },
-  rowHeld: {
-    fontSize: fontSizes.xs,
-    color: colors.warning,
-    fontWeight: '700',
+  statusRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  statusPill: {
+    flex: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+  },
+  statusPillOk: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+  },
+  statusPillWarn: {
+    backgroundColor: colors.warning + '14',
+    borderColor: colors.warning,
+  },
+  statusPillDanger: {
+    backgroundColor: colors.danger + '14',
+    borderColor: colors.danger,
+  },
+  statusPillLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  statusPillLabelOk: { color: colors.textMuted },
+  statusPillLabelWarn: { color: colors.warning },
+  statusPillLabelDanger: { color: colors.danger },
+  statusPillValue: {
+    fontSize: fontSizes.body,
+    fontWeight: '900',
     marginTop: 2,
   },
+  statusPillValueOk: { color: colors.textMuted },
+  statusPillValueWarn: { color: colors.warning },
+  statusPillValueDanger: { color: colors.danger },
+  statusPillIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  statusPillImg: { width: 18, height: 18 },
+
+  paymentBox: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.md,
+    padding: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  payRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  payLabel: {
+    fontSize: fontSizes.xs,
+    fontWeight: '800',
+    color: colors.primaryDark,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  payInputWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    borderWidth: 1.5,
+    borderColor: colors.primaryLight,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.sm,
+    backgroundColor: colors.surface,
+    minHeight: 36,
+  },
+  payCurrency: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.textMuted,
+  },
+  payInput: {
+    flex: 1,
+    paddingVertical: 4,
+    fontSize: fontSizes.sm,
+    fontWeight: '800',
+    color: colors.primaryDark,
+    textAlign: 'right',
+  },
+  refInput: {
+    marginTop: spacing.sm,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+    fontSize: fontSizes.sm,
+    color: colors.text,
+    backgroundColor: colors.surface,
+  },
+  creditRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  creditLabel: {
+    fontSize: fontSizes.xs,
+    fontWeight: '700',
+    color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  creditValue: {
+    fontSize: fontSizes.body,
+    fontWeight: '900',
+    color: colors.success,
+  },
+  creditValueDanger: { color: colors.danger },
+
+  headerStatMoney: { color: colors.success, fontWeight: '900' },
+
   swipeWrap: { marginTop: spacing.md },
 });

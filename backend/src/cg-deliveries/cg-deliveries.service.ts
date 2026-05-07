@@ -15,6 +15,8 @@ export type RecordDeliveryParams = {
   emptyCansCollected: number;
   emptyGallonsCollected: number;
   cashCollected: number;
+  bankCollected?: number;
+  paymentReference?: string;
   tripNumber?: number;
 };
 
@@ -55,6 +57,8 @@ export class CGDeliveriesService {
       const billed =
         params.cansDelivered * customer.pricePerCan +
         params.gallonsDelivered * customer.pricePerGallon;
+      const bankCollected = Math.max(0, params.bankCollected ?? 0);
+      const totalPaid = params.cashCollected + bankCollected;
 
       await tx.cGCustomer.update({
         where: { id: customer.id },
@@ -69,7 +73,7 @@ export class CGDeliveriesService {
             params.emptyGallonsCollected,
           outstandingDebt: Math.max(
             0,
-            customer.outstandingDebt + billed - params.cashCollected,
+            customer.outstandingDebt + billed - totalPaid,
           ),
           lastActivityAt: new Date(),
         },
@@ -85,6 +89,8 @@ export class CGDeliveriesService {
           emptyCansCollected: params.emptyCansCollected,
           emptyGallonsCollected: params.emptyGallonsCollected,
           cashCollected: params.cashCollected,
+          bankCollected,
+          paymentReference: params.paymentReference?.trim() || null,
           amountBilled: billed,
           tripNumber: params.tripNumber ?? 1,
         },
@@ -118,7 +124,7 @@ export class CGDeliveriesService {
             customer.emptyGallonsHeld - d.gallonsDelivered + d.emptyGallonsCollected,
           outstandingDebt: Math.max(
             0,
-            customer.outstandingDebt - d.amountBilled + d.cashCollected,
+            customer.outstandingDebt - d.amountBilled + d.cashCollected + d.bankCollected,
           ),
         },
       });

@@ -46,6 +46,34 @@ type DemoCG = {
   notes?: string;
 };
 
+type DemoPet = {
+  id: string;
+  name: string;
+  phone: string;
+  address: string;
+  area: string;
+  branchSlug: string;
+  outstandingDebt: number;
+  pricePet600?: number;
+  pricePet1500?: number;
+  lastActivityAt?: Date;
+  notes?: string;
+};
+
+/** Mirror of mobile/src/pets/demoData.ts */
+const petCustomers: DemoPet[] = [
+  { id: 'p-1',  name: 'Al-Madina General Store',    phone: '0300-1112233', address: 'Bazaar Chowk, Timergara',          area: 'Bazaar',       branchSlug: 'timergara', outstandingDebt: 0,    lastActivityAt: daysAgo(1) },
+  { id: 'p-2',  name: 'Khan Karyana',               phone: '0301-7788990', address: 'Mohalla Khan, Street 4',           area: 'Mohalla Khan', branchSlug: 'timergara', outstandingDebt: 4200, lastActivityAt: daysAgo(9),  notes: 'Pays weekly on Friday.' },
+  { id: 'p-3',  name: 'New Sahib Departmental',     phone: '0312-4455667', address: 'Main Bazaar, opposite mosque',     area: 'Bazaar',       branchSlug: 'timergara', outstandingDebt: 0,    lastActivityAt: daysAgo(50) },
+  { id: 'p-4',  name: 'Saima Tuck Shop (School)',   phone: '0344-5566778', address: 'Govt Boys School, canteen',         area: 'School Road',  branchSlug: 'timergara', outstandingDebt: 0,    lastActivityAt: daysAgo(4),  notes: 'Only morning hours (8 AM – 1 PM).' },
+  { id: 'p-5',  name: 'Bypass Cold Drink Corner',   phone: '0345-9988776', address: 'Bypass Road, near tyre shop',       area: 'Bypass',       branchSlug: 'timergara', outstandingDebt: 0,    pricePet600: 290, pricePet1500: 330, lastActivityAt: daysAgo(6) },
+  { id: 'p-6',  name: 'Family — Akbar House',       phone: '0322-1010101', address: 'House #14, Street 5',               area: 'Domestic',     branchSlug: 'timergara', outstandingDebt: 0,    lastActivityAt: daysAgo(38) },
+  { id: 'p-7',  name: 'Hira Beauty Parlour',        phone: '0331-2233445', address: 'Bazaar second floor',               area: 'Bazaar',       branchSlug: 'timergara', outstandingDebt: 0,    lastActivityAt: daysAgo(14) },
+  { id: 'p-8',  name: 'Al-Falah Stationery',        phone: '0300-7654321', address: 'School Road, near press',           area: 'School Road',  branchSlug: 'timergara', outstandingDebt: 1100, lastActivityAt: daysAgo(75) },
+  { id: 'p-9',  name: 'Truck Adda Tea Stall',       phone: '0335-8899001', address: 'Truck adda, end of bypass',         area: 'Bypass',       branchSlug: 'timergara', outstandingDebt: 0,    lastActivityAt: daysAgo(2),  notes: 'Buys 1.5L packs only. No 600ml.' },
+  { id: 'p-10', name: 'Eidgah Mart',                phone: '0310-7777888', address: 'Eidgah Road, main entrance',        area: 'Eidgah',       branchSlug: 'timergara', outstandingDebt: 0,    lastActivityAt: daysAgo(22) },
+];
+
 const cgCustomers: DemoCG[] = [
   // --- Hospital route ---
   { id: 'c-h1', name: 'DHQ Hospital — ICU Block', phone: '0300-1112233', address: 'DHQ Hospital, ICU Block, Timergara', branchSlug: 'timergara', route: CGRoute.hospital, paymentCycle: PaymentCycle.daily,  usualCans: 4, usualGallons: 6, emptyCansHeld: 4, emptyGallonsHeld: 6, outstandingDebt: 0,    pricePerCan: 250, pricePerGallon: 180, lastActivityAt: daysAgo(1),  notes: 'Deliver before 9 AM. Ask for Sister Aisha.' },
@@ -123,6 +151,27 @@ async function main() {
       create: c,
     });
     console.log(`  ✔ ${c.id.padEnd(8)} ${c.name}`);
+  }
+
+  console.log('Pets customers:');
+  for (const p of petCustomers) {
+    await prisma.petCustomer.upsert({
+      where: { id: p.id },
+      update: {
+        name: p.name,
+        phone: p.phone,
+        address: p.address,
+        area: p.area,
+        branchSlug: p.branchSlug,
+        outstandingDebt: p.outstandingDebt,
+        pricePet600: p.pricePet600 ?? null,
+        pricePet1500: p.pricePet1500 ?? null,
+        lastActivityAt: p.lastActivityAt ?? null,
+        notes: p.notes ?? null,
+      },
+      create: p,
+    });
+    console.log(`  ✔ ${p.id.padEnd(6)} ${p.name}`);
   }
 
   console.log('Users:');

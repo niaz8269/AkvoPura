@@ -51,6 +51,12 @@ export function PetsSellScreen() {
   const [price600, setPrice600] = useState<string | null>(null);
   const [price1500, setPrice1500] = useState<string | null>(null);
   const [discountStr, setDiscountStr] = useState('');
+  // Payment method state. Cash defaults to the full bill (current behaviour);
+  // bank covers digital payments (Easypaisa / JazzCash / IBFT). Anything not
+  // covered by either becomes credit on the customer's account.
+  const [cashStr, setCashStr] = useState<string | null>(null);
+  const [bankStr, setBankStr] = useState('');
+  const [paymentRef, setPaymentRef] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [resetKey, setResetKey] = useState(0);
   const [sharing, setSharing] = useState(false);
@@ -97,6 +103,19 @@ export function PetsSellScreen() {
   }, [discountStr, subtotal]);
   const billed = subtotal - discount;
 
+  // Both cash + bank default to 0. Salesman MUST type any amount they
+  // actually received — auto-defaulting to "paid in full" risks marking a
+  // credit sale as paid if the salesman swipes without checking.
+  const cashAmt = useMemo(() => {
+    const n = Number(cashStr ?? '') || 0;
+    return Math.max(0, Math.min(billed, n));
+  }, [cashStr, billed]);
+  const bankAmt = useMemo(() => {
+    const n = Number(bankStr) || 0;
+    return Math.max(0, Math.min(billed - cashAmt, n));
+  }, [bankStr, billed, cashAmt]);
+  const creditAmt = Math.max(0, billed - cashAmt - bankAmt);
+
   const canSwipe = !!selected && pet600 + pet1500 > 0 && !confirmed;
 
   useEffect(() => {
@@ -110,6 +129,9 @@ export function PetsSellScreen() {
       setPrice600(null);
       setPrice1500(null);
       setDiscountStr('');
+      setCashStr(null);
+      setBankStr('');
+      setPaymentRef('');
       setLastReceipt(null);
       setResetKey((k) => k + 1);
     }, 7000);
@@ -118,14 +140,15 @@ export function PetsSellScreen() {
 
   const onConfirm = () => {
     if (!selected) return;
-    // Pets bills are always treated as paid in full (cash on the spot).
-    // Credit-style sales now flow through the CG cycle logic; if a Pets credit
-    // mechanism is needed later it will get its own UI rather than a toggle.
+    // Cash + bank can be split arbitrarily; whatever isn't covered by
+    // either becomes credit on the customer's account.
     const entry = recordBill({
       customerId: selected.id,
       pet600Packs: pet600,
       pet1500Packs: pet1500,
-      cashCollected: billed,
+      cashCollected: cashAmt,
+      bankCollected: bankAmt,
+      paymentReference: paymentRef.trim() || undefined,
       pricePet600: effective600,
       pricePet1500: effective1500,
       discount,
@@ -141,7 +164,7 @@ export function PetsSellScreen() {
         subtotal,
         discount,
         amount: billed,
-        cash: billed,
+        cash: cashAmt + bankAmt, // legacy field — total paid for receipt math
       });
       setConfirmed(true);
     }
@@ -312,6 +335,77 @@ export function PetsSellScreen() {
                 <Text style={styles.totalLabel}>Total bill</Text>
                 <Text style={styles.totalLabelUr}>کل بل</Text>
                 <Text style={styles.totalValue}>Rs {billed.toLocaleString()}</Text>
+              </View>
+
+              <View style={styles.paymentCard}>
+                <Text style={styles.paymentTitle}>Payment</Text>
+                <Text style={styles.paymentTitleUr}>ادائیگی</Text>
+
+                <View style={styles.payRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.payLabel}>Cash</Text>
+                    <Text style={styles.payLabelUr}>نقد</Text>
+                  </View>
+                  <View style={styles.payInputWrap}>
+                    <Text style={styles.payCurrency}>Rs</Text>
+                    <TextInput
+                      value={cashStr ?? ''}
+                      onChangeText={(t) => setCashStr(t.replace(/[^0-9]/g, ''))}
+                      keyboardType="number-pad"
+                      placeholder="0"
+                      placeholderTextColor={colors.textMuted}
+                      style={styles.payInput}
+                      maxLength={7}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.payRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.payLabel}>Bank / Easypaisa</Text>
+                    <Text style={styles.payLabelUr}>بینک / ایزی پیسہ</Text>
+                  </View>
+                  <View style={styles.payInputWrap}>
+                    <Text style={styles.payCurrency}>Rs</Text>
+                    <TextInput
+                      value={bankStr}
+                      onChangeText={(t) => setBankStr(t.replace(/[^0-9]/g, ''))}
+                      keyboardType="number-pad"
+                      placeholder="0"
+                      placeholderTextColor={colors.textMuted}
+                      style={styles.payInput}
+                      maxLength={7}
+                    />
+                  </View>
+                </View>
+
+                {bankAmt > 0 ? (
+                  <View style={styles.refRow}>
+                    <Text style={styles.refLabel}>Reference / TXN ID</Text>
+                    <TextInput
+                      value={paymentRef}
+                      onChangeText={setPaymentRef}
+                      placeholder="e.g. EP12345 or sender name"
+                      placeholderTextColor={colors.textMuted}
+                      style={styles.refInput}
+                    />
+                  </View>
+                ) : null}
+
+                <View style={styles.creditRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.creditLabel}>On credit (debt)</Text>
+                    <Text style={styles.creditLabelUr}>قرض</Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.creditValue,
+                      creditAmt > 0 ? styles.creditValueDanger : null,
+                    ]}
+                  >
+                    Rs {creditAmt.toLocaleString()}
+                  </Text>
+                </View>
               </View>
 
               <SwipeToConfirm
@@ -646,6 +740,92 @@ const styles = StyleSheet.create({
   paidLabel: { fontSize: fontSizes.body, fontWeight: '700', color: colors.text },
   paidLabelUr: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 1 },
   swipe: { marginTop: spacing.sm },
+
+  paymentCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginTop: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  paymentTitle: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  paymentTitleUr: {
+    fontSize: fontSizes.xs,
+    color: colors.primary,
+    marginBottom: spacing.sm,
+  },
+  payRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+  },
+  payLabel: { fontSize: fontSizes.body, fontWeight: '700', color: colors.text },
+  payLabelUr: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 1 },
+  payInputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1.5,
+    borderColor: colors.primaryLight,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.sm,
+    backgroundColor: colors.surfaceMuted,
+    minWidth: 110,
+  },
+  payCurrency: {
+    fontSize: fontSizes.xs,
+    fontWeight: '800',
+    color: colors.textMuted,
+  },
+  payInput: {
+    flex: 1,
+    paddingVertical: 8,
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+    textAlign: 'right',
+  },
+  refRow: { marginTop: spacing.sm },
+  refLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  refInput: {
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    fontSize: fontSizes.sm,
+    color: colors.text,
+    backgroundColor: colors.surfaceMuted,
+  },
+  creditRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  creditLabel: { fontSize: fontSizes.body, fontWeight: '700', color: colors.text },
+  creditLabelUr: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 1 },
+  creditValue: {
+    fontSize: fontSizes.title,
+    fontWeight: '900',
+    color: colors.success,
+  },
+  creditValueDanger: { color: colors.danger },
   receiptCard: {
     marginTop: spacing.md,
     padding: spacing.lg,

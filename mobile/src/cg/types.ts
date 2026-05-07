@@ -47,7 +47,13 @@ export type DeliveryEntry = {
   /** Empties picked up during this same delivery visit (optional). */
   emptyCansCollected: number;
   emptyGallonsCollected: number;
+  /** Cash received in hand. */
   cashCollected: number;
+  /** Money received via Easypaisa / JazzCash / IBFT / etc. Counts the
+   *  same as cash for the debt calculation. */
+  bankCollected: number;
+  /** Free-text reference for the digital payment (TXN id, sender). */
+  paymentReference?: string;
   /** Total amount of this delivery (cans*price + gallons*price), for receipt. */
   amountBilled: number;
   /** Which trip (1, 2, 3...) of the day this delivery belongs to. */
@@ -58,6 +64,13 @@ export type DeliveryEntry = {
 export type CollectionEntry = {
   id: string;
   customerId: string;
+  /** Cash received from the customer at this visit. */
+  cashCollected: number;
+  /** Money received via Easypaisa / JazzCash / IBFT etc. Counts the
+   *  same as cash for the debt calculation. */
+  bankCollected: number;
+  /** Free-text reference for the digital payment (TXN id, sender). */
+  paymentReference?: string;
   cansCollected: number;
   gallonsCollected: number;
   /** Which trip of the day this collection belongs to. */

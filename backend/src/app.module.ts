@@ -9,6 +9,9 @@ import { PricingModule } from './pricing/pricing.module';
 import { CGCustomersModule } from './cg-customers/cg-customers.module';
 import { CGDeliveriesModule } from './cg-deliveries/cg-deliveries.module';
 import { CGCollectionsModule } from './cg-collections/cg-collections.module';
+import { PetCustomersModule } from './pet-customers/pet-customers.module';
+import { PetBillsModule } from './pet-bills/pet-bills.module';
+import { PetReturnsModule } from './pet-returns/pet-returns.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -21,6 +24,9 @@ import { HealthController } from './health.controller';
     CGCustomersModule,
     CGDeliveriesModule,
     CGCollectionsModule,
+    PetCustomersModule,
+    PetBillsModule,
+    PetReturnsModule,
     AuthModule,
   ],
   controllers: [HealthController],

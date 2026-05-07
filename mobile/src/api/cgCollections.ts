@@ -12,6 +12,9 @@ export type ApiCGCollection = {
   branchSlug: string;
   cansCollected: number;
   gallonsCollected: number;
+  cashCollected: number;
+  bankCollected: number;
+  paymentReference: string | null;
   tripNumber: number;
   loggedAt: string;
 };
@@ -22,6 +25,9 @@ export function toCollectionEntry(api: ApiCGCollection): CollectionEntry {
     customerId: api.customerId,
     cansCollected: api.cansCollected,
     gallonsCollected: api.gallonsCollected,
+    cashCollected: api.cashCollected,
+    bankCollected: api.bankCollected,
+    paymentReference: api.paymentReference ?? undefined,
     tripNumber: api.tripNumber,
     timestamp: Date.parse(api.loggedAt),
   };
@@ -47,6 +53,9 @@ export type RecordCollectionInput = {
   customerId: string;
   cansCollected: number;
   gallonsCollected: number;
+  cashCollected?: number;
+  bankCollected?: number;
+  paymentReference?: string;
   tripNumber?: number;
 };
 

@@ -47,8 +47,98 @@ model Branch {
   updatedAt    DateTime     @updatedAt
   users        User[]
   cgCustomers  CGCustomer[]
+  petCustomers PetCustomer[]
 
   @@map("branches")
+}
+
+/// Pets customer — usually a small shop or domestic household that buys
+/// disposable PET packs (600ml × 12 or 1.5L × 6). No empties, no
+/// payment cycle — just a debt balance. Per-customer price overrides
+/// fall back to global Pricing if null.
+model PetCustomer {
+  id              String   @id @default(cuid())
+  name            String
+  phone           String
+  address         String
+  /// Free text — Pets routes are flexible, not enum-constrained.
+  area            String
+  branchSlug      String
+  branch          Branch   @relation(fields: [branchSlug], references: [slug])
+
+  outstandingDebt Int      @default(0)
+  pricePet600     Int?
+  pricePet1500    Int?
+
+  lastActivityAt  DateTime?
+
+  active          Boolean  @default(true)
+  notes           String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  bills           PetBill[]
+  returns         PetReturn[]
+
+  @@index([branchSlug, active])
+  @@map("pet_customers")
+}
+
+/// One Pets bill (sale). Mutates the customer's outstanding debt.
+model PetBill {
+  id            String      @id @default(cuid())
+  customerId    String
+  customer      PetCustomer @relation(fields: [customerId], references: [id])
+  salesmanId    String
+  branchSlug    String
+
+  pet600Packs   Int
+  pet1500Packs  Int
+  /// Subtotal before discount = packs * unit prices used at bill time.
+  subtotal      Int
+  /// Flat Rs amount discounted (0 if none).
+  discount      Int         @default(0)
+  /// Final amount the customer owes for this bill = subtotal - discount.
+  amountBilled  Int
+  /// Cash received in hand.
+  cashCollected Int         @default(0)
+  /// Money received via Easypaisa / JazzCash / IBFT / other digital.
+  /// Treated identically to cash for the debt calculation.
+  bankCollected Int         @default(0)
+  /// Free-text reference for the digital payment (TXN id, sender name).
+  paymentReference String?
+  tripNumber    Int         @default(1)
+
+  loggedAt      DateTime    @default(now())
+
+  @@index([branchSlug, loggedAt])
+  @@index([salesmanId, loggedAt])
+  @@index([customerId, loggedAt])
+  @@map("pet_bills")
+}
+
+/// One Pets return — packs come back, customer's debt is credited
+/// (or cash refunded — for now just credit).
+model PetReturn {
+  id            String      @id @default(cuid())
+  customerId    String
+  customer      PetCustomer @relation(fields: [customerId], references: [id])
+  salesmanId    String
+  branchSlug    String
+
+  pet600Packs   Int
+  pet1500Packs  Int
+  refundAmount  Int
+  reason        String?
+  tripNumber    Int         @default(1)
+
+  loggedAt      DateTime    @default(now())
+
+  @@index([branchSlug, loggedAt])
+  @@index([salesmanId, loggedAt])
+  @@index([customerId, loggedAt])
+  @@map("pet_returns")
 }
 
 /// One delivery visit. Mutates the customer's empties + debt; the
@@ -65,7 +155,13 @@ model CGDelivery {
   gallonsDelivered      Int
   emptyCansCollected    Int
   emptyGallonsCollected Int
+  /// Cash received in hand.
   cashCollected         Int
+  /// Money received via Easypaisa / JazzCash / IBFT / other digital.
+  /// Treated identically to cash for the debt calculation.
+  bankCollected         Int        @default(0)
+  /// Free-text reference for the digital payment (TXN id, sender name).
+  paymentReference      String?
   /// cans*price + gallons*price at delivery time, snapshotted.
   amountBilled          Int
   /// Which trip of the day (1, 2, ...).
@@ -89,6 +185,16 @@ model CGCollection {
 
   cansCollected     Int
   gallonsCollected  Int
+
+  /// Cash collected from the customer at this visit (often the moment
+  /// the salesman comes back to pick up empties is also when payment
+  /// changes hands, especially for weekly-cycle customers).
+  cashCollected     Int        @default(0)
+  /// Money received via Easypaisa / JazzCash / IBFT etc.
+  bankCollected     Int        @default(0)
+  /// Free-text reference for the digital payment (TXN id, sender name).
+  paymentReference  String?
+
   tripNumber        Int        @default(1)
 
   loggedAt          DateTime   @default(now())

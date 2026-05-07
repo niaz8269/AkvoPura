@@ -22,6 +22,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -81,9 +82,14 @@ export function CGDeliveryScreen() {
   return (
     <Screen padded={false}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerStat}>
-          On van: <Text style={styles.headerStatVal}>{vanLoad.filledCans}🥫 · {vanLoad.filledGallons}💧</Text>
-        </Text>
+        <View style={styles.headerStatRow}>
+          <Text style={styles.headerStat}>On van:</Text>
+          <Text style={styles.headerStatVal}>{vanLoad.filledCans}</Text>
+          <Image source={canIcon} style={styles.headerIcon} resizeMode="contain" />
+          <Text style={styles.headerStat}>·</Text>
+          <Text style={styles.headerStatVal}>{vanLoad.filledGallons}</Text>
+          <Image source={gallonIcon} style={styles.headerIcon} resizeMode="contain" />
+        </View>
         {deliveries.length > 0 ? (
           <Pressable
             onPress={() => {
@@ -146,11 +152,9 @@ function DeliveryRow({
   const [lastEntry, setLastEntry] = useState<DeliveryEntry | null>(null);
   const [sharing, setSharing] = useState(false);
 
+  // Delivery only records what was given. Payment is collected on the
+  // Collect tab (with empties) — that's where the money flow lives.
   const billed = cans * customer.pricePerCan + gallons * customer.pricePerGallon;
-  // Cash vs credit is derived from the customer's payment cycle:
-  //   daily customers pay on every visit → full cash collected
-  //   weekly customers settle once a week → bill goes to outstanding debt
-  const isPaidNow = customer.paymentCycle === 'daily';
   const canSwipe = cans + gallons > 0;
 
   // After a successful confirm, hold the green row + Share button for a while,
@@ -174,7 +178,9 @@ function DeliveryRow({
       gallonsDelivered: gallons,
       emptyCansCollected: 0,
       emptyGallonsCollected: 0,
-      cashCollected: isPaidNow ? billed : 0,
+      // Payment is captured on the Collect tab — delivery is goods-only.
+      cashCollected: 0,
+      bankCollected: 0,
     });
     if (entry) {
       setLastEntry(entry);
@@ -313,7 +319,14 @@ const styles = StyleSheet.create({
   headerStatVal: {
     color: colors.primaryDark,
     fontWeight: '800',
+    fontSize: 13,
   },
+  headerStatRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  headerIcon: { width: 14, height: 14 },
   undoBtn: {
     paddingVertical: 4,
     paddingHorizontal: spacing.sm,
@@ -435,6 +448,83 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: 1,
   },
+  paymentBox: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.md,
+    padding: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  payRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  payLabel: {
+    fontSize: fontSizes.xs,
+    fontWeight: '800',
+    color: colors.primaryDark,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  payInputWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    borderWidth: 1.5,
+    borderColor: colors.primaryLight,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.sm,
+    backgroundColor: colors.surface,
+    minHeight: 36,
+  },
+  payCurrency: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.textMuted,
+  },
+  payInput: {
+    flex: 1,
+    paddingVertical: 4,
+    fontSize: fontSizes.sm,
+    fontWeight: '800',
+    color: colors.primaryDark,
+    textAlign: 'right',
+  },
+  refInput: {
+    marginTop: spacing.sm,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+    fontSize: fontSizes.sm,
+    color: colors.text,
+    backgroundColor: colors.surface,
+  },
+  creditRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  creditLabel: {
+    fontSize: fontSizes.xs,
+    fontWeight: '700',
+    color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  creditValue: {
+    fontSize: fontSizes.body,
+    fontWeight: '900',
+    color: colors.success,
+  },
+  creditValueDanger: { color: colors.danger },
+
   swipeWrap: {
     marginTop: spacing.sm,
   },

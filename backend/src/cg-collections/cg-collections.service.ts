@@ -12,6 +12,9 @@ export type RecordCollectionParams = {
   salesmanId: string;
   cansCollected: number;
   gallonsCollected: number;
+  cashCollected?: number;
+  bankCollected?: number;
+  paymentReference?: string;
   tripNumber?: number;
 };
 
@@ -39,7 +42,8 @@ export class CGCollectionsService {
     });
   }
 
-  /** Atomic: insert collection row + decrement customer's empties. */
+  /** Atomic: insert collection row + decrement customer's empties + reduce
+   *  customer's outstanding debt by cash + bank received. */
   async record(params: RecordCollectionParams) {
     return this.prisma.$transaction(async (tx) => {
       const customer = await tx.cGCustomer.findUnique({
@@ -47,11 +51,17 @@ export class CGCollectionsService {
       });
       if (!customer) throw new NotFoundException('Customer not found');
 
+      const cash = Math.max(0, params.cashCollected ?? 0);
+      const bank = Math.max(0, params.bankCollected ?? 0);
+      const totalPaid = cash + bank;
+
       await tx.cGCustomer.update({
         where: { id: customer.id },
         data: {
           emptyCansHeld: Math.max(0, customer.emptyCansHeld - params.cansCollected),
           emptyGallonsHeld: Math.max(0, customer.emptyGallonsHeld - params.gallonsCollected),
+          outstandingDebt: Math.max(0, customer.outstandingDebt - totalPaid),
+          ...(totalPaid > 0 ? { lastActivityAt: new Date() } : {}),
         },
       });
 
@@ -62,13 +72,17 @@ export class CGCollectionsService {
           branchSlug: customer.branchSlug,
           cansCollected: params.cansCollected,
           gallonsCollected: params.gallonsCollected,
+          cashCollected: cash,
+          bankCollected: bank,
+          paymentReference: params.paymentReference?.trim() || null,
           tripNumber: params.tripNumber ?? 1,
         },
       });
     });
   }
 
-  /** Reverse a collection and delete it. Same-day, same-salesman only. */
+  /** Reverse a collection and delete it. Same-day, same-salesman only.
+   *  Reverses both the empties and the money. */
   async undo(id: string, salesmanId: string) {
     return this.prisma.$transaction(async (tx) => {
       const c = await tx.cGCollection.findUnique({ where: { id } });
@@ -89,6 +103,7 @@ export class CGCollectionsService {
         data: {
           emptyCansHeld: customer.emptyCansHeld + c.cansCollected,
           emptyGallonsHeld: customer.emptyGallonsHeld + c.gallonsCollected,
+          outstandingDebt: customer.outstandingDebt + c.cashCollected + c.bankCollected,
         },
       });
 

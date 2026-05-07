@@ -51,7 +51,13 @@ export type BillEntry = {
   discount: number;
   /** Final amount the customer owes = subtotal - discount. */
   amountBilled: number;
+  /** Cash received in hand. */
   cashCollected: number;
+  /** Money received via Easypaisa / JazzCash / IBFT / etc. Counts the
+   *  same as cash for the debt calculation. */
+  bankCollected: number;
+  /** Free-text reference for the digital payment (TXN id, sender). */
+  paymentReference?: string;
   /** Which trip (1, 2, 3...) of the day this bill belongs to. */
   tripNumber: number;
   timestamp: number;

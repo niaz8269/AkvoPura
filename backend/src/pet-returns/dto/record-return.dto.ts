@@ -1,31 +1,25 @@
 import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class RecordDeliveryDto {
+export class RecordReturnDto {
   @IsString()
   customerId!: string;
 
   @Type(() => Number) @IsInt() @Min(0)
-  cansDelivered!: number;
+  pet600Packs!: number;
 
   @Type(() => Number) @IsInt() @Min(0)
-  gallonsDelivered!: number;
+  pet1500Packs!: number;
+
+  /** Bill-time unit prices used for the refund computation. */
+  @Type(() => Number) @IsInt() @Min(0)
+  pricePet600!: number;
 
   @Type(() => Number) @IsInt() @Min(0)
-  emptyCansCollected!: number;
-
-  @Type(() => Number) @IsInt() @Min(0)
-  emptyGallonsCollected!: number;
-
-  @Type(() => Number) @IsInt() @Min(0)
-  cashCollected!: number;
-
-  /** Easypaisa / JazzCash / IBFT etc. Counts toward payment same as cash. */
-  @IsOptional() @Type(() => Number) @IsInt() @Min(0)
-  bankCollected?: number;
+  pricePet1500!: number;
 
   @IsOptional() @IsString()
-  paymentReference?: string;
+  reason?: string;
 
   @IsOptional() @Type(() => Number) @IsInt() @Min(1)
   tripNumber?: number;

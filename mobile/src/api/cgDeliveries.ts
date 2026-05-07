@@ -18,6 +18,8 @@ export type ApiCGDelivery = {
   emptyCansCollected: number;
   emptyGallonsCollected: number;
   cashCollected: number;
+  bankCollected: number;
+  paymentReference: string | null;
   amountBilled: number;
   tripNumber: number;
   loggedAt: string;
@@ -32,6 +34,8 @@ export function toDeliveryEntry(api: ApiCGDelivery): DeliveryEntry {
     emptyCansCollected: api.emptyCansCollected,
     emptyGallonsCollected: api.emptyGallonsCollected,
     cashCollected: api.cashCollected,
+    bankCollected: api.bankCollected,
+    paymentReference: api.paymentReference ?? undefined,
     amountBilled: api.amountBilled,
     tripNumber: api.tripNumber,
     timestamp: Date.parse(api.loggedAt),
@@ -68,6 +72,8 @@ export type RecordDeliveryInput = {
   emptyCansCollected: number;
   emptyGallonsCollected: number;
   cashCollected: number;
+  bankCollected?: number;
+  paymentReference?: string;
   tripNumber?: number;
 };
 

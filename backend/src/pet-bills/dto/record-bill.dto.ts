@@ -1,19 +1,29 @@
 import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class RecordCollectionDto {
+export class RecordBillDto {
   @IsString()
   customerId!: string;
 
   @Type(() => Number) @IsInt() @Min(0)
-  cansCollected!: number;
+  pet600Packs!: number;
 
   @Type(() => Number) @IsInt() @Min(0)
-  gallonsCollected!: number;
+  pet1500Packs!: number;
 
-  /** Cash received at this visit. Defaults to 0. */
+  /** Bill-time unit prices used for the calculation. The salesman may
+   *  override the customer / global default at bill time. */
+  @Type(() => Number) @IsInt() @Min(0)
+  pricePet600!: number;
+
+  @Type(() => Number) @IsInt() @Min(0)
+  pricePet1500!: number;
+
   @IsOptional() @Type(() => Number) @IsInt() @Min(0)
-  cashCollected?: number;
+  discount?: number;
+
+  @Type(() => Number) @IsInt() @Min(0)
+  cashCollected!: number;
 
   /** Easypaisa / JazzCash / IBFT etc. Counts toward payment same as cash. */
   @IsOptional() @Type(() => Number) @IsInt() @Min(0)

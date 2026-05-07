@@ -1,14 +1,22 @@
 /**
  * PetsSalesmanState — single source of truth for the Pets salesman's day.
  *
- * Tracks: customers (with mutable debt), van load (Pet600/Pet1500 packs),
- * bills[], returns[]. In-memory only for Slice 3 — backend persistence later.
+ * As of B-10 the customer list, bills, and returns are all backed by the
+ * /pets/* endpoints. The provider boots from baked-in demo data so the
+ * UI is usable offline, then refetches whenever a user logs in. Mutations
+ * (addCustomer / recordBill / undoLastBill / recordReturn / undoLastReturn)
+ * are optimistic locally and rolled back via refresh on failure.
+ *
+ * Van load is still local for now — it represents what's physically on
+ * the van, which is set by the manager at trip-start; persisting it is
+ * a later slice.
  */
 
 import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type PropsWithChildren,
@@ -16,6 +24,22 @@ import React, {
 
 import { demoPetCustomers, initialPetVanLoad, petProducts } from './demoData';
 import { usePricing } from '../pricing/state';
+import { useAuth } from '../auth/AuthContext';
+import {
+  createPetCustomer,
+  listPetCustomers,
+} from '../api/petCustomers';
+import {
+  listPetBills,
+  recordPetBill,
+  todayLocal,
+  undoPetBill,
+} from '../api/petBills';
+import {
+  listPetReturns,
+  recordPetReturn,
+  undoPetReturn,
+} from '../api/petReturns';
 import type {
   BillEntry,
   PetCustomer,
@@ -29,6 +53,9 @@ type BillInput = {
   pet600Packs: number;
   pet1500Packs: number;
   cashCollected: number;
+  /** Optional digital payment (Easypaisa / JazzCash / IBFT). */
+  bankCollected?: number;
+  paymentReference?: string;
   /** Bill-time price overrides (per pack). If omitted, falls back to priceFor(). */
   pricePet600?: number;
   pricePet1500?: number;
@@ -46,7 +73,10 @@ type ReturnInput = {
 type AddPetCustomerInput = Omit<
   PetCustomer,
   'id' | 'outstandingDebt' | 'lastActivityAt'
->;
+> & {
+  /** Branch the customer belongs to. Defaults to the caller's branch. */
+  branchSlug?: string;
+};
 
 type State = {
   customers: PetCustomer[];
@@ -60,8 +90,12 @@ type State = {
   returnsForCustomer: (id: string) => PetReturnEntry[];
   priceFor: (customer: PetCustomer, productId: PetProduct['id']) => number;
 
-  /** Add a new Pets customer. Returns the created record (with id). */
-  addCustomer: (input: AddPetCustomerInput) => PetCustomer;
+  /** Add a new Pets customer (POSTs to backend). */
+  addCustomer: (input: AddPetCustomerInput) => Promise<PetCustomer>;
+  /** Force a fresh fetch of customers + today's activity. */
+  refresh: () => Promise<void>;
+  /** True while loading customers from the server. */
+  loading: boolean;
   recordBill: (input: BillInput) => BillEntry | null;
   undoLastBill: () => BillEntry | null;
   recordReturn: (input: ReturnInput) => PetReturnEntry | null;
@@ -83,11 +117,39 @@ function nextId(prefix: string) {
 
 export function PetsSalesmanProvider({ children }: PropsWithChildren) {
   const { prices } = usePricing();
+  const { user } = useAuth();
   const [customers, setCustomers] = useState<PetCustomer[]>(demoPetCustomers);
+  const [loading, setLoading] = useState(false);
   const [vanLoad, setVanLoad] = useState<PetVanLoad>(initialPetVanLoad);
   const [bills, setBills] = useState<BillEntry[]>([]);
   const [returns, setReturns] = useState<PetReturnEntry[]>([]);
   const [currentTripNumber, setCurrentTripNumber] = useState(1);
+
+  const refresh = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const date = todayLocal();
+      const [freshCustomers, todayBills, todayReturns] = await Promise.all([
+        listPetCustomers(),
+        listPetBills({ date, salesmanId: user.id }),
+        listPetReturns({ date, salesmanId: user.id }),
+      ]);
+      setCustomers(freshCustomers);
+      // Server returns most-recent-first; keep oldest-first for the UI.
+      setBills([...todayBills].reverse());
+      setReturns([...todayReturns].reverse());
+    } catch {
+      // offline — keep current in-memory state
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  // Re-fetch on user change.
+  useEffect(() => {
+    if (user) refresh();
+  }, [user, refresh]);
 
   const customerById = useCallback(
     (id: string) => customers.find((c) => c.id === id),
@@ -116,15 +178,24 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
     [prices]
   );
 
-  const addCustomer = useCallback<State['addCustomer']>((input) => {
-    const created: PetCustomer = {
-      ...input,
-      id: nextId('cust'),
-      outstandingDebt: 0,
-    };
-    setCustomers((prev) => [...prev, created]);
-    return created;
-  }, []);
+  const addCustomer = useCallback<State['addCustomer']>(
+    async (input) => {
+      const branchSlug = input.branchSlug ?? user?.branch ?? 'timergara';
+      const created = await createPetCustomer({
+        name: input.name,
+        phone: input.phone,
+        address: input.address,
+        area: input.area,
+        branchSlug,
+        pricePet600: input.pricePet600,
+        pricePet1500: input.pricePet1500,
+        notes: input.notes,
+      });
+      setCustomers((prev) => [...prev, created]);
+      return created;
+    },
+    [user?.branch],
+  );
 
   const recordBill = useCallback<State['recordBill']>((input) => {
     const customer = customers.find((c) => c.id === input.customerId);
@@ -135,26 +206,12 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
     const subtotal = input.pet600Packs * unit600 + input.pet1500Packs * unit1500;
     const discount = Math.max(0, Math.min(subtotal, input.discount ?? 0));
     const billed = subtotal - discount;
+    const bankCollected = Math.max(0, input.bankCollected ?? 0);
+    const totalPaid = input.cashCollected + bankCollected;
 
-    setCustomers((prev) =>
-      prev.map((c) =>
-        c.id === customer.id
-          ? {
-              ...c,
-              outstandingDebt: Math.max(0, c.outstandingDebt + billed - input.cashCollected),
-              lastActivityAt: Date.now(),
-            }
-          : c
-      )
-    );
-
-    setVanLoad((prev) => ({
-      pet600Packs: prev.pet600Packs - input.pet600Packs,
-      pet1500Packs: prev.pet1500Packs - input.pet1500Packs,
-    }));
-
+    const tempId = nextId('b-pending');
     const entry: BillEntry = {
-      id: nextId('b'),
+      id: tempId,
       customerId: customer.id,
       pet600Packs: input.pet600Packs,
       pet1500Packs: input.pet1500Packs,
@@ -162,12 +219,52 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
       discount,
       amountBilled: billed,
       cashCollected: input.cashCollected,
+      bankCollected,
+      paymentReference: input.paymentReference,
       tripNumber: currentTripNumber,
       timestamp: Date.now(),
     };
+
+    // Optimistic local update.
+    setCustomers((prev) =>
+      prev.map((c) =>
+        c.id === customer.id
+          ? {
+              ...c,
+              outstandingDebt: Math.max(0, c.outstandingDebt + billed - totalPaid),
+              lastActivityAt: Date.now(),
+            }
+          : c
+      )
+    );
+    setVanLoad((prev) => ({
+      pet600Packs: prev.pet600Packs - input.pet600Packs,
+      pet1500Packs: prev.pet1500Packs - input.pet1500Packs,
+    }));
     setBills((prev) => [...prev, entry]);
+
+    // Sync with server.
+    recordPetBill({
+      customerId: customer.id,
+      pet600Packs: input.pet600Packs,
+      pet1500Packs: input.pet1500Packs,
+      pricePet600: unit600,
+      pricePet1500: unit1500,
+      discount,
+      cashCollected: input.cashCollected,
+      bankCollected,
+      paymentReference: input.paymentReference,
+      tripNumber: currentTripNumber,
+    })
+      .then((real) => {
+        setBills((prev) => prev.map((b) => (b.id === tempId ? real : b)));
+      })
+      .catch(() => {
+        refresh();
+      });
+
     return entry;
-  }, [customers, priceFor, currentTripNumber]);
+  }, [customers, priceFor, currentTripNumber, refresh]);
 
   const undoLastBill = useCallback<State['undoLastBill']>(() => {
     if (bills.length === 0) return null;
@@ -180,7 +277,7 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
               ...c,
               outstandingDebt: Math.max(
                 0,
-                c.outstandingDebt - last.amountBilled + last.cashCollected
+                c.outstandingDebt - last.amountBilled + last.cashCollected + last.bankCollected
               ),
             }
           : c
@@ -191,16 +288,36 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
       pet1500Packs: prev.pet1500Packs + last.pet1500Packs,
     }));
     setBills((prev) => prev.slice(0, -1));
+
+    if (!last.id.startsWith('b-pending')) {
+      undoPetBill(last.id).catch(() => {
+        refresh();
+      });
+    }
+
     return last;
-  }, [bills]);
+  }, [bills, refresh]);
 
   const recordReturn = useCallback<State['recordReturn']>((input) => {
     const customer = customers.find((c) => c.id === input.customerId);
     if (!customer) return null;
 
+    const unit600 = priceFor(customer, 'pet600');
+    const unit1500 = priceFor(customer, 'pet1500');
     const refund =
-      input.pet600Packs * priceFor(customer, 'pet600') +
-      input.pet1500Packs * priceFor(customer, 'pet1500');
+      input.pet600Packs * unit600 + input.pet1500Packs * unit1500;
+
+    const tempId = nextId('r-pending');
+    const entry: PetReturnEntry = {
+      id: tempId,
+      customerId: customer.id,
+      pet600Packs: input.pet600Packs,
+      pet1500Packs: input.pet1500Packs,
+      refundAmount: refund,
+      reason: input.reason,
+      tripNumber: currentTripNumber,
+      timestamp: Date.now(),
+    };
 
     setCustomers((prev) =>
       prev.map((c) =>
@@ -213,20 +330,26 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
       pet600Packs: prev.pet600Packs + input.pet600Packs,
       pet1500Packs: prev.pet1500Packs + input.pet1500Packs,
     }));
+    setReturns((prev) => [...prev, entry]);
 
-    const entry: PetReturnEntry = {
-      id: nextId('r'),
+    recordPetReturn({
       customerId: customer.id,
       pet600Packs: input.pet600Packs,
       pet1500Packs: input.pet1500Packs,
-      refundAmount: refund,
+      pricePet600: unit600,
+      pricePet1500: unit1500,
       reason: input.reason,
       tripNumber: currentTripNumber,
-      timestamp: Date.now(),
-    };
-    setReturns((prev) => [...prev, entry]);
+    })
+      .then((real) => {
+        setReturns((prev) => prev.map((r) => (r.id === tempId ? real : r)));
+      })
+      .catch(() => {
+        refresh();
+      });
+
     return entry;
-  }, [customers, priceFor, currentTripNumber]);
+  }, [customers, priceFor, currentTripNumber, refresh]);
 
   const undoLastReturn = useCallback<State['undoLastReturn']>(() => {
     if (returns.length === 0) return null;
@@ -244,8 +367,15 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
       pet1500Packs: prev.pet1500Packs - last.pet1500Packs,
     }));
     setReturns((prev) => prev.slice(0, -1));
+
+    if (!last.id.startsWith('r-pending')) {
+      undoPetReturn(last.id).catch(() => {
+        refresh();
+      });
+    }
+
     return last;
-  }, [returns]);
+  }, [returns, refresh]);
 
   const setVanPacks = useCallback<State['setVanPacks']>((pet600, pet1500) => {
     setVanLoad({
@@ -282,6 +412,8 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
       returnsForCustomer,
       priceFor,
       addCustomer,
+      refresh,
+      loading,
       recordBill,
       undoLastBill,
       recordReturn,
@@ -301,6 +433,8 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
       returnsForCustomer,
       priceFor,
       addCustomer,
+      refresh,
+      loading,
       recordBill,
       undoLastBill,
       recordReturn,

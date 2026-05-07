@@ -53,12 +53,20 @@ type DeliveryInput = {
   emptyCansCollected: number;
   emptyGallonsCollected: number;
   cashCollected: number;
+  /** Optional digital payment (Easypaisa / JazzCash / IBFT). */
+  bankCollected?: number;
+  paymentReference?: string;
 };
 
 type CollectionInput = {
   customerId: string;
   cansCollected: number;
   gallonsCollected: number;
+  /** Cash received from the customer at this visit. */
+  cashCollected?: number;
+  /** Easypaisa / JazzCash / IBFT etc. */
+  bankCollected?: number;
+  paymentReference?: string;
 };
 
 type AddCustomerInput = Omit<
@@ -213,6 +221,8 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
     const billed =
       input.cansDelivered * customer.pricePerCan +
       input.gallonsDelivered * customer.pricePerGallon;
+    const bankCollected = Math.max(0, input.bankCollected ?? 0);
+    const totalPaid = input.cashCollected + bankCollected;
 
     // Optimistic local update: customer balance + delivery row + van.
     const tempId = nextId('d-pending');
@@ -224,6 +234,8 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       emptyCansCollected: input.emptyCansCollected,
       emptyGallonsCollected: input.emptyGallonsCollected,
       cashCollected: input.cashCollected,
+      bankCollected,
+      paymentReference: input.paymentReference,
       amountBilled: billed,
       tripNumber: currentTripNumber,
       timestamp: Date.now(),
@@ -243,7 +255,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
                 input.emptyGallonsCollected,
               outstandingDebt: Math.max(
                 0,
-                c.outstandingDebt + billed - input.cashCollected
+                c.outstandingDebt + billed - totalPaid
               ),
               lastActivityAt: Date.now(),
             }
@@ -259,9 +271,6 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
 
     setDeliveries((prev) => [...prev, entry]);
 
-    // Fire-and-forget POST. On success swap our temp row for the real
-    // server one. On failure, refresh customers + today's activity from
-    // the server (rolls back the optimistic mutations).
     recordCGDelivery({
       customerId: input.customerId,
       cansDelivered: input.cansDelivered,
@@ -269,6 +278,8 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       emptyCansCollected: input.emptyCansCollected,
       emptyGallonsCollected: input.emptyGallonsCollected,
       cashCollected: input.cashCollected,
+      bankCollected,
+      paymentReference: input.paymentReference,
       tripNumber: currentTripNumber,
     })
       .then((real) => {
@@ -298,7 +309,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
             c.emptyGallonsHeld - last.gallonsDelivered + last.emptyGallonsCollected,
           outstandingDebt: Math.max(
             0,
-            c.outstandingDebt - last.amountBilled + last.cashCollected
+            c.outstandingDebt - last.amountBilled + last.cashCollected + last.bankCollected
           ),
         };
       })
@@ -326,11 +337,18 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
 
   const recordCollection = useCallback((input: CollectionInput) => {
     const tempId = nextId('c-pending');
+    const cashCollected = Math.max(0, input.cashCollected ?? 0);
+    const bankCollected = Math.max(0, input.bankCollected ?? 0);
+    const totalPaid = cashCollected + bankCollected;
+
     const entry: CollectionEntry = {
       id: tempId,
       customerId: input.customerId,
       cansCollected: input.cansCollected,
       gallonsCollected: input.gallonsCollected,
+      cashCollected,
+      bankCollected,
+      paymentReference: input.paymentReference,
       tripNumber: currentTripNumber,
       timestamp: Date.now(),
     };
@@ -342,6 +360,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
           ...c,
           emptyCansHeld: Math.max(0, c.emptyCansHeld - input.cansCollected),
           emptyGallonsHeld: Math.max(0, c.emptyGallonsHeld - input.gallonsCollected),
+          outstandingDebt: Math.max(0, c.outstandingDebt - totalPaid),
         };
       })
     );
@@ -356,6 +375,9 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       customerId: input.customerId,
       cansCollected: input.cansCollected,
       gallonsCollected: input.gallonsCollected,
+      cashCollected,
+      bankCollected,
+      paymentReference: input.paymentReference,
       tripNumber: currentTripNumber,
     })
       .then((real) => {
@@ -378,6 +400,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
           ...c,
           emptyCansHeld: c.emptyCansHeld + last.cansCollected,
           emptyGallonsHeld: c.emptyGallonsHeld + last.gallonsCollected,
+          outstandingDebt: c.outstandingDebt + last.cashCollected + last.bankCollected,
         };
       })
     );
