@@ -37,7 +37,6 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export function CustomerSubscriptionsScreen() {
   const { user } = useAuth();
   const {
-    catalog,
     subscriptionsForUser,
     createSubscription,
     cancelSubscription,
@@ -83,20 +82,29 @@ export function CustomerSubscriptionsScreen() {
           ) : (
             <NewSubscriptionForm
               onCancel={() => setCreating(false)}
-              onCreate={(items, frequency, weekday, notes) => {
+              onCreate={async (items, frequency, weekday, notes) => {
                 if (!user) return;
-                createSubscription({
-                  customerUserId: user.id,
-                  items,
-                  frequency,
-                  weekday,
-                  notes,
-                });
-                setCreating(false);
-                Alert.alert(
-                  'Subscription saved',
-                  'Tap "Run now" any time to create today\'s order from it.'
-                );
+                try {
+                  await createSubscription({
+                    customerUserId: user.id,
+                    items,
+                    frequency,
+                    weekday,
+                    notes,
+                  });
+                  setCreating(false);
+                  Alert.alert(
+                    'Subscription saved',
+                    frequency === 'daily'
+                      ? 'A new order will be created for you every day at 6 AM.'
+                      : `A new order will be created for you every ${WEEKDAYS[weekday ?? 1]} morning. Tap "Run now" any time for an extra one.`,
+                  );
+                } catch (e: unknown) {
+                  Alert.alert(
+                    'Could not save',
+                    e instanceof Error ? e.message : 'Unknown error',
+                  );
+                }
               }}
             />
           )}
@@ -161,7 +169,7 @@ function NewSubscriptionForm({
     frequency: SubscriptionFrequency,
     weekday: number | undefined,
     notes: string | undefined
-  ) => void;
+  ) => void | Promise<void>;
   onCancel: () => void;
 }) {
   const { catalog } = useCustomerPortal();

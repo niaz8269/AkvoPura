@@ -1,9 +1,10 @@
 /**
  * CustomerProvider — orders + complaints + subscriptions state.
  *
- * Orders are backed by the /orders endpoints (B-15). Complaints and
- * subscriptions still live in local state — they move to the backend
- * in the next slices.
+ * All three are backed by Postgres now (B-15 orders, B-16 complaints,
+ * B-18 subscriptions). The store keeps an in-memory mirror so screens
+ * have something to render before the first network round-trip; on user
+ * actions it does optimistic updates with refresh-on-failure rollback.
  */
 
 import React, {
@@ -28,6 +29,12 @@ import {
   listComplaints,
   updateComplaintApi,
 } from '../api/complaints';
+import {
+  createSubscriptionApi,
+  deleteSubscriptionApi,
+  listMySubscriptions,
+  updateSubscriptionApi,
+} from '../api/subscriptions';
 import type {
   Complaint,
   ComplaintCategory,
@@ -75,11 +82,14 @@ type State = {
   cancelOrder: (id: string) => void;
   fileComplaint: (input: FileComplaintInput) => Promise<Complaint>;
   rateComplaint: (id: string, rating: number) => void;
-  createSubscription: (input: CreateSubscriptionInput) => Subscription;
+  createSubscription: (input: CreateSubscriptionInput) => Promise<Subscription>;
+  /** Cancels by deleting the subscription. Past orders generated from
+   *  it are preserved in the order history. */
   cancelSubscription: (id: string) => void;
-  /** Place an order right now from a subscription (manual run for demo). */
+  /** Place an order right now from a subscription (one-tap, ad-hoc). */
   runSubscriptionNow: (id: string) => Promise<CustomerOrder | null>;
   refreshOrders: () => Promise<void>;
+  refreshSubscriptions: () => Promise<void>;
 
   // Manager + salesman workflow actions
   assignOrder: (orderId: string, salesmanId: string) => void;
@@ -91,10 +101,6 @@ type State = {
 };
 
 const Ctx = createContext<State | undefined>(undefined);
-
-function nextId(prefix: string) {
-  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 9999)}`;
-}
 
 export function CustomerProvider({ children }: PropsWithChildren) {
   const { user } = useAuth();
@@ -132,12 +138,23 @@ export function CustomerProvider({ children }: PropsWithChildren) {
     }
   }, [user]);
 
+  const refreshSubscriptions = useCallback(async () => {
+    if (!user || user.role !== 'customer') return;
+    try {
+      const fresh = await listMySubscriptions();
+      setSubscriptions(fresh);
+    } catch {
+      // offline — keep current in-memory state
+    }
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       refreshOrders();
       refreshComplaints();
+      refreshSubscriptions();
     }
-  }, [user, refreshOrders, refreshComplaints]);
+  }, [user, refreshOrders, refreshComplaints, refreshSubscriptions]);
 
   const ordersForUser = useCallback(
     (userId: string) => orders.filter((o) => o.customerUserId === userId),
@@ -332,40 +349,48 @@ export function CustomerProvider({ children }: PropsWithChildren) {
     [refreshComplaints],
   );
 
-  const createSubscription = useCallback<State['createSubscription']>((input) => {
-    const total = input.items.reduce((s, it) => s + it.qty * it.unitPrice, 0);
-    const sub: Subscription = {
-      id: nextId('s'),
-      customerUserId: input.customerUserId,
-      items: input.items,
-      totalAmount: total,
-      frequency: input.frequency,
-      weekday: input.weekday,
-      notes: input.notes,
-      active: true,
-      lastRunAt: null,
-      createdAt: Date.now(),
-    };
-    setSubscriptions((prev) => [sub, ...prev]);
-    return sub;
-  }, []);
+  const createSubscription = useCallback<State['createSubscription']>(
+    async (input) => {
+      const real = await createSubscriptionApi({
+        items: input.items,
+        frequency: input.frequency,
+        weekday: input.weekday,
+        notes: input.notes,
+      });
+      setSubscriptions((prev) => [real, ...prev]);
+      return real;
+    },
+    [],
+  );
 
-  const cancelSubscription = useCallback<State['cancelSubscription']>((id) => {
-    setSubscriptions((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, active: false } : s)),
-    );
-  }, []);
+  const cancelSubscription = useCallback<State['cancelSubscription']>(
+    (id) => {
+      // Optimistic remove
+      setSubscriptions((prev) => prev.filter((s) => s.id !== id));
+      deleteSubscriptionApi(id).catch(() => {
+        // Restore by refetching
+        refreshSubscriptions();
+      });
+    },
+    [refreshSubscriptions],
+  );
 
   const runSubscriptionNow = useCallback<State['runSubscriptionNow']>(
     async (id) => {
       const sub = subscriptions.find((s) => s.id === id);
       if (!sub || !sub.active) return null;
       try {
+        // "Run now" = place a one-off order with the same items. The
+        // subscription itself is untouched (the cron will still run on
+        // its scheduled days).
         const real = await placeOrderApi({
           items: sub.items,
           notes: `From subscription · ${sub.frequency}${sub.notes ? ` · ${sub.notes}` : ''}`,
         });
         setOrders((prev) => [real, ...prev]);
+        // Optimistic lastRunAt bump for nicer UX. Backend doesn't track
+        // ad-hoc runs (only cron-generated ones); refresh will overwrite
+        // this on the next listSubscriptions if it doesn't match.
         setSubscriptions((prev) =>
           prev.map((s) => (s.id === id ? { ...s, lastRunAt: Date.now() } : s)),
         );
@@ -395,6 +420,7 @@ export function CustomerProvider({ children }: PropsWithChildren) {
       cancelSubscription,
       runSubscriptionNow,
       refreshOrders,
+      refreshSubscriptions,
       assignOrder,
       markInTransit,
       markDelivered,
@@ -418,6 +444,7 @@ export function CustomerProvider({ children }: PropsWithChildren) {
       cancelSubscription,
       runSubscriptionNow,
       refreshOrders,
+      refreshSubscriptions,
       assignOrder,
       markInTransit,
       markDelivered,

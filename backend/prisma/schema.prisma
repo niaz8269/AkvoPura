@@ -71,6 +71,10 @@ enum CustomerOrderStatus {
   cancelled
 }
 
+enum SubscriptionCadence {
+  weekly
+}
+
 enum ComplaintCategory {
   delivery
   product_quality
@@ -108,6 +112,7 @@ model Branch {
   productionBatches ProductionBatch[]
   customerOrders CustomerOrder[]
   complaints    Complaint[]
+  subscriptions Subscription[]
 
   @@map("branches")
 }
@@ -504,6 +509,49 @@ model Pricing {
   updatedBy     String?
 
   @@map("pricing")
+}
+
+/// Customer subscription — recurring order template that the daily cron
+/// turns into pending CustomerOrder rows on matching days. Customers
+/// create / pause / cancel from the customer portal; the manager just
+/// sees the generated orders in their inbox (badged "From subscription").
+model Subscription {
+  id              String              @id @default(cuid())
+  branchSlug      String
+  branch          Branch              @relation(fields: [branchSlug], references: [slug])
+
+  customerUserId  String
+  /// Display-name snapshot at subscribe time.
+  customerName    String
+
+  /// JSON: Array<{ productId: 'cans'|'gallons'|'pet600'|'pet1500', qty: number, unitPrice: number }>
+  /// unitPrice is snapshotted at create time so historical pricing is
+  /// preserved if global pricing changes later. The cron does NOT
+  /// re-price.
+  items           Json
+
+  cadence         SubscriptionCadence @default(weekly)
+  /// Days the order should be generated. 0 = Sunday … 6 = Saturday
+  /// (matches JS Date.getDay()).
+  daysOfWeek      Int[]
+
+  preferredTime   String?
+  notes           String?
+
+  /// Paused / cancelled subscriptions are skipped by the cron.
+  active          Boolean             @default(true)
+
+  /// Last date (yyyy-mm-dd) the cron generated an order from this
+  /// subscription. Prevents duplicate generation if the cron runs
+  /// twice the same day.
+  lastGeneratedOn String?
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([branchSlug, active])
+  @@index([customerUserId])
+  @@map("subscriptions")
 }
 
 model User {

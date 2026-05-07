@@ -19,6 +19,8 @@ import {
   type ProductPriceKey,
   usePricing,
 } from '../../pricing/state';
+import { ApiError } from '../../api/client';
+import { runSubscriptionsCronApi } from '../../api/subscriptions';
 
 export function OwnerSettingsScreen() {
   const { prices, fees, setPrice, setFee, resetPrices } = usePricing();
@@ -76,7 +78,55 @@ export function OwnerSettingsScreen() {
           }}
         />
       </View>
+
+      <Text style={[styles.sectionTitle, { marginTop: spacing.xl }]}>
+        Maintenance
+      </Text>
+      <Text style={styles.sectionSub}>دیکھ بھال</Text>
+      <View style={styles.maintCard}>
+        <Text style={styles.maintTitle}>Subscription orders</Text>
+        <Text style={styles.maintDesc}>
+          Subscriptions normally generate today's orders automatically at
+          6 AM. Tap below to run that job now — useful for testing a new
+          subscription or recovering after server downtime. Safe to repeat:
+          subscriptions already generated today are skipped.
+        </Text>
+        <RunCronButton />
+      </View>
     </Screen>
+  );
+}
+
+function RunCronButton() {
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const res = await runSubscriptionsCronApi();
+      Alert.alert(
+        'Done',
+        res.count === 0
+          ? 'No subscriptions were due today (or all already generated).'
+          : `Generated ${res.count} order${res.count === 1 ? '' : 's'} from today's subscriptions. Check the Manager order inbox.`,
+      );
+    } catch (e: unknown) {
+      const msg = e instanceof ApiError ? e.message || e.code : 'Unknown error';
+      Alert.alert('Could not run', msg);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <BilingualButton
+      label={{
+        en: busy ? 'Running…' : "Generate today's subscription orders",
+        ur: 'آج کے سبسکرپشن آرڈرز بنائیں',
+      }}
+      onPress={run}
+      disabled={busy}
+      style={{ marginTop: spacing.md }}
+    />
   );
 }
 
@@ -250,5 +300,24 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: 'row',
     marginTop: spacing.md,
+  },
+  maintCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginTop: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  maintTitle: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  maintDesc: {
+    fontSize: fontSizes.sm,
+    color: colors.text,
+    lineHeight: 20,
+    marginTop: 4,
   },
 });
