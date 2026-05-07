@@ -1,21 +1,36 @@
 /**
  * EmployeesProvider — single source of truth for employees, attendance,
- * and salary disbursements. In-memory until backend ships.
+ * and salary disbursements. Backed by /employees endpoints (B-21).
  *
- * Computes hours-worked + earnings on demand from raw attendance entries
- * (cheap because we have small numbers).
+ * - Loads employees + today's attendance + disbursements on mount for
+ *   manager/owner roles.
+ * - Mutations are optimistic with refresh-on-failure rollback (same
+ *   pattern as orders/complaints/subscriptions slices).
+ * - Computes hours-worked + earnings on demand from raw attendance
+ *   entries (cheap because we have small numbers).
  */
 
 import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type PropsWithChildren,
 } from 'react';
 
-import { demoAttendance, demoEmployees } from './demoData';
+import { useAuth } from '../auth/AuthContext';
+import {
+  checkInApi,
+  checkOutApi,
+  createEmployeeApi,
+  listAttendanceApi,
+  listDisbursementsApi,
+  listEmployeesApi,
+  recordDisbursementApi,
+  updateEmployeeApi,
+} from '../api/employees';
 import type {
   AttendanceEntry,
   AttendanceTotals,
@@ -51,29 +66,52 @@ type State = {
   /** Returns hours + earnings for a single attendance entry. */
   totalsForEntry: (entry: AttendanceEntry, employee: Employee | undefined) => AttendanceTotals;
 
-  /** Mutations */
-  addEmployee: (input: EmployeeInput) => Employee;
-  updateEmployee: (id: string, patch: Partial<EmployeeInput>) => void;
-  setActive: (id: string, active: boolean) => void;
-  checkIn: (employeeId: string, note?: string) => AttendanceEntry | null;
-  checkOut: (employeeId: string) => AttendanceEntry | null;
-  recordDisbursement: (employeeId: string, period: string, amount: number, notes?: string) => void;
+  /** Mutations — async; resolve to the persisted record. */
+  addEmployee: (input: EmployeeInput) => Promise<Employee>;
+  updateEmployee: (id: string, patch: Partial<EmployeeInput>) => Promise<void>;
+  setActive: (id: string, active: boolean) => Promise<void>;
+  checkIn: (employeeId: string, note?: string) => Promise<AttendanceEntry | null>;
+  checkOut: (employeeId: string) => Promise<AttendanceEntry | null>;
+  recordDisbursement: (
+    employeeId: string,
+    period: string,
+    amount: number,
+    notes?: string,
+  ) => Promise<void>;
+
+  /** Pull-to-refresh helpers */
+  refresh: () => Promise<void>;
 };
 
 const Ctx = createContext<State | undefined>(undefined);
-
-function nextId(prefix: string) {
-  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 9999)}`;
-}
 
 function isoDateForNow() {
   return new Date().toISOString().slice(0, 10);
 }
 
 export function EmployeesProvider({ children }: PropsWithChildren) {
-  const [employees, setEmployees] = useState<Employee[]>(demoEmployees);
-  const [attendance, setAttendance] = useState<AttendanceEntry[]>(demoAttendance);
+  const { user } = useAuth();
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [attendance, setAttendance] = useState<AttendanceEntry[]>([]);
   const [disbursements, setDisbursements] = useState<SalaryDisbursement[]>([]);
+
+  const refresh = useCallback(async () => {
+    if (!user || (user.role !== 'manager' && user.role !== 'owner')) return;
+    const settled = await Promise.allSettled([
+      listEmployeesApi({ includeInactive: true }),
+      listAttendanceApi(),
+      listDisbursementsApi(),
+    ]);
+    if (settled[0].status === 'fulfilled') setEmployees(settled[0].value);
+    if (settled[1].status === 'fulfilled') setAttendance(settled[1].value);
+    if (settled[2].status === 'fulfilled') setDisbursements(settled[2].value);
+  }, [user]);
+
+  useEffect(() => {
+    if (user) refresh();
+  }, [user, refresh]);
+
+  // -------- Convenience lookups (unchanged) --------
 
   const employeeById = useCallback(
     (id: string) => employees.find((e) => e.id === id),
@@ -115,95 +153,123 @@ export function EmployeesProvider({ children }: PropsWithChildren) {
     return { hours, earnings };
   }, []);
 
-  const addEmployee = useCallback<State['addEmployee']>((input) => {
-    const employee: Employee = {
-      id: nextId('emp'),
+  // -------- Mutations (backend-backed) --------
+
+  const addEmployee = useCallback<State['addEmployee']>(async (input) => {
+    const created = await createEmployeeApi({
       name: input.name,
       phone: input.phone,
       role: input.role,
-      branch: input.branch,
+      branchSlug: input.branch,
       employmentType: input.employmentType,
-      monthlySalary: input.employmentType === 'salaried' ? input.monthlySalary : undefined,
-      hourlyRate: input.employmentType === 'hourly' ? input.hourlyRate : undefined,
-      active: true,
-      hiredAt: Date.now(),
+      monthlySalary: input.monthlySalary,
+      hourlyRate: input.hourlyRate,
       notes: input.notes,
-    };
-    setEmployees((prev) => [...prev, employee]);
-    return employee;
+    });
+    setEmployees((prev) => [...prev, created]);
+    return created;
   }, []);
 
-  const updateEmployee = useCallback<State['updateEmployee']>((id, patch) => {
-    setEmployees((prev) =>
-      prev.map((e) =>
-        e.id === id
-          ? {
-              ...e,
-              ...patch,
-              monthlySalary:
-                (patch.employmentType ?? e.employmentType) === 'salaried'
-                  ? patch.monthlySalary ?? e.monthlySalary
-                  : undefined,
-              hourlyRate:
-                (patch.employmentType ?? e.employmentType) === 'hourly'
-                  ? patch.hourlyRate ?? e.hourlyRate
-                  : undefined,
-            }
-          : e
-      )
-    );
-  }, []);
+  const updateEmployee = useCallback<State['updateEmployee']>(
+    async (id, patch) => {
+      // Optimistic local merge so the UI updates instantly.
+      setEmployees((prev) =>
+        prev.map((e) =>
+          e.id === id
+            ? {
+                ...e,
+                ...patch,
+                monthlySalary:
+                  (patch.employmentType ?? e.employmentType) === 'salaried'
+                    ? patch.monthlySalary ?? e.monthlySalary
+                    : undefined,
+                hourlyRate:
+                  (patch.employmentType ?? e.employmentType) === 'hourly'
+                    ? patch.hourlyRate ?? e.hourlyRate
+                    : undefined,
+              }
+            : e
+        )
+      );
+      try {
+        const updated = await updateEmployeeApi(id, patch);
+        setEmployees((prev) => prev.map((e) => (e.id === id ? updated : e)));
+      } catch {
+        // Revert by refetching all employees on failure.
+        refresh();
+      }
+    },
+    [refresh],
+  );
 
-  const setActive = useCallback<State['setActive']>((id, active) => {
-    setEmployees((prev) => prev.map((e) => (e.id === id ? { ...e, active } : e)));
-  }, []);
+  const setActive = useCallback<State['setActive']>(
+    async (id, active) => {
+      setEmployees((prev) => prev.map((e) => (e.id === id ? { ...e, active } : e)));
+      try {
+        const updated = await updateEmployeeApi(id, { active });
+        setEmployees((prev) => prev.map((e) => (e.id === id ? updated : e)));
+      } catch {
+        refresh();
+      }
+    },
+    [refresh],
+  );
 
-  const checkIn = useCallback<State['checkIn']>((employeeId, note) => {
-    const today = isoDateForNow();
-    const existing = attendance.find(
-      (a) => a.employeeId === employeeId && a.date === today
-    );
-    if (existing) return existing; // already checked in today
-    const entry: AttendanceEntry = {
-      id: nextId('att'),
-      employeeId,
-      date: today,
-      checkInAt: Date.now(),
-      checkOutAt: null,
-      note,
-    };
-    setAttendance((prev) => [...prev, entry]);
-    return entry;
-  }, [attendance]);
+  const checkIn = useCallback<State['checkIn']>(
+    async (employeeId, note) => {
+      try {
+        const entry = await checkInApi(employeeId, note);
+        // Replace today's entry for this employee, or append.
+        setAttendance((prev) => {
+          const i = prev.findIndex(
+            (a) => a.employeeId === employeeId && a.date === entry.date,
+          );
+          if (i >= 0) {
+            const next = [...prev];
+            next[i] = entry;
+            return next;
+          }
+          return [...prev, entry];
+        });
+        return entry;
+      } catch {
+        refresh();
+        return null;
+      }
+    },
+    [refresh],
+  );
 
-  const checkOut = useCallback<State['checkOut']>((employeeId) => {
-    const today = isoDateForNow();
-    let updated: AttendanceEntry | null = null;
-    setAttendance((prev) =>
-      prev.map((a) => {
-        if (a.employeeId !== employeeId || a.date !== today || a.checkOutAt !== null) {
-          return a;
-        }
-        updated = { ...a, checkOutAt: Date.now() };
-        return updated;
-      })
-    );
-    return updated;
-  }, []);
+  const checkOut = useCallback<State['checkOut']>(
+    async (employeeId) => {
+      try {
+        const entry = await checkOutApi(employeeId);
+        setAttendance((prev) =>
+          prev.map((a) => (a.id === entry.id ? entry : a)),
+        );
+        return entry;
+      } catch {
+        refresh();
+        return null;
+      }
+    },
+    [refresh],
+  );
 
   const recordDisbursement = useCallback<State['recordDisbursement']>(
-    (employeeId, period, amount, notes) => {
-      const d: SalaryDisbursement = {
-        id: nextId('sal'),
-        employeeId,
-        period,
-        amount,
-        paidAt: Date.now(),
-        notes,
-      };
-      setDisbursements((prev) => [...prev, d]);
+    async (employeeId, period, amount, notes) => {
+      try {
+        const created = await recordDisbursementApi(employeeId, {
+          period,
+          amount,
+          notes,
+        });
+        setDisbursements((prev) => [created, ...prev]);
+      } catch {
+        refresh();
+      }
     },
-    []
+    [refresh],
   );
 
   const value = useMemo<State>(
@@ -223,6 +289,7 @@ export function EmployeesProvider({ children }: PropsWithChildren) {
       checkIn,
       checkOut,
       recordDisbursement,
+      refresh,
     }),
     [
       employees,
@@ -240,6 +307,7 @@ export function EmployeesProvider({ children }: PropsWithChildren) {
       checkIn,
       checkOut,
       recordDisbursement,
+      refresh,
     ]
   );
 
