@@ -39,7 +39,8 @@ const FILTER_ORDER: RoleFilter[] = [
 ];
 
 type Nav = {
-  navigate: (screen: string, params?: { employeeId?: string }) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  navigate: (screen: string, params?: any) => void;
 };
 
 export function ManagerEmployeesScreen({ navigation }: { navigation: Nav }) {
@@ -139,6 +140,18 @@ export function ManagerEmployeesScreen({ navigation }: { navigation: Nav }) {
           ))
         )}
       </ScrollView>
+
+      {/* Floating "+" button to add a new employee */}
+      <Pressable
+        onPress={() => navigation.navigate('AddEmployee')}
+        style={({ pressed }) => [
+          styles.fab,
+          pressed ? { opacity: 0.85 } : null,
+        ]}
+        accessibilityLabel="Add employee"
+      >
+        <Ionicons name="add" size={28} color={colors.textInverse} />
+      </Pressable>
     </Screen>
   );
 }
@@ -339,4 +352,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceMuted,
   },
   inactiveChipText: { fontSize: 10, fontWeight: '800', color: colors.textMuted },
+  fab: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: spacing.lg,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
 });
