@@ -29,7 +29,11 @@ services:
     region: singapore
     plan: free
     rootDir: backend
-    buildCommand: npm install && npm run build
+    # --include=dev forces npm to install devDependencies even though
+    # NODE_ENV=production is set below — needed because the @nestjs/cli
+    # and prisma CLI binaries live in devDependencies and are required
+    # to compile the app + run migrations.
+    buildCommand: npm install --include=dev && npm run build
     # `migrate deploy` applies any new migrations safely on every release;
     # `start:prod` then boots the compiled NestJS app.
     startCommand: npm run prisma:migrate:deploy && npm run start:prod
