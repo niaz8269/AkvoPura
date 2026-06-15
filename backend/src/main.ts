@@ -9,8 +9,8 @@ async function bootstrap() {
   app.enableCors();
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   const port = Number(process.env.PORT) || 3000;
-  await app.listen(port);
-  console.log(`AkvoPura API listening on http://localhost:${port}`);
+  await app.listen(port, '0.0.0.0');
+  console.log(`AkvoPura API listening on port ${port}`);
 }
 
 bootstrap();
