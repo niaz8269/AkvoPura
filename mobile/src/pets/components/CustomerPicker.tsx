@@ -6,7 +6,7 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { colors, fontSizes, radii, spacing } from '../../theme';
 import type { PetCustomer } from '../types';
@@ -15,11 +15,13 @@ type Props = {
   customers: PetCustomer[];
   selected: PetCustomer | null;
   onSelect: (customer: PetCustomer | null) => void;
-  /** Optional max height for the list when expanded. */
+  /** Deprecated — kept for API stability. Picker is now a flat View; the
+   *  parent ScrollView handles scrolling, which avoids the nested-ScrollView
+   *  gesture conflict that hid customers past the 5th row. */
   maxHeight?: number;
 };
 
-export function CustomerPicker({ customers, selected, onSelect, maxHeight = 320 }: Props) {
+export function CustomerPicker({ customers, selected, onSelect }: Props) {
   const [query, setQuery] = useState('');
 
   const filtered = useMemo(() => {
@@ -77,10 +79,7 @@ export function CustomerPicker({ customers, selected, onSelect, maxHeight = 320 
         autoCorrect={false}
       />
 
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        style={[styles.list, { maxHeight }]}
-      >
+      <View style={styles.list}>
         {filtered.length === 0 ? (
           <Text style={styles.empty}>No matches.</Text>
         ) : (
@@ -111,7 +110,7 @@ export function CustomerPicker({ customers, selected, onSelect, maxHeight = 320 
             </Pressable>
           ))
         )}
-      </ScrollView>
+      </View>
     </View>
   );
 }
