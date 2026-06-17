@@ -85,7 +85,6 @@ export function OwnerBranchOverviewScreen({ route, navigation }: { route: Route;
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.branchName}>{summary.name.en} Branch</Text>
-            <Text style={styles.branchNameUr}>{summary.name.ur} برانچ</Text>
           </View>
           {isLive ? (
             <View style={styles.liveBadge}>
@@ -155,13 +154,13 @@ export function OwnerBranchOverviewScreen({ route, navigation }: { route: Route;
         </Pressable>
       ) : null}
 
-      <Section title="Pets sales" subtitle="پیٹس فروخت">
+      <Section title="Pets sales" subtitle=" ">
         <Row label="Bills today" value={summary.petsBills} />
         <Row label="600 ml packs" value={summary.pet600PacksSold} />
         <Row label="1.5 L packs" value={summary.pet1500PacksSold} last />
       </Section>
 
-      <Section title="Cans / Gallons activity" subtitle="کین / گیلن سرگرمی">
+      <Section title="Cans / Gallons activity" subtitle=" /  ">
         <Row label="Deliveries" value={summary.cgDeliveries} />
         <Row label="Cans delivered" value={summary.cansDelivered} />
         <Row label="Gallons delivered" value={summary.gallonsDelivered} />
@@ -169,7 +168,7 @@ export function OwnerBranchOverviewScreen({ route, navigation }: { route: Route;
         <Row label="Empty gallons returned" value={summary.emptyGallonsCollected} last />
       </Section>
 
-      <Section title="Customers" subtitle="کسٹمرز">
+      <Section title="Customers" subtitle="">
         <Row label="Total customers" value={summary.customerCount} />
         <Row
           label="In debt"
@@ -202,7 +201,7 @@ export function OwnerBranchOverviewScreen({ route, navigation }: { route: Route;
         ) : null}
       </Section>
 
-      <Section title="Production & inventory" subtitle="پروڈکشن اور انوینٹری">
+      <Section title="Production & inventory" subtitle="  ">
         <Row label="Batches today" value={todaysBatches} />
         <Row
           label="Low-stock materials"
@@ -223,7 +222,7 @@ export function OwnerBranchOverviewScreen({ route, navigation }: { route: Route;
           : null}
       </Section>
 
-      <Section title="Expenses" subtitle="اخراجات">
+      <Section title="Expenses" subtitle="">
         <Row label="Pending (manager inbox)" value={summary.pendingExpenses} />
         <Row label="Approved" value={summary.expensesApproved} success />
         <Row label="Rejected" value={summary.expensesRejected} />

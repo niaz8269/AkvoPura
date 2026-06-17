@@ -114,7 +114,6 @@ export function ManagerStaffAccountsScreen({ navigation }: any) {
         <View style={styles.titleRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>Staff accounts</Text>
-            <Text style={styles.titleUr}>عملہ کے اکاؤنٹس</Text>
             <Text style={styles.subtitle}>
               {users?.length ?? 0} account{users?.length === 1 ? '' : 's'} who can
               log into the app

@@ -134,7 +134,6 @@ export function ManagerCustomersScreen({ navigation }: { navigation: Nav }) {
         <View style={styles.titleRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>Customers</Text>
-            <Text style={styles.titleUr}>کسٹمرز</Text>
           </View>
           <Pressable
             onPress={openAddCustomer}

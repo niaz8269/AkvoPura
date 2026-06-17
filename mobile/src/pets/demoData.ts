@@ -24,14 +24,14 @@ export const petProducts: PetProduct[] = [
   {
     id: 'pet600',
     nameEn: '600 ml pack',
-    nameUr: '۶۰۰ ملی پیک',
+    nameUr: '  ',
     bottlesPerPack: 12,
     defaultPrice: 280,
   },
   {
     id: 'pet1500',
     nameEn: '1.5 L pack',
-    nameUr: '۱.۵ لیٹر پیک',
+    nameUr: '.  ',
     bottlesPerPack: 6,
     defaultPrice: 320,
   },

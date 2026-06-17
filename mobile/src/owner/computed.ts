@@ -46,7 +46,7 @@ export function useOwnerData() {
 
     return {
       key: 'timergara',
-      name: { en: 'Timergara', ur: 'تیمرگرہ' },
+      name: { en: 'Timergara', ur: '' },
 
       cashCollectedToday: cgCash + petsCash,
       amountBilledToday: cgBilled + petsBilled,

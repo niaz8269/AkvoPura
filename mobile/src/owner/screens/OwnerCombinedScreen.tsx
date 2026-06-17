@@ -19,7 +19,6 @@ export function OwnerCombinedScreen() {
   return (
     <Screen scroll>
       <Text style={styles.title}>Branch comparison</Text>
-      <Text style={styles.titleUr}>برانچ کا موازنہ</Text>
       <Text style={styles.intro}>
         Today's numbers across both branches. Shergarh figures are demo
         until a Shergarh salesman starts logging real activity.
@@ -44,7 +43,7 @@ export function OwnerCombinedScreen() {
         </View>
       </View>
 
-      <Block title="Today's cash" subtitle="آج کی نقدی">
+      <Block title="Today's cash" subtitle="  ">
         <CompareRow
           label="Cash collected"
           a={timergara.cashCollectedToday}
@@ -62,7 +61,7 @@ export function OwnerCombinedScreen() {
         />
       </Block>
 
-      <Block title="Pets sales" subtitle="پیٹس فروخت">
+      <Block title="Pets sales" subtitle=" ">
         <CompareRow label="Bills" a={timergara.petsBills} b={shergarh.petsBills} higherIsBetter />
         <CompareRow
           label="600 ml packs"
@@ -79,7 +78,7 @@ export function OwnerCombinedScreen() {
         />
       </Block>
 
-      <Block title="C/G activity" subtitle="کین/گیلن سرگرمی">
+      <Block title="C/G activity" subtitle="/ ">
         <CompareRow
           label="Deliveries"
           a={timergara.cgDeliveries}
@@ -113,7 +112,7 @@ export function OwnerCombinedScreen() {
         />
       </Block>
 
-      <Block title="Customers & debt" subtitle="کسٹمرز اور قرض">
+      <Block title="Customers & debt" subtitle="  ">
         <CompareRow
           label="Total customers"
           a={timergara.customerCount}

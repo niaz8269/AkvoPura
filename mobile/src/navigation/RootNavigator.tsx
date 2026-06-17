@@ -85,7 +85,6 @@ function Splash() {
     <View style={styles.splash}>
       <Image source={brandLogo} style={styles.logo} resizeMode="contain" />
       <Text style={styles.appName}>{strings.appName.en}</Text>
-      <Text style={styles.appNameUr}>{strings.appName.ur}</Text>
       <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />
     </View>
   );

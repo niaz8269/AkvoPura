@@ -95,7 +95,7 @@ export function OwnerAddBranchScreen({ navigation }: any) {
           <TextInput
             value={nameUr}
             onChangeText={setNameUr}
-            placeholder="e.g. پشاور"
+            placeholder="e.g. "
             placeholderTextColor={colors.textMuted}
             style={styles.input}
           />
@@ -113,7 +113,7 @@ export function OwnerAddBranchScreen({ navigation }: any) {
           <BilingualButton
             label={{
               en: submitting ? 'Creating…' : 'Create branch',
-              ur: 'برانچ بنائیں',
+              ur: ' ',
             }}
             onPress={submit}
             disabled={!valid || submitting}

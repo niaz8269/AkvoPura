@@ -31,11 +31,11 @@ import type {
 } from '../types';
 
 const CATEGORIES: { id: ComplaintCategory; en: string; ur: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { id: 'delivery', en: 'Delivery', ur: 'ڈیلیوری', icon: 'cube-outline' },
-  { id: 'product_quality', en: 'Product quality', ur: 'پروڈکٹ کا معیار', icon: 'water-outline' },
-  { id: 'billing', en: 'Billing', ur: 'بل', icon: 'receipt-outline' },
-  { id: 'salesman_behavior', en: 'Salesman behaviour', ur: 'سیلز مین کا رویہ', icon: 'person-outline' },
-  { id: 'other', en: 'Other', ur: 'دیگر', icon: 'ellipsis-horizontal-outline' },
+  { id: 'delivery', en: 'Delivery', ur: '', icon: 'cube-outline' },
+  { id: 'product_quality', en: 'Product quality', ur: '  ', icon: 'water-outline' },
+  { id: 'billing', en: 'Billing', ur: '', icon: 'receipt-outline' },
+  { id: 'salesman_behavior', en: 'Salesman behaviour', ur: '   ', icon: 'person-outline' },
+  { id: 'other', en: 'Other', ur: '', icon: 'ellipsis-horizontal-outline' },
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -79,7 +79,6 @@ export function CustomerComplaintsScreen({ navigation }: any) {
       >
         <View style={styles.header}>
           <Text style={styles.title}>Complaints</Text>
-          <Text style={styles.titleUr}>شکایات</Text>
         </View>
 
         <ScrollView
@@ -89,7 +88,6 @@ export function CustomerComplaintsScreen({ navigation }: any) {
         >
           <View style={styles.formCard}>
             <Text style={styles.formTitle}>File a new complaint</Text>
-            <Text style={styles.formTitleUr}>نئی شکایت درج کریں</Text>
 
             <Text style={styles.fieldLabel}>What's the issue about?</Text>
             <View style={styles.catGrid}>
@@ -122,13 +120,13 @@ export function CustomerComplaintsScreen({ navigation }: any) {
             <View style={styles.recipientRow}>
               <RecipientPill
                 label="Salesman"
-                labelUr="سیلز مین"
+                labelUr=" "
                 active={recipient === 'salesman'}
                 onPress={() => setRecipient('salesman')}
               />
               <RecipientPill
                 label="Manager"
-                labelUr="منیجر"
+                labelUr=""
                 active={recipient === 'manager'}
                 onPress={() => setRecipient('manager')}
               />
@@ -146,7 +144,7 @@ export function CustomerComplaintsScreen({ navigation }: any) {
             />
 
             <BilingualButton
-              label={{ en: 'Submit complaint', ur: 'شکایت بھیجیں' }}
+              label={{ en: 'Submit complaint', ur: ' ' }}
               onPress={submit}
               disabled={description.trim().length === 0}
             />

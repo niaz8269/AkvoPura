@@ -10,7 +10,7 @@ import type { BranchSummary } from './types';
 
 export const shergarhDemoSummary: BranchSummary = {
   key: 'shergarh',
-  name: { en: 'Shergarh', ur: 'شیر گڑھ' },
+  name: { en: 'Shergarh', ur: ' ' },
 
   cashCollectedToday: 18_500,
   amountBilledToday: 24_300,

@@ -42,7 +42,6 @@ export function OwnerForwardedScreen() {
     <Screen padded={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Forwarded for approval</Text>
-        <Text style={styles.titleUr}>منظوری کے لیے بھیجے گئے</Text>
 
         <View style={styles.kpiRow}>
           <KpiCard label="Awaiting you" value={forwarded.length} />

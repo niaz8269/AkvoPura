@@ -63,7 +63,7 @@ export function PetsCustomerDetailScreen({ route }: { route: Route }) {
         </Text>
       </View>
 
-      <Section title="Today's bills" subtitle="آج کے بل">
+      <Section title="Today's bills" subtitle="  ">
         {bills.length === 0 ? (
           <Text style={styles.empty}>No bills today.</Text>
         ) : (
@@ -94,7 +94,7 @@ export function PetsCustomerDetailScreen({ route }: { route: Route }) {
         )}
       </Section>
 
-      <Section title="Today's returns" subtitle="آج کی واپسی">
+      <Section title="Today's returns" subtitle="  ">
         {rets.length === 0 ? (
           <Text style={styles.empty}>No returns today.</Text>
         ) : (
@@ -122,7 +122,7 @@ export function PetsCustomerDetailScreen({ route }: { route: Route }) {
         )}
       </Section>
 
-      <Section title="Pricing" subtitle="قیمتیں">
+      <Section title="Pricing" subtitle="">
         <View style={styles.priceRow}>
           <Text style={styles.priceLabel}>600 ml pack</Text>
           <Text style={styles.priceValue}>Rs {priceFor(customer, 'pet600')}</Text>

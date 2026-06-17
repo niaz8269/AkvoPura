@@ -35,7 +35,6 @@ export function ManagerExpensesScreen() {
     <Screen padded={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Expense approvals</Text>
-        <Text style={styles.titleUr}>اخراجات کی منظوری</Text>
 
         <View style={styles.kpiRow}>
           <KpiCard label="Pending" value={pendingExpenses.length} />
@@ -51,7 +50,7 @@ export function ManagerExpensesScreen() {
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.body}>
-        <SectionTitle text={`Pending (${pendingExpenses.length})`} subtitle="منظوری کا انتظار" />
+        <SectionTitle text={`Pending (${pendingExpenses.length})`} subtitle="  " />
         {pendingExpenses.length === 0 ? (
           <EmptyCard text="No pending expenses. You're all caught up." />
         ) : (
@@ -66,7 +65,7 @@ export function ManagerExpensesScreen() {
           ))
         )}
 
-        <SectionTitle text="Recent decisions" subtitle="حالیہ فیصلے" />
+        <SectionTitle text="Recent decisions" subtitle=" " />
         {decided.length === 0 ? (
           <EmptyCard text="No decisions yet." />
         ) : (

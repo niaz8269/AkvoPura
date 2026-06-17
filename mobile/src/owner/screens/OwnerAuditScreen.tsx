@@ -38,7 +38,6 @@ export function OwnerAuditScreen() {
     <Screen padded={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Audit log</Text>
-        <Text style={styles.titleUr}>کاروائی کا ریکارڈ</Text>
 
         <View style={styles.filterRow}>
           {(['all', 'sales', 'expenses'] as Filter[]).map((f) => {

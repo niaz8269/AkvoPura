@@ -71,7 +71,6 @@ export function OwnerManageBranchesScreen({ navigation }: any) {
     <Screen padded={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Branches</Text>
-        <Text style={styles.titleUr}>برانچیں</Text>
         <Text style={styles.subtitle}>
           {branches?.length ?? 0} branch{branches?.length === 1 ? '' : 'es'} configured
         </Text>
@@ -117,7 +116,6 @@ export function OwnerManageBranchesScreen({ navigation }: any) {
             <View style={{ flex: 1 }}>
               <Text style={[styles.name, !b.active ? styles.nameInactive : null]}>
                 {b.name}
-                {b.nameUr ? <Text style={styles.nameUr}>  {b.nameUr}</Text> : null}
               </Text>
               <Text style={styles.slug}>@{b.slug}</Text>
               {b.location ? (

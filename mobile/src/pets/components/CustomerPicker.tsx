@@ -68,7 +68,6 @@ export function CustomerPicker({ customers, selected, onSelect }: Props) {
   return (
     <View>
       <Text style={styles.label}>Pick customer</Text>
-      <Text style={styles.labelUr}>کسٹمر چنیں</Text>
 
       <TextInput
         value={query}

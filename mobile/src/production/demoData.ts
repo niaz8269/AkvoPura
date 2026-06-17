@@ -9,7 +9,7 @@ export const initialRawMaterials: RawMaterial[] = [
   {
     id: 'bottle_600',
     name: '600 ml empty bottles',
-    nameUr: '۶۰۰ ملی خالی بوتلیں',
+    nameUr: '   ',
     currentStock: 1800,
     reorderThreshold: 500,
     unit: 'pieces',
@@ -17,7 +17,7 @@ export const initialRawMaterials: RawMaterial[] = [
   {
     id: 'bottle_1500',
     name: '1.5 L empty bottles',
-    nameUr: '۱.۵ لیٹر خالی بوتلیں',
+    nameUr: '.   ',
     currentStock: 240,           // intentionally low to demo low-stock alert
     reorderThreshold: 300,
     unit: 'pieces',
@@ -25,7 +25,7 @@ export const initialRawMaterials: RawMaterial[] = [
   {
     id: 'cap_pet',
     name: 'PET bottle caps',
-    nameUr: 'پیٹ بوتل ڈھکن',
+    nameUr: '  ',
     currentStock: 3000,           // combined stock from old 2400 + 600
     reorderThreshold: 800,
     unit: 'pieces',
@@ -33,7 +33,7 @@ export const initialRawMaterials: RawMaterial[] = [
   {
     id: 'cap_gallon',
     name: 'Gallon caps',
-    nameUr: 'گیلن ڈھکن',
+    nameUr: ' ',
     currentStock: 90,            // intentionally low
     reorderThreshold: 100,
     unit: 'pieces',
@@ -41,7 +41,7 @@ export const initialRawMaterials: RawMaterial[] = [
   {
     id: 'sticker_600',
     name: '600 ml stickers',
-    nameUr: '۶۰۰ ملی سٹیکر',
+    nameUr: '  ',
     currentStock: 2200,
     reorderThreshold: 500,
     unit: 'pieces',
@@ -49,7 +49,7 @@ export const initialRawMaterials: RawMaterial[] = [
   {
     id: 'sticker_1500',
     name: '1.5 L stickers',
-    nameUr: '۱.۵ لیٹر سٹیکر',
+    nameUr: '.  ',
     currentStock: 800,
     reorderThreshold: 300,
     unit: 'pieces',
@@ -57,7 +57,7 @@ export const initialRawMaterials: RawMaterial[] = [
   {
     id: 'wrap_600',
     name: '600 ml plastic wraps',
-    nameUr: '۶۰۰ ملی پلاسٹک ریپ',
+    nameUr: '   ',
     currentStock: 18,
     reorderThreshold: 30,         // intentionally low
     unit: 'rolls',
@@ -65,7 +65,7 @@ export const initialRawMaterials: RawMaterial[] = [
   {
     id: 'wrap_1500',
     name: '1.5 L plastic wraps',
-    nameUr: '۱.۵ لیٹر پلاسٹک ریپ',
+    nameUr: '.   ',
     currentStock: 12,
     reorderThreshold: 20,
     unit: 'rolls',

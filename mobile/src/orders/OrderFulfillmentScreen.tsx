@@ -275,7 +275,7 @@ export function OrderFulfillmentScreen({ route, navigation }: any) {
           <BilingualButton
             label={{
               en: submitting ? 'Saving…' : 'Confirm delivery',
-              ur: 'ڈیلیوری مکمل کریں',
+              ur: '  ',
             }}
             onPress={submit}
             disabled={submitting}

@@ -81,7 +81,6 @@ export function PetsReturnsScreen() {
           <View style={styles.headerTop}>
             <View>
               <Text style={styles.title}>Returns</Text>
-              <Text style={styles.titleUr}>واپسی</Text>
             </View>
             <Text style={styles.headerHint}>Refund credits the balance</Text>
           </View>
@@ -124,26 +123,24 @@ export function PetsReturnsScreen() {
 
               <QuantityStepper
                 label="600 ml packs returned"
-                labelUr="واپس ۶۰۰ ملی پیک"
+                labelUr="   "
                 value={pet600}
                 onChange={setPet600}
               />
               <View style={styles.divider} />
               <QuantityStepper
                 label="1.5 L packs returned"
-                labelUr="واپس ۱.۵ لیٹر پیک"
+                labelUr=" .  "
                 value={pet1500}
                 onChange={setPet1500}
               />
 
               <View style={styles.refundCard}>
                 <Text style={styles.refundLabel}>Refund credit</Text>
-                <Text style={styles.refundLabelUr}>کریڈٹ</Text>
                 <Text style={styles.refundValue}>Rs {refund.toLocaleString()}</Text>
               </View>
 
               <Text style={styles.reasonLabel}>Reason (optional)</Text>
-              <Text style={styles.reasonLabelUr}>وجہ (اختیاری)</Text>
               <TextInput
                 value={reason}
                 onChangeText={setReason}
@@ -157,9 +154,9 @@ export function PetsReturnsScreen() {
               <SwipeToConfirm
                 key={resetKey}
                 labelEn="Swipe to record return  ›››"
-                labelUr="واپسی محفوظ کرنے کے لیے سوائپ کریں"
+                labelUr="      "
                 doneLabelEn="Return saved ✓"
-                doneLabelUr="واپسی محفوظ ہو گئی"
+                doneLabelUr="   "
                 done={confirmed}
                 disabled={!canSwipe}
                 onConfirm={onConfirm}

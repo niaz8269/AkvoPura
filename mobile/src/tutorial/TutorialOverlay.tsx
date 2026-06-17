@@ -72,9 +72,7 @@ export function TutorialOverlay() {
           </View>
 
           <Text style={styles.title}>{step.titleEn}</Text>
-          <Text style={styles.titleUr}>{step.titleUr}</Text>
           <Text style={styles.body}>{step.bodyEn}</Text>
-          <Text style={styles.bodyUr}>{step.bodyUr}</Text>
 
           <View style={styles.dotRow}>
             {steps.map((_: TutorialStep, i: number) => (

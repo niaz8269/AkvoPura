@@ -222,7 +222,7 @@ export function ManagerAddStaffAccountScreen({ navigation }: any) {
           <BilingualButton
             label={{
               en: submitting ? 'Creating…' : 'Create account',
-              ur: 'اکاؤنٹ بنائیں',
+              ur: ' ',
             }}
             onPress={submit}
             disabled={!valid || submitting}

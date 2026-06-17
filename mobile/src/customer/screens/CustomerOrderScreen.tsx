@@ -95,7 +95,6 @@ export function CustomerOrderScreen() {
       >
         <View style={styles.header}>
           <Text style={styles.title}>Place an order</Text>
-          <Text style={styles.titleUr}>آرڈر کریں</Text>
         </View>
 
         <ScrollView
@@ -111,7 +110,6 @@ export function CustomerOrderScreen() {
                 <View style={styles.productHeader}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.productName}>{p.nameEn}</Text>
-                    <Text style={styles.productNameUr}>{p.nameUr}</Text>
                   </View>
                   <Text style={styles.productPrice}>Rs {p.defaultPrice}</Text>
                 </View>
@@ -150,7 +148,6 @@ export function CustomerOrderScreen() {
           <View style={styles.totalCard}>
             <View style={{ flex: 1 }}>
               <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalLabelUr}>کل</Text>
             </View>
             <Text style={styles.totalValue}>Rs {total.toLocaleString()}</Text>
           </View>
@@ -160,9 +157,9 @@ export function CustomerOrderScreen() {
             labelEn={`Swipe to place order  (${itemCount} item${
               itemCount === 1 ? '' : 's'
             })`}
-            labelUr="آرڈر کرنے کے لیے سوائپ کریں"
+            labelUr="     "
             doneLabelEn="Order placed ✓"
-            doneLabelUr="آرڈر ہو گیا"
+            doneLabelUr="  "
             done={confirmed}
             disabled={total === 0 || confirmed}
             onConfirm={onConfirm}

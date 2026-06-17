@@ -271,7 +271,7 @@ export function generateBillHtml(bill: BillData): string {
   </div>
 
   <div class="footer">
-    <div class="thanks">Thank you for choosing AkvoPura · شکریہ</div>
+    <div class="thanks">Thank you for choosing AkvoPura · </div>
     <div>Reusable cans &amp; gallons must be returned on the next visit.</div>
   </div>
 </body>

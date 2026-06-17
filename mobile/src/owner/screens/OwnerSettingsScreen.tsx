@@ -28,14 +28,13 @@ export function OwnerSettingsScreen() {
   return (
     <Screen scroll>
       <Text style={styles.title}>Settings</Text>
-      <Text style={styles.titleUr}>ترتیبات</Text>
       <Text style={styles.intro}>
         Set the default price for each product. Per-customer custom prices (set
         on a customer's record) override these defaults at bill time.
       </Text>
 
       <Text style={styles.sectionTitle}>Default product prices</Text>
-      <Text style={styles.sectionSub}>پروڈکٹس کی قیمتیں</Text>
+      <Text style={styles.sectionSub}>  </Text>
 
       {(Object.keys(prices) as ProductPriceKey[]).map((key) => (
         <PriceCard
@@ -47,7 +46,7 @@ export function OwnerSettingsScreen() {
       ))}
 
       <Text style={styles.sectionTitle}>Lost / damaged container fees</Text>
-      <Text style={styles.sectionSub}>گم/خراب برتنوں کی فیس</Text>
+      <Text style={styles.sectionSub}>/   </Text>
 
       {(Object.keys(fees) as Array<keyof ContainerFees>).map((key) => (
         <FeeCard
@@ -60,7 +59,7 @@ export function OwnerSettingsScreen() {
 
       <View style={{ marginTop: spacing.lg }}>
         <BilingualButton
-          label={{ en: 'Reset all to defaults', ur: 'سب کو ڈیفالٹ پر کریں' }}
+          label={{ en: 'Reset all to defaults', ur: '    ' }}
           variant="secondary"
           onPress={() => {
             Alert.alert(
@@ -82,7 +81,7 @@ export function OwnerSettingsScreen() {
       <Text style={[styles.sectionTitle, { marginTop: spacing.xl }]}>
         Maintenance
       </Text>
-      <Text style={styles.sectionSub}>دیکھ بھال</Text>
+      <Text style={styles.sectionSub}> </Text>
       <View style={styles.maintCard}>
         <Text style={styles.maintTitle}>Subscription orders</Text>
         <Text style={styles.maintDesc}>
@@ -121,7 +120,7 @@ function RunCronButton() {
     <BilingualButton
       label={{
         en: busy ? 'Running…' : "Generate today's subscription orders",
-        ur: 'آج کے سبسکرپشن آرڈرز بنائیں',
+        ur: '    ',
       }}
       onPress={run}
       disabled={busy}
@@ -150,7 +149,6 @@ function FeeCard({
       <View style={styles.cardHeader}>
         <View style={{ flex: 1 }}>
           <Text style={styles.productName}>{label.en}</Text>
-          <Text style={styles.productNameUr}>{label.ur}</Text>
           <Text style={styles.productDesc}>{label.description}</Text>
         </View>
         <View style={[styles.priceChip, { backgroundColor: colors.warning + '15' }]}>
@@ -162,7 +160,7 @@ function FeeCard({
 
       <QuantityStepper
         label="New fee (Rs)"
-        labelUr="نئی فیس"
+        labelUr=" "
         value={draft}
         onChange={setDraft}
         max={5000}
@@ -171,7 +169,7 @@ function FeeCard({
       {dirty ? (
         <View style={styles.actionRow}>
           <BilingualButton
-            label={{ en: 'Save', ur: 'محفوظ کریں' }}
+            label={{ en: 'Save', ur: ' ' }}
             onPress={() => {
               onSave(draft);
               Alert.alert('Saved', `${label.en} fee is now Rs ${draft.toLocaleString()}.`);
@@ -180,7 +178,7 @@ function FeeCard({
           />
           <View style={{ width: spacing.md }} />
           <BilingualButton
-            label={{ en: 'Discard', ur: 'منسوخ' }}
+            label={{ en: 'Discard', ur: '' }}
             variant="secondary"
             onPress={() => setDraft(value)}
             style={{ flex: 1 }}
@@ -211,7 +209,6 @@ function PriceCard({
       <View style={styles.cardHeader}>
         <View style={{ flex: 1 }}>
           <Text style={styles.productName}>{label.en}</Text>
-          <Text style={styles.productNameUr}>{label.ur}</Text>
           <Text style={styles.productDesc}>{label.description}</Text>
         </View>
         <View style={styles.priceChip}>
@@ -221,7 +218,7 @@ function PriceCard({
 
       <QuantityStepper
         label="New price (Rs)"
-        labelUr="نئی قیمت"
+        labelUr=" "
         value={draft}
         onChange={setDraft}
         max={5000}
@@ -230,7 +227,7 @@ function PriceCard({
       {dirty ? (
         <View style={styles.actionRow}>
           <BilingualButton
-            label={{ en: 'Save', ur: 'محفوظ کریں' }}
+            label={{ en: 'Save', ur: ' ' }}
             onPress={() => {
               onSave(draft);
               Alert.alert('Saved', `${label.en} default is now Rs ${draft.toLocaleString()}.`);
@@ -239,7 +236,7 @@ function PriceCard({
           />
           <View style={{ width: spacing.md }} />
           <BilingualButton
-            label={{ en: 'Discard', ur: 'منسوخ' }}
+            label={{ en: 'Discard', ur: '' }}
             variant="secondary"
             onPress={() => setDraft(value)}
             style={{ flex: 1 }}

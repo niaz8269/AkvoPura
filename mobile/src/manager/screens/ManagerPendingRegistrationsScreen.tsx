@@ -70,7 +70,6 @@ export function ManagerPendingRegistrationsScreen({ navigation }: any) {
     <Screen padded={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Pending registrations</Text>
-        <Text style={styles.titleUr}>منتظر اکاؤنٹس</Text>
         <Text style={styles.subtitle}>
           {users?.length ?? 0} customer{users?.length === 1 ? '' : 's'} waiting for approval
         </Text>

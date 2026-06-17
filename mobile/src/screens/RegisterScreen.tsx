@@ -36,12 +36,12 @@ const BRANCH_LABELS: Record<Branch, string> = {
 const KIND_LABELS: Record<CustomerKind, { en: string; ur: string; desc: string }> = {
   cg: {
     en: 'Cans / Gallons',
-    ur: 'کین / گیلن',
+    ur: ' / ',
     desc: 'Daily or weekly delivery of refillable cans and gallons',
   },
   pets: {
     en: 'Bottled (Pets)',
-    ur: 'بوتل',
+    ur: '',
     desc: '600ml and 1.5L bottle packs delivered to shops, offices, homes',
   },
 };
@@ -107,7 +107,6 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
             <Text style={styles.backText}>Back to login</Text>
           </Pressable>
           <Text style={styles.title}>Create your account</Text>
-          <Text style={styles.titleUr}>اپنا اکاؤنٹ بنائیں</Text>
           <Text style={styles.subtitle}>
             We'll pass your details to the branch manager. They'll approve your
             account within a day.
@@ -115,7 +114,7 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
         </View>
 
         <TextField
-          label={{ en: 'Full name *', ur: 'نام' }}
+          label={{ en: 'Full name *', ur: '' }}
           value={name}
           onChangeText={setName}
           placeholder="e.g. Akbar Khan"
@@ -123,7 +122,7 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
         />
 
         <TextField
-          label={{ en: 'Login username *', ur: 'یوزر نیم' }}
+          label={{ en: 'Login username *', ur: ' ' }}
           value={identifier}
           onChangeText={(t) => setIdentifier(t.toLowerCase())}
           placeholder="e.g. akbar03001234567"
@@ -135,7 +134,7 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
         </Text>
 
         <TextField
-          label={{ en: 'Phone *', ur: 'فون' }}
+          label={{ en: 'Phone *', ur: '' }}
           value={phone}
           onChangeText={setPhone}
           placeholder="0300-1234567"
@@ -143,7 +142,7 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
         />
 
         <TextField
-          label={{ en: 'Password *', ur: 'پاسورڈ' }}
+          label={{ en: 'Password *', ur: '' }}
           value={password}
           onChangeText={setPassword}
           placeholder="Min. 6 characters"
@@ -197,7 +196,6 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.kindTitle, active ? styles.kindTitleActive : null]}>
                     {label.en}
-                    <Text style={styles.kindTitleUr}>  {label.ur}</Text>
                   </Text>
                   <Text style={[styles.kindDesc, active ? styles.kindDescActive : null]}>
                     {label.desc}
@@ -214,7 +212,7 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
         <BilingualButton
           label={{
             en: submitting ? 'Submitting…' : 'Create account',
-            ur: 'اکاؤنٹ بنائیں',
+            ur: ' ',
           }}
           onPress={submit}
           disabled={!valid || submitting}

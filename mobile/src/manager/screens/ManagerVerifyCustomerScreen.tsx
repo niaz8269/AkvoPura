@@ -276,7 +276,7 @@ export function ManagerVerifyCustomerScreen({ route, navigation }: { route: Rout
           <BilingualButton
             label={{
               en: submitting ? 'Approving…' : 'Approve & verify',
-              ur: 'منظور کریں',
+              ur: ' ',
             }}
             onPress={submit}
             disabled={!valid || submitting}

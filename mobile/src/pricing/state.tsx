@@ -49,21 +49,21 @@ const DEFAULT_FEES: ContainerFees = {
 };
 
 export const PRODUCT_LABELS: Record<ProductPriceKey, { en: string; ur: string; description: string }> = {
-  pet600: { en: '600 ml pack', ur: '۶۰۰ ملی پیک', description: 'Disposable pack of 12 × 600ml bottles' },
-  pet1500: { en: '1.5 L pack', ur: '۱.۵ لیٹر پیک', description: 'Disposable pack of 6 × 1.5L bottles' },
-  can: { en: '14 L can', ur: '۱۴ لیٹر کین', description: 'Reusable 14-litre can' },
-  gallon: { en: '19 L gallon', ur: '۱۹ لیٹر گیلن', description: 'Reusable 19-litre gallon' },
+  pet600: { en: '600 ml pack', ur: '  ', description: 'Disposable pack of 12 × 600ml bottles' },
+  pet1500: { en: '1.5 L pack', ur: '.  ', description: 'Disposable pack of 6 × 1.5L bottles' },
+  can: { en: '14 L can', ur: '  ', description: 'Reusable 14-litre can' },
+  gallon: { en: '19 L gallon', ur: '  ', description: 'Reusable 19-litre gallon' },
 };
 
 export const FEE_LABELS = {
   lostCanFee: {
     en: 'Lost / damaged 14L can',
-    ur: 'گم/خراب کین',
+    ur: '/ ',
     description: 'Charged when a customer cannot return a can',
   },
   lostGallonFee: {
     en: 'Lost / damaged 19L gallon',
-    ur: 'گم/خراب گیلن',
+    ur: '/ ',
     description: 'Charged when a customer cannot return a gallon',
   },
 };

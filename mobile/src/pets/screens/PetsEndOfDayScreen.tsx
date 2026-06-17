@@ -57,11 +57,9 @@ export function PetsEndOfDayScreen({ navigation }: any) {
   return (
     <Screen scroll>
       <Text style={styles.title}>End of Day</Text>
-      <Text style={styles.titleUr}>دن کا اختتام</Text>
 
       <View style={styles.cashCard}>
         <Text style={styles.cashLabel}>Cash collected today</Text>
-        <Text style={styles.cashLabelUr}>آج جمع کی گئی نقدی</Text>
         <Text style={styles.cashValue}>Rs {totalCash.toLocaleString()}</Text>
         {totalBilled !== totalCash ? (
           <Text style={styles.cashDelta}>
@@ -81,7 +79,7 @@ export function PetsEndOfDayScreen({ navigation }: any) {
         <BigStat label="1.5 L packs returned" value={ret1500} variant="warn" />
       </View>
 
-      <Section title={`Per-trip breakdown (${currentTripNumber} trip${currentTripNumber === 1 ? '' : 's'} today)`} subtitle="ٹرپ کے حساب سے">
+      <Section title={`Per-trip breakdown (${currentTripNumber} trip${currentTripNumber === 1 ? '' : 's'} today)`} subtitle="   ">
         {Array.from({ length: currentTripNumber }, (_, i) => {
           const tripNum = i + 1;
           const tripBills = bills.filter((b) => b.tripNumber === tripNum);
@@ -105,7 +103,7 @@ export function PetsEndOfDayScreen({ navigation }: any) {
         })}
       </Section>
 
-      <Section title="Van reconciliation" subtitle="گاڑی کی پڑتال">
+      <Section title="Van reconciliation" subtitle="  ">
         <Row
           label="600 ml packs loaded → returning"
           value={`${initialPetVanLoad.pet600Packs} → ${vanLoad.pet600Packs}`}
@@ -123,7 +121,7 @@ export function PetsEndOfDayScreen({ navigation }: any) {
         />
       </Section>
 
-      <Section title="Per-customer breakdown" subtitle="ہر کسٹمر کی تفصیل">
+      <Section title="Per-customer breakdown" subtitle="   ">
         {perCustomer.length === 0 ? (
           <Text style={styles.empty}>No bills or returns today.</Text>
         ) : (
@@ -150,12 +148,12 @@ export function PetsEndOfDayScreen({ navigation }: any) {
 
       <View style={{ marginTop: spacing.lg, gap: spacing.md }}>
         <BilingualButton
-          label={{ en: 'Submit closure to manager', ur: 'منیجر کو بھیجیں' }}
+          label={{ en: 'Submit closure to manager', ur: '  ' }}
           onPress={submit}
           disabled={bills.length === 0 && returns.length === 0}
         />
         <BilingualButton
-          label={{ en: 'Add field expense', ur: 'اخراجات شامل کریں' }}
+          label={{ en: 'Add field expense', ur: '  ' }}
           variant="secondary"
           onPress={() =>
             navigation.getParent()?.navigate('SubmitExpense') ??

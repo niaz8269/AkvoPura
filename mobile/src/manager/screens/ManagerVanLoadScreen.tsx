@@ -95,7 +95,6 @@ export function ManagerVanLoadScreen() {
   return (
     <Screen scroll>
       <Text style={styles.title}>Van Loading</Text>
-      <Text style={styles.titleUr}>گاڑی کی لوڈنگ</Text>
 
       <Text style={styles.intro}>
         Set the totals the salesmen will see when they start their trip. Saving
@@ -110,7 +109,6 @@ export function ManagerVanLoadScreen() {
               <Text style={styles.tripBadgeText}>Trip #{pets.currentTripNumber}</Text>
             </View>
           </View>
-          <Text style={styles.cardTitleUr}>پیٹس وین</Text>
         </View>
 
         <SalesmanPicker
@@ -124,14 +122,14 @@ export function ManagerVanLoadScreen() {
 
         <QuantityStepper
           label="600 ml packs"
-          labelUr="۶۰۰ ملی پیک"
+          labelUr="  "
           value={pet600}
           onChange={setPet600}
         />
         <View style={styles.divider} />
         <QuantityStepper
           label="1.5 L packs"
-          labelUr="۱.۵ لیٹر پیک"
+          labelUr=".  "
           value={pet1500}
           onChange={setPet1500}
         />
@@ -144,7 +142,7 @@ export function ManagerVanLoadScreen() {
         </View>
 
         <BilingualButton
-          label={{ en: 'Save Pets van load', ur: 'پیٹس وین محفوظ کریں' }}
+          label={{ en: 'Save Pets van load', ur: '   ' }}
           onPress={savePets}
           disabled={!petsDirty}
           variant={petsDirty ? 'primary' : 'secondary'}
@@ -172,7 +170,6 @@ export function ManagerVanLoadScreen() {
               <Text style={styles.tripBadgeText}>Trip #{cg.currentTripNumber}</Text>
             </View>
           </View>
-          <Text style={styles.cardTitleUr}>کین / گیلن وین</Text>
         </View>
 
         <SalesmanPicker
@@ -186,7 +183,7 @@ export function ManagerVanLoadScreen() {
 
         <QuantityStepper
           label="Filled cans"
-          labelUr="بھری کین"
+          labelUr=" "
           value={filledCans}
           onChange={setFilledCans}
           icon={canIcon}
@@ -194,7 +191,7 @@ export function ManagerVanLoadScreen() {
         <View style={styles.divider} />
         <QuantityStepper
           label="Filled gallons"
-          labelUr="بھری گیلن"
+          labelUr=" "
           value={filledGallons}
           onChange={setFilledGallons}
           icon={gallonIcon}
@@ -211,7 +208,7 @@ export function ManagerVanLoadScreen() {
         </View>
 
         <BilingualButton
-          label={{ en: 'Save C/G van load', ur: 'کین/گیلن محفوظ کریں' }}
+          label={{ en: 'Save C/G van load', ur: '/  ' }}
           onPress={saveCG}
           disabled={!cgDirty}
           variant={cgDirty ? 'primary' : 'secondary'}

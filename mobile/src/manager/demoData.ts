@@ -59,11 +59,11 @@ export const demoExpenses: Expense[] = [
 ];
 
 export const expenseCategoryLabels: Record<Expense['category'], { en: string; ur: string }> = {
-  fuel: { en: 'Fuel', ur: 'ایندھن' },
-  food: { en: 'Food', ur: 'کھانا' },
-  repairs: { en: 'Repairs', ur: 'مرمت' },
-  utilities: { en: 'Utilities', ur: 'یوٹیلٹیز' },
-  salary: { en: 'Salary', ur: 'تنخواہ' },
-  raw_material: { en: 'Raw Material', ur: 'خام مال' },
-  other: { en: 'Other', ur: 'دیگر' },
+  fuel: { en: 'Fuel', ur: '' },
+  food: { en: 'Food', ur: '' },
+  repairs: { en: 'Repairs', ur: '' },
+  utilities: { en: 'Utilities', ur: '' },
+  salary: { en: 'Salary', ur: '' },
+  raw_material: { en: 'Raw Material', ur: ' ' },
+  other: { en: 'Other', ur: '' },
 };

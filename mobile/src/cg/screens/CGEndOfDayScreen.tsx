@@ -70,11 +70,9 @@ export function CGEndOfDayScreen({ navigation }: any) {
   return (
     <Screen scroll>
       <Text style={styles.title}>End of Day</Text>
-      <Text style={styles.titleUr}>دن کا اختتام</Text>
 
       <View style={styles.cashCard}>
         <Text style={styles.cashLabel}>Cash collected today</Text>
-        <Text style={styles.cashLabelUr}>آج جمع کی گئی نقدی</Text>
         <Text style={styles.cashValue}>Rs {totalCash.toLocaleString()}</Text>
         {totalBilled !== totalCash ? (
           <Text style={styles.cashDelta}>
@@ -110,7 +108,7 @@ export function CGEndOfDayScreen({ navigation }: any) {
         />
       </View>
 
-      <Section title={`Per-trip breakdown (${currentTripNumber} trip${currentTripNumber === 1 ? '' : 's'} today)`} subtitle="ٹرپ کے حساب سے">
+      <Section title={`Per-trip breakdown (${currentTripNumber} trip${currentTripNumber === 1 ? '' : 's'} today)`} subtitle="   ">
         {Array.from({ length: currentTripNumber }, (_, i) => {
           const tripNum = i + 1;
           const tripDeliveries = deliveries.filter((d) => d.tripNumber === tripNum);
@@ -134,7 +132,7 @@ export function CGEndOfDayScreen({ navigation }: any) {
         })}
       </Section>
 
-      <Section title="Van reconciliation" subtitle="گاڑی کی پڑتال">
+      <Section title="Van reconciliation" subtitle="  ">
         <ReconRow
           label="Filled cans loaded → returning"
           value={`${expectedCansLoaded} → ${outstandingFilledCans}`}
@@ -153,7 +151,7 @@ export function CGEndOfDayScreen({ navigation }: any) {
         />
       </Section>
 
-      <Section title="Per-customer breakdown" subtitle="ہر کسٹمر کی تفصیل">
+      <Section title="Per-customer breakdown" subtitle="   ">
         {perCustomer.length === 0 ? (
           <Text style={styles.empty}>No deliveries today.</Text>
         ) : (
@@ -180,12 +178,12 @@ export function CGEndOfDayScreen({ navigation }: any) {
 
       <View style={{ marginTop: spacing.lg, gap: spacing.md }}>
         <BilingualButton
-          label={{ en: 'Submit closure to manager', ur: 'منیجر کو بھیجیں' }}
+          label={{ en: 'Submit closure to manager', ur: '  ' }}
           onPress={submit}
           disabled={deliveries.length === 0 && collections.length === 0}
         />
         <BilingualButton
-          label={{ en: 'Add field expense', ur: 'اخراجات شامل کریں' }}
+          label={{ en: 'Add field expense', ur: '  ' }}
           variant="secondary"
           onPress={() =>
             navigation.getParent()?.navigate('SubmitExpense') ??

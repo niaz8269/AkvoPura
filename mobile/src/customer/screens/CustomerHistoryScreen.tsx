@@ -69,7 +69,6 @@ export function CustomerHistoryScreen() {
     <Screen padded={false}>
       <View style={styles.header}>
         <Text style={styles.title}>History</Text>
-        <Text style={styles.titleUr}>تاریخ</Text>
       </View>
 
       <ScrollView
@@ -77,7 +76,7 @@ export function CustomerHistoryScreen() {
         contentContainerStyle={styles.body}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <SectionTitle text="Your orders" subtitle="آپ کے آرڈر" />
+        <SectionTitle text="Your orders" subtitle="  " />
         {orderedOrders.length === 0 ? (
           <Empty text="No orders yet. Tap Order to place one." />
         ) : (
@@ -103,7 +102,7 @@ export function CustomerHistoryScreen() {
           ))
         )}
 
-        <SectionTitle text="Bills you've received" subtitle="آپ کے بل" />
+        <SectionTitle text="Bills you've received" subtitle="  " />
         {feed.length === 0 ? (
           <Empty text="No bills yet. Bills appear here once a delivery is completed." />
         ) : (

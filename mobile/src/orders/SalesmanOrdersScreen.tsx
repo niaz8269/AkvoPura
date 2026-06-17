@@ -111,7 +111,6 @@ export function SalesmanOrdersScreen() {
     <Screen padded={false}>
       <View style={styles.header}>
         <Text style={styles.title}>My orders</Text>
-        <Text style={styles.titleUr}>میرے آرڈرز</Text>
         <Text style={styles.subtitle}>
           {active.length} active · {completed.length} done today
         </Text>

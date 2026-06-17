@@ -222,7 +222,6 @@ export function PetsSellScreen() {
           <View style={styles.headerTop}>
             <View>
               <Text style={styles.title}>Sell</Text>
-              <Text style={styles.titleUr}>فروخت</Text>
             </View>
             <View style={styles.vanChip}>
               <Text style={styles.vanChipLabel}>On van</Text>
@@ -273,7 +272,7 @@ export function PetsSellScreen() {
 
               <QuantityStepper
                 label="600 ml packs"
-                labelUr="۶۰۰ ملی پیک"
+                labelUr="  "
                 value={pet600}
                 onChange={setPet600}
                 max={vanLoad.pet600Packs}
@@ -291,7 +290,7 @@ export function PetsSellScreen() {
 
               <QuantityStepper
                 label="1.5 L packs"
-                labelUr="۱.۵ لیٹر پیک"
+                labelUr=".  "
                 value={pet1500}
                 onChange={setPet1500}
                 max={vanLoad.pet1500Packs}
@@ -309,7 +308,6 @@ export function PetsSellScreen() {
               <View style={styles.discountRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.discountLabel}>Discount (Rs)</Text>
-                  <Text style={styles.discountLabelUr}>چھوٹ</Text>
                 </View>
                 <View style={styles.discountInputWrap}>
                   <Text style={styles.discountMinus}>−</Text>
@@ -333,18 +331,15 @@ export function PetsSellScreen() {
                   </Text>
                 ) : null}
                 <Text style={styles.totalLabel}>Total bill</Text>
-                <Text style={styles.totalLabelUr}>کل بل</Text>
                 <Text style={styles.totalValue}>Rs {billed.toLocaleString()}</Text>
               </View>
 
               <View style={styles.paymentCard}>
                 <Text style={styles.paymentTitle}>Payment</Text>
-                <Text style={styles.paymentTitleUr}>ادائیگی</Text>
 
                 <View style={styles.payRow}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.payLabel}>Cash</Text>
-                    <Text style={styles.payLabelUr}>نقد</Text>
                   </View>
                   <View style={styles.payInputWrap}>
                     <Text style={styles.payCurrency}>Rs</Text>
@@ -363,7 +358,6 @@ export function PetsSellScreen() {
                 <View style={styles.payRow}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.payLabel}>Bank / Easypaisa</Text>
-                    <Text style={styles.payLabelUr}>بینک / ایزی پیسہ</Text>
                   </View>
                   <View style={styles.payInputWrap}>
                     <Text style={styles.payCurrency}>Rs</Text>
@@ -395,7 +389,6 @@ export function PetsSellScreen() {
                 <View style={styles.creditRow}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.creditLabel}>On credit (debt)</Text>
-                    <Text style={styles.creditLabelUr}>قرض</Text>
                   </View>
                   <Text
                     style={[
@@ -411,9 +404,9 @@ export function PetsSellScreen() {
               <SwipeToConfirm
                 key={resetKey}
                 labelEn="Swipe to finalize bill  ›››"
-                labelUr="بل کو حتمی شکل دیں"
+                labelUr="    "
                 doneLabelEn="Bill saved ✓"
-                doneLabelUr="بل محفوظ ہو گیا"
+                doneLabelUr="   "
                 done={confirmed}
                 disabled={!canSwipe}
                 onConfirm={onConfirm}

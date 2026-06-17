@@ -19,38 +19,38 @@ export const TUTORIAL_STEPS: Partial<Record<Role, TutorialStep[]>> = {
     {
       icon: 'business-outline',
       titleEn: 'Welcome, Owner',
-      titleUr: 'خوش آمدید، مالک',
+      titleUr: '  ',
       bodyEn:
         'You can see both branches (Timergara and Shergarh) and compare them side by side. Tap a branch on the Branches tab to drill in.',
       bodyUr:
-        'آپ دونوں برانچوں (تیمرگرہ اور شیر گڑھ) کو دیکھ سکتے ہیں اور ان کا موازنہ کر سکتے ہیں۔ تفصیل کے لیے برانچ پر ٹیپ کریں۔',
+        '   (   )                  ',
     },
     {
       icon: 'wallet-outline',
       titleEn: 'Approve high-value expenses',
-      titleUr: 'اخراجات کی منظوری',
+      titleUr: '  ',
       bodyEn:
         'When the manager forwards a high-value expense to you, it appears on the Forwarded tab. Approve or reject from there.',
       bodyUr:
-        'منیجر آپ کو بڑے اخراجات کی منظوری کے لیے بھیجتا ہے۔ Forwarded ٹیب پر منظوری دیں یا منع کریں۔',
+        '           Forwarded       ',
     },
     {
       icon: 'settings-outline',
       titleEn: 'Set product prices',
-      titleUr: 'پروڈکٹ کی قیمتیں',
+      titleUr: '  ',
       bodyEn:
         'On the Settings tab you can change the default price for every product. Per-customer overrides still apply.',
       bodyUr:
-        'Settings ٹیب میں آپ ہر پروڈکٹ کی ڈیفالٹ قیمت تبدیل کر سکتے ہیں۔',
+        'Settings            ',
     },
     {
       icon: 'list-outline',
       titleEn: 'Audit log',
-      titleUr: 'آڈٹ لاگ',
+      titleUr: ' ',
       bodyEn:
         "Every important action — sales, returns, expense decisions — is in the Audit tab. Filter by Sales or Expenses.",
       bodyUr:
-        'ہر اہم کام Audit ٹیب میں ہے — فروخت، واپسی، اخراجات کے فیصلے۔',
+        '   Audit    —     ',
     },
   ],
 
@@ -58,47 +58,47 @@ export const TUTORIAL_STEPS: Partial<Record<Role, TutorialStep[]>> = {
     {
       icon: 'home-outline',
       titleEn: 'Welcome, Manager',
-      titleUr: 'خوش آمدید، منیجر',
+      titleUr: '  ',
       bodyEn:
         "Your Home tab is the branch's nerve center — cash, alerts, today's assignments, recent activity.",
       bodyUr:
-        'Home ٹیب آپ کی برانچ کا کنٹرول روم ہے — نقدی، الرٹس، آج کی تفویض، حالیہ سرگرمی۔',
+        'Home         —       ',
     },
     {
       icon: 'cube-outline',
       titleEn: 'Load the vans + assign salesmen',
-      titleUr: 'وین لوڈنگ اور سیلز مین کی تفویض',
+      titleUr: '      ',
       bodyEn:
         'From Home → Today\'s assignments, set how many cans/gallons/packs each van carries today, and pick which salesman drives.',
       bodyUr:
-        "Home → آج کی تفویض سے ہر وین کا سامان اور سیلز مین چنیں۔",
+        "Home →            ",
     },
     {
       icon: 'cart-outline',
       titleEn: 'Customer orders',
-      titleUr: 'کسٹمر آرڈرز',
+      titleUr: ' ',
       bodyEn:
         'When a customer places an order from their app, you\'ll see an alert here. Assign it to a salesman, then mark on-the-way and delivered.',
       bodyUr:
-        'کسٹمر آرڈر کرے تو آپ کو الرٹ ملے گا۔ سیلز مین کو تفویض کریں اور پھر ڈیلیور کا نشان لگائیں۔',
+        '                   ',
     },
     {
       icon: 'briefcase-outline',
       titleEn: 'Staff accounts',
-      titleUr: 'عملے کے اکاؤنٹس',
+      titleUr: '  ',
       bodyEn:
         'The Team tab manages who can log into the app — add staff accounts, set roles, deactivate when needed.',
       bodyUr:
-        'Team ٹیب میں اپنے عملے کے لاگ ان اکاؤنٹس ہیں — نئے بنائیں، کردار طے کریں، غیر فعال کریں۔',
+        'Team          —        ',
     },
     {
       icon: 'wallet-outline',
       titleEn: 'Expense approvals',
-      titleUr: 'اخراجات کی منظوری',
+      titleUr: '  ',
       bodyEn:
         'Salesmen submit field expenses (fuel, repairs, food). Approve, reject, or forward big ones to the Owner.',
       bodyUr:
-        'سیلز مین اخراجات بھیجتے ہیں۔ منظوری دیں، منع کریں، یا بڑے اخراجات مالک کو بھیجیں۔',
+        '              ',
     },
   ],
 
@@ -106,47 +106,47 @@ export const TUTORIAL_STEPS: Partial<Record<Role, TutorialStep[]>> = {
     {
       icon: 'people-outline',
       titleEn: 'Your customer list',
-      titleUr: 'آپ کی کسٹمر لسٹ',
+      titleUr: '   ',
       bodyEn:
         'The Customers tab shows everyone on your route. Customers you have sold to today turn green. Tap any to see history.',
       bodyUr:
-        'Customers ٹیب میں آپ کے روٹ کے سب کسٹمر ہیں۔ آج فروخت کی تو کارڈ سبز ہو جاتا ہے۔',
+        'Customers                  ',
     },
     {
       icon: 'cash-outline',
       titleEn: 'Generating a bill',
-      titleUr: 'بل بنانا',
+      titleUr: ' ',
       bodyEn:
         'On the Sell tab: pick a customer, set the pack quantities with the +/- buttons, edit the price if needed, then swipe to finalize.',
       bodyUr:
-        'Sell ٹیب میں: کسٹمر چنیں، مقدار سیٹ کریں، قیمت تبدیل کریں اگر چاہیں، پھر سوائپ کریں۔',
+        'Sell  :             ',
     },
     {
       icon: 'share-social-outline',
       titleEn: 'Share the bill',
-      titleUr: 'بل بھیجیں',
+      titleUr: ' ',
       bodyEn:
         'After saving, tap "Share bill" to send a clean PDF via WhatsApp directly to the customer.',
       bodyUr:
-        'بل محفوظ ہونے کے بعد "Share bill" پر ٹیپ کر کے کسٹمر کو WhatsApp پر بھیجیں۔',
+        '     "Share bill"       WhatsApp  ',
     },
     {
       icon: 'return-down-back-outline',
       titleEn: 'Returns',
-      titleUr: 'واپسی',
+      titleUr: '',
       bodyEn:
         "When a customer returns unsold packs, log them on the Returns tab. The refund is auto-credited to their balance.",
       bodyUr:
-        'اگر کسٹمر پیک واپس کرے تو Returns ٹیب پر درج کریں۔ رقم خود کسٹمر کے حساب میں جاتی ہے۔',
+        '      Returns            ',
     },
     {
       icon: 'checkmark-done-outline',
       titleEn: 'End of day',
-      titleUr: 'دن کا اختتام',
+      titleUr: '  ',
       bodyEn:
         'Submit your daily closure to the manager from the End Day tab. You can also log field expenses (fuel, food) here.',
       bodyUr:
-        'End Day ٹیب سے دن کا حساب منیجر کو بھیجیں۔ یہاں اخراجات بھی درج ہو سکتے ہیں۔',
+        'End Day               ',
     },
   ],
 
@@ -154,47 +154,47 @@ export const TUTORIAL_STEPS: Partial<Record<Role, TutorialStep[]>> = {
     {
       icon: 'today-outline',
       titleEn: 'Color-coded customers',
-      titleUr: 'رنگوں سے فرق',
+      titleUr: '  ',
       bodyEn:
         'Today tab shows your customers as cards: ⚪ clean, 🟡 has empties, 🟠 has debt, 🔴 has both, 🟢 delivered today.',
       bodyUr:
-        'Today میں کسٹمر کارڈز رنگوں سے: ⚪ صاف، 🟡 خالی ہیں، 🟠 ادھار، 🔴 دونوں، 🟢 آج ڈیلیور ہوا۔',
+        'Today     : ⚪  🟡   🟠  🔴  🟢   ',
     },
     {
       icon: 'cube-outline',
       titleEn: 'Daily and weekly customers',
-      titleUr: 'روزانہ اور ہفتہ وار',
+      titleUr: '   ',
       bodyEn:
         'Filter by payment cycle (All / Daily / Weekly) above the route tabs. Daily customers pay each visit; weekly settle once a week.',
       bodyUr:
-        'روٹ ٹیبز کے اوپر سے روزانہ یا ہفتہ وار کسٹمر چنیں۔ روزانہ ہر بار ادائیگی کرتے ہیں، ہفتہ وار ہفتے میں۔',
+        '                    ',
     },
     {
       icon: 'send-outline',
       titleEn: 'Swipe to deliver',
-      titleUr: 'ڈیلیور کرنے کے لیے سوائپ',
+      titleUr: '    ',
       bodyEn:
         'On the Deliver tab: set cans/gallons with +/- buttons, then swipe right to confirm. The system auto-handles cash vs credit.',
       bodyUr:
-        'Deliver میں مقدار سیٹ کریں اور دائیں سوائپ کریں۔ نقدی یا ادھار خود طے ہوتا ہے۔',
+        'Deliver               ',
     },
     {
       icon: 'archive-outline',
       titleEn: 'Empty container collection',
-      titleUr: 'خالی برتنوں کی واپسی',
+      titleUr: '   ',
       bodyEn:
         'Use the Collect tab to log empty cans/gallons returned by the customer. It updates their held-empties balance.',
       bodyUr:
-        'Collect ٹیب پر کسٹمر سے واپس آنے والے خالی برتن درج کریں۔',
+        'Collect           ',
     },
     {
       icon: 'checkmark-done-outline',
       titleEn: 'End of day',
-      titleUr: 'دن کا اختتام',
+      titleUr: '  ',
       bodyEn:
         'Submit your daily closure from End Day. You can also log field expenses (fuel, repairs) for manager approval.',
       bodyUr:
-        'End Day سے دن کا حساب بھیجیں۔ یہاں اخراجات بھی شامل کر سکتے ہیں۔',
+        'End Day            ',
     },
   ],
 
@@ -202,38 +202,38 @@ export const TUTORIAL_STEPS: Partial<Record<Role, TutorialStep[]>> = {
     {
       icon: 'home-outline',
       titleEn: 'Your account at a glance',
-      titleUr: 'آپ کے حساب کا خلاصہ',
+      titleUr: '    ',
       bodyEn:
         'Home shows your outstanding balance, the empties (cans/gallons) you are holding, and any orders in progress.',
       bodyUr:
-        'Home میں آپ کی باقی رقم، آپ کے پاس موجود خالی کین/گیلن، اور جاری آرڈر نظر آتے ہیں۔',
+        'Home           /      ',
     },
     {
       icon: 'cart-outline',
       titleEn: 'Place an order',
-      titleUr: 'آرڈر کریں',
+      titleUr: ' ',
       bodyEn:
         'On the Order tab, pick the products + quantities, optional time and notes, then swipe to submit. The manager will assign a salesman.',
       bodyUr:
-        'Order ٹیب پر پروڈکٹ اور مقدار چنیں، پھر سوائپ کریں۔ منیجر سیلز مین تفویض کرے گا۔',
+        'Order               ',
     },
     {
       icon: 'time-outline',
       titleEn: 'History + share bills',
-      titleUr: 'تاریخ اور بل',
+      titleUr: '  ',
       bodyEn:
         'History shows every past order with status, plus PDF bills for every delivery. Tap the share icon on any bill to forward it.',
       bodyUr:
-        'History میں سب آرڈر، اور ہر ڈیلیوری کا PDF بل ہے۔',
+        'History        PDF  ',
     },
     {
       icon: 'chatbubble-ellipses-outline',
       titleEn: 'Complaints',
-      titleUr: 'شکایات',
+      titleUr: '',
       bodyEn:
         'If anything goes wrong, file a complaint on the Complaints tab. Pick a category and choose if it goes to the salesman or the manager.',
       bodyUr:
-        'کوئی مسئلہ ہو تو Complaints ٹیب پر شکایت درج کریں۔',
+        '    Complaints     ',
     },
   ],
 };

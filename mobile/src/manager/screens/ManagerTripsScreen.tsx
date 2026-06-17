@@ -27,7 +27,6 @@ export function ManagerTripsScreen() {
     <Screen padded={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Today's Trips</Text>
-        <Text style={styles.titleUr}>آج کے ٹرپ</Text>
 
         <View style={styles.tabRow}>
           <TabPill label="Cans / Gallons" active={tab === 'cg'} onPress={() => setTab('cg')} />

@@ -40,7 +40,6 @@ export function OwnerLandingScreen({ navigation }: { navigation: Nav }) {
 
       <View style={styles.totalCard}>
         <Text style={styles.totalLabel}>Today across all branches</Text>
-        <Text style={styles.totalLabelUr}>آج تمام برانچوں میں</Text>
         <Text style={styles.totalValue}>Rs {totalCash.toLocaleString()}</Text>
         <View style={styles.totalSubRow}>
           <Text style={styles.totalSub}>{totalDeliveries} C/G deliveries</Text>
@@ -58,7 +57,7 @@ export function OwnerLandingScreen({ navigation }: { navigation: Nav }) {
       </View>
 
       <Text style={styles.sectionTitle}>Branches</Text>
-      <Text style={styles.sectionSubtitle}>برانچیں — choose to drill in</Text>
+      <Text style={styles.sectionSubtitle}> — choose to drill in</Text>
 
       <BranchButton
         summary={timergara}
@@ -80,7 +79,7 @@ export function OwnerLandingScreen({ navigation }: { navigation: Nav }) {
         <Ionicons name="git-compare-outline" size={22} color={colors.primaryDark} />
         <View style={{ flex: 1 }}>
           <Text style={styles.combinedTitle}>Compare both branches</Text>
-          <Text style={styles.combinedSub}>دونوں برانچوں کا موازنہ</Text>
+          <Text style={styles.combinedSub}>   </Text>
         </View>
         <Ionicons name="chevron-forward" size={20} color={colors.primaryDark} />
       </Pressable>
@@ -136,7 +135,6 @@ function BranchButton({
               </View>
             )}
           </View>
-          <Text style={styles.branchNameUr}>{summary.name.ur}</Text>
         </View>
         <Ionicons name="chevron-forward" size={22} color={colors.primaryDark} />
       </View>

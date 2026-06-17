@@ -47,7 +47,6 @@ export function CustomerHomeScreen({ navigation }: { navigation: Nav }) {
         <Image source={brandLogo} style={styles.logo} resizeMode="contain" />
         <View style={{ flex: 1 }}>
           <Text style={styles.welcome}>Welcome,</Text>
-          <Text style={styles.welcomeUr}>خوش آمدید،</Text>
           <Text style={styles.userName} numberOfLines={1}>
             {user?.name}
           </Text>
@@ -59,7 +58,7 @@ export function CustomerHomeScreen({ navigation }: { navigation: Nav }) {
           {debt > 0 ? 'You owe' : 'You are settled up'}
         </Text>
         <Text style={[styles.balanceLabelUr, debt > 0 ? styles.balanceLabelDebt : null]}>
-          {debt > 0 ? 'آپ کے ذمہ' : 'حساب صاف ہے'}
+          {debt > 0 ? '  ' : '  '}
         </Text>
         <Text style={[styles.balanceValue, debt > 0 ? styles.balanceValueDebt : null]}>
           Rs {debt.toLocaleString()}
@@ -86,7 +85,7 @@ export function CustomerHomeScreen({ navigation }: { navigation: Nav }) {
       >
         <View style={{ flex: 1 }}>
           <Text style={styles.ctaTitle}>Place a new order</Text>
-          <Text style={styles.ctaSub}>نیا آرڈر کریں — pets, cans, or gallons</Text>
+          <Text style={styles.ctaSub}>   — pets, cans, or gallons</Text>
         </View>
         <Ionicons name="arrow-forward-circle" size={32} color={colors.textInverse} />
       </Pressable>

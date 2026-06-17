@@ -137,7 +137,7 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
               {branchLabel ? branchLabel.en : 'Branch'} Branch
             </Text>
             <Text style={styles.branchSub}>
-              {branchLabel ? branchLabel.ur : ''} • Manager: {user?.name}
+              Manager: {user?.name}
             </Text>
           </View>
         </View>
@@ -145,7 +145,6 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
 
       <View style={styles.cashCard}>
         <Text style={styles.cashLabel}>Cash collected today</Text>
-        <Text style={styles.cashLabelUr}>آج جمع کی گئی نقدی</Text>
         <Text style={styles.cashValue}>Rs {totalCash.toLocaleString()}</Text>
         <View style={styles.cashSplit}>
           <Text style={styles.cashSplitText}>

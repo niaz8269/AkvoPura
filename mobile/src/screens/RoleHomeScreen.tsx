@@ -30,7 +30,7 @@ const ROLE_LABEL: Partial<Record<Role, BilingualString>> = {
   customer: strings.roleCustomer,
 };
 
-const FALLBACK_ROLE_LABEL: BilingualString = { en: 'Staff', ur: 'عملہ' };
+const FALLBACK_ROLE_LABEL: BilingualString = { en: 'Staff', ur: '' };
 
 /** Built-in branch labels for the original two branches; for branches added
  *  later we just show the slug capitalised. */
@@ -58,7 +58,6 @@ export function RoleHomeScreen() {
         <View style={styles.welcomeRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.welcomeEn}>{strings.welcome.en},</Text>
-            <Text style={styles.welcomeUr}>{strings.welcome.ur}،</Text>
             <Text style={styles.userName}>{user.name}</Text>
           </View>
           <RoleIcon role={user.role} />
@@ -66,14 +65,12 @@ export function RoleHomeScreen() {
 
         <View style={styles.badgeRow}>
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>
-              {roleLabel.en} • {roleLabel.ur}
-            </Text>
+            <Text style={styles.badgeText}>{roleLabel.en}</Text>
           </View>
           {branchLabel ? (
             <View style={[styles.badge, styles.badgeBranch]}>
               <Text style={styles.badgeText}>
-                {strings.branch.en}: {branchLabel.en} • {branchLabel.ur}
+                {strings.branch.en}: {branchLabel.en}
               </Text>
             </View>
           ) : null}
@@ -110,13 +107,12 @@ function RoleIcon({ role }: { role: Role }) {
 function RoleSpecificStub({ role }: { role: Role }) {
   const stub = STUB_CONTENT[role] ?? {
     titleEn: 'Portal coming soon',
-    titleUr: 'پورٹل جلد آرہا ہے',
+    titleUr: '   ',
     points: ['Your role does not have a dedicated portal yet.'],
   };
   return (
     <View style={styles.stubCard}>
       <Text style={styles.stubTitle}>{stub.titleEn}</Text>
-      <Text style={styles.stubTitleUr}>{stub.titleUr}</Text>
       <View style={styles.divider} />
       {stub.points.map((p, i) => (
         <View key={i} style={styles.bulletRow}>
@@ -126,7 +122,6 @@ function RoleSpecificStub({ role }: { role: Role }) {
       ))}
       <View style={styles.divider} />
       <Text style={styles.comingSoonEn}>{strings.comingSoon.en}</Text>
-      <Text style={styles.comingSoonUr}>{strings.comingSoon.ur}</Text>
     </View>
   );
 }
@@ -137,7 +132,7 @@ const STUB_CONTENT: Partial<Record<
 >> = {
   owner: {
     titleEn: 'Owner Dashboard',
-    titleUr: 'مالک کا ڈیش بورڈ',
+    titleUr: '   ',
     points: [
       'Branch overview: Timergara & Shergarh',
       'Inventory, production, sales, expenses, P&L',
@@ -147,7 +142,7 @@ const STUB_CONTENT: Partial<Record<
   },
   manager: {
     titleEn: 'Manager Dashboard',
-    titleUr: 'منیجر کا ڈیش بورڈ',
+    titleUr: '   ',
     points: [
       'Van loading & multi-trip audit',
       'Customer & route management',
@@ -157,7 +152,7 @@ const STUB_CONTENT: Partial<Record<
   },
   pets_salesman: {
     titleEn: 'Pets Salesman Dashboard',
-    titleUr: 'پیٹس سیلز مین کا ڈیش بورڈ',
+    titleUr: '     ',
     points: [
       "Today's route and van load (read-only)",
       'Customer list with full history',
@@ -167,7 +162,7 @@ const STUB_CONTENT: Partial<Record<
   },
   cans_gallons_salesman: {
     titleEn: 'Cans / Gallons Salesman Dashboard',
-    titleUr: 'کین / گیلن سیلز مین کا ڈیش بورڈ',
+    titleUr: ' /      ',
     points: [
       'Color-coded customer cards (white / yellow / red)',
       'Slide-to-confirm delivery with +/- quantity',
@@ -177,7 +172,7 @@ const STUB_CONTENT: Partial<Record<
   },
   customer: {
     titleEn: 'Customer Portal',
-    titleUr: 'کسٹمر پورٹل',
+    titleUr: ' ',
     points: [
       'Place orders for Pets, Cans, Gallons',
       'Track deliveries and outstanding balance',

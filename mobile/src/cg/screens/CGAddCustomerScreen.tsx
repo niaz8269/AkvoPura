@@ -106,7 +106,6 @@ export function CGAddCustomerScreen({ navigation }: { navigation: Nav }) {
           keyboardShouldPersistTaps="handled"
         >
           <Text style={styles.fieldLabel}>Name *</Text>
-          <Text style={styles.fieldLabelUr}>نام</Text>
           <TextInput
             value={name}
             onChangeText={setName}
@@ -117,7 +116,6 @@ export function CGAddCustomerScreen({ navigation }: { navigation: Nav }) {
           />
 
           <Text style={styles.fieldLabel}>Phone *</Text>
-          <Text style={styles.fieldLabelUr}>فون نمبر</Text>
           <TextInput
             value={phone}
             onChangeText={setPhone}
@@ -128,7 +126,6 @@ export function CGAddCustomerScreen({ navigation }: { navigation: Nav }) {
           />
 
           <Text style={styles.fieldLabel}>Address *</Text>
-          <Text style={styles.fieldLabelUr}>پتہ</Text>
           <TextInput
             value={address}
             onChangeText={setAddress}
@@ -259,7 +256,7 @@ export function CGAddCustomerScreen({ navigation }: { navigation: Nav }) {
           <BilingualButton
             label={{
               en: submitting ? 'Adding…' : 'Add customer',
-              ur: 'کسٹمر شامل کریں',
+              ur: '  ',
             }}
             onPress={submit}
             disabled={!valid || submitting}

@@ -291,14 +291,14 @@ function NewSubscriptionForm({
 
       <View style={styles.formActions}>
         <BilingualButton
-          label={{ en: 'Cancel', ur: 'منسوخ' }}
+          label={{ en: 'Cancel', ur: '' }}
           variant="secondary"
           onPress={onCancel}
           style={{ flex: 1 }}
         />
         <View style={{ width: spacing.md }} />
         <BilingualButton
-          label={{ en: 'Save subscription', ur: 'محفوظ کریں' }}
+          label={{ en: 'Save subscription', ur: ' ' }}
           onPress={submit}
           disabled={totalItems === 0}
           style={{ flex: 1 }}

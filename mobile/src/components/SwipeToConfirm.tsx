@@ -44,7 +44,7 @@ export function SwipeToConfirm({
   labelEn,
   labelUr,
   doneLabelEn = 'Done',
-  doneLabelUr = 'مکمل',
+  doneLabelUr = '',
   done,
   disabled,
   onConfirm,
@@ -134,11 +134,6 @@ export function SwipeToConfirm({
         <Text style={[styles.labelEn, isDone ? styles.labelDone : null]}>
           {isDone ? doneLabelEn : labelEn}
         </Text>
-        {labelUr || doneLabelUr ? (
-          <Text style={[styles.labelUr, isDone ? styles.labelDone : null]}>
-            {isDone ? doneLabelUr : labelUr}
-          </Text>
-        ) : null}
       </View>
 
       {!isDone ? (

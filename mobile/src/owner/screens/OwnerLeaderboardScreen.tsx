@@ -44,7 +44,6 @@ export function OwnerLeaderboardScreen() {
   return (
     <Screen scroll>
       <Text style={styles.title}>Salesman leaderboard</Text>
-      <Text style={styles.titleUr}>سیلز مین کی کارکردگی</Text>
       <Text style={styles.intro}>
         Today's ranking by cash collected.
       </Text>

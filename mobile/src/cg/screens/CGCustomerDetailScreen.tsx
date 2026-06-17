@@ -73,12 +73,12 @@ export function CGCustomerDetailScreen({ route }: { route: Route }) {
         </Text>
       </View>
 
-      <Section title="Payment cycle" subtitle="ادائیگی کا چکر">
+      <Section title="Payment cycle" subtitle="  ">
         <View style={styles.cycleRow}>
           <CycleOption
             value="daily"
             label="Daily"
-            labelUr="روزانہ"
+            labelUr=""
             sub="Pays on every visit"
             active={customer.paymentCycle === 'daily'}
             onPress={() => setPaymentCycle(customer.id, 'daily')}
@@ -86,7 +86,7 @@ export function CGCustomerDetailScreen({ route }: { route: Route }) {
           <CycleOption
             value="weekly"
             label="Weekly"
-            labelUr="ہفتہ وار"
+            labelUr=" "
             sub="Settles once a week"
             active={customer.paymentCycle === 'weekly'}
             onPress={() => setPaymentCycle(customer.id, 'weekly')}
@@ -94,7 +94,7 @@ export function CGCustomerDetailScreen({ route }: { route: Route }) {
         </View>
       </Section>
 
-      <Section title="Today's deliveries" subtitle="آج کی ڈیلیوریز">
+      <Section title="Today's deliveries" subtitle="  ">
         {deliveries.length === 0 ? (
           <Text style={styles.empty}>No deliveries yet today.</Text>
         ) : (
@@ -125,7 +125,7 @@ export function CGCustomerDetailScreen({ route }: { route: Route }) {
         )}
       </Section>
 
-      <Section title="Today's empty collections" subtitle="آج جمع کیے گئے خالی">
+      <Section title="Today's empty collections" subtitle="    ">
         {collections.length === 0 ? (
           <Text style={styles.empty}>No empties collected yet today.</Text>
         ) : (
@@ -143,7 +143,7 @@ export function CGCustomerDetailScreen({ route }: { route: Route }) {
         )}
       </Section>
 
-      <Section title="Pricing" subtitle="قیمتیں">
+      <Section title="Pricing" subtitle="">
         <View style={styles.priceRow}>
           <Text style={styles.priceLabel}>Per can</Text>
           <Text style={styles.priceValue}>Rs {customer.pricePerCan}</Text>

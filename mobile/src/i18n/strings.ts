@@ -10,37 +10,37 @@ export type BilingualString = { en: string; ur: string };
 
 export const strings = {
   // App
-  appName: { en: 'AkvoPura', ur: 'آکوو پیورا' },
-  tagline: { en: 'Pure Water, Pure Trust', ur: 'خالص پانی، خالص بھروسہ' },
+  appName: { en: 'AkvoPura', ur: ' ' },
+  tagline: { en: 'Pure Water, Pure Trust', ur: '   ' },
 
   // Auth
-  login: { en: 'Login', ur: 'لاگ ان' },
-  logout: { en: 'Logout', ur: 'لاگ آؤٹ' },
-  phoneOrEmail: { en: 'Phone or Email', ur: 'فون یا ای میل' },
-  password: { en: 'Password', ur: 'پاس ورڈ' },
-  loginFailed: { en: 'Wrong phone/email or password', ur: 'غلط فون/ای میل یا پاس ورڈ' },
-  loggingIn: { en: 'Signing in...', ur: 'لاگ ان ہو رہا ہے...' },
-  testAccountsHint: { en: 'Tap a test account to log in:', ur: 'لاگ ان کے لیے ٹیسٹ اکاؤنٹ پر ٹیپ کریں:' },
+  login: { en: 'Login', ur: ' ' },
+  logout: { en: 'Logout', ur: ' ' },
+  phoneOrEmail: { en: 'Phone or Email', ur: '   ' },
+  password: { en: 'Password', ur: ' ' },
+  loginFailed: { en: 'Wrong phone/email or password', ur: ' /    ' },
+  loggingIn: { en: 'Signing in...', ur: '    ...' },
+  testAccountsHint: { en: 'Tap a test account to log in:', ur: '        :' },
 
   // Roles (display labels)
-  roleOwner: { en: 'Owner', ur: 'مالک' },
-  roleManager: { en: 'Manager', ur: 'منیجر' },
-  rolePetsSalesman: { en: 'Pets Salesman', ur: 'پیٹس سیلز مین' },
-  roleCansSalesman: { en: 'Cans/Gallons Salesman', ur: 'کین/گیلن سیلز مین' },
-  roleCustomer: { en: 'Customer', ur: 'کسٹمر' },
+  roleOwner: { en: 'Owner', ur: '' },
+  roleManager: { en: 'Manager', ur: '' },
+  rolePetsSalesman: { en: 'Pets Salesman', ur: '  ' },
+  roleCansSalesman: { en: 'Cans/Gallons Salesman', ur: '/  ' },
+  roleCustomer: { en: 'Customer', ur: '' },
 
   // Branches
-  branchTimergara: { en: 'Timergara', ur: 'تیمرگرہ' },
-  branchShergarh: { en: 'Shergarh', ur: 'شیر گڑھ' },
+  branchTimergara: { en: 'Timergara', ur: '' },
+  branchShergarh: { en: 'Shergarh', ur: ' ' },
 
   // Common
-  welcome: { en: 'Welcome', ur: 'خوش آمدید' },
-  branch: { en: 'Branch', ur: 'برانچ' },
-  comingSoon: { en: 'This dashboard will be built next.', ur: 'یہ ڈیش بورڈ اگلے مرحلے میں بنایا جائے گا۔' },
-  cancel: { en: 'Cancel', ur: 'منسوخ' },
-  confirm: { en: 'Confirm', ur: 'تصدیق' },
-  yes: { en: 'Yes', ur: 'جی ہاں' },
-  no: { en: 'No', ur: 'نہیں' },
+  welcome: { en: 'Welcome', ur: ' ' },
+  branch: { en: 'Branch', ur: '' },
+  comingSoon: { en: 'This dashboard will be built next.', ur: '        ' },
+  cancel: { en: 'Cancel', ur: '' },
+  confirm: { en: 'Confirm', ur: '' },
+  yes: { en: 'Yes', ur: ' ' },
+  no: { en: 'No', ur: '' },
 } as const;
 
 export type StringKey = keyof typeof strings;

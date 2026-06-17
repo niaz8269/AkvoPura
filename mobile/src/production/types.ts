@@ -75,8 +75,8 @@ export const RECIPE: Record<
 };
 
 export const PRODUCT_LABEL: Record<ProducedProduct, { en: string; ur: string }> = {
-  pet600: { en: '600 ml pack', ur: '۶۰۰ ملی پیک' },
-  pet1500: { en: '1.5 L pack', ur: '۱.۵ لیٹر پیک' },
-  can: { en: 'Filled can', ur: 'بھری کین' },
-  gallon: { en: 'Filled gallon', ur: 'بھری گیلن' },
+  pet600: { en: '600 ml pack', ur: '  ' },
+  pet1500: { en: '1.5 L pack', ur: '.  ' },
+  can: { en: 'Filled can', ur: ' ' },
+  gallon: { en: 'Filled gallon', ur: ' ' },
 };

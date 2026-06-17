@@ -66,7 +66,6 @@ export function QuantityStepper({
         {icon ? <Image source={icon} style={styles.icon} resizeMode="contain" /> : null}
         <View style={{ flexShrink: 1 }}>
           <Text style={styles.labelEn}>{label}</Text>
-          {labelUr ? <Text style={styles.labelUr}>{labelUr}</Text> : null}
         </View>
       </View>
 

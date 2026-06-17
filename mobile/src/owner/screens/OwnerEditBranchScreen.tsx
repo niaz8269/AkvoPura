@@ -167,7 +167,7 @@ export function OwnerEditBranchScreen({ route }: any) {
           <TextInput
             value={nameUr}
             onChangeText={setNameUr}
-            placeholder="e.g. پشاور"
+            placeholder="e.g. "
             placeholderTextColor={colors.textMuted}
             style={styles.input}
           />
@@ -183,7 +183,7 @@ export function OwnerEditBranchScreen({ route }: any) {
           />
 
           <BilingualButton
-            label={{ en: saving ? 'Saving…' : 'Save changes', ur: 'محفوظ کریں' }}
+            label={{ en: saving ? 'Saving…' : 'Save changes', ur: ' ' }}
             onPress={save}
             disabled={!dirty || saving}
             style={{ marginTop: spacing.lg }}

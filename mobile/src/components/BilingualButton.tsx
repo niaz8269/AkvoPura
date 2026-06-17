@@ -51,16 +51,13 @@ export function BilingualButton({
         style,
       ]}
       accessibilityRole="button"
-      accessibilityLabel={`${label.en} / ${label.ur}`}
+      accessibilityLabel={label.en}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
     >
       {loading ? (
         <ActivityIndicator color={variantStyles.textColor} />
       ) : (
-        <View style={styles.labelStack}>
-          <Text style={[styles.labelEn, { color: variantStyles.textColor }]}>{label.en}</Text>
-          <Text style={[styles.labelUr, { color: variantStyles.textColor }]}>{label.ur}</Text>
-        </View>
+        <Text style={[styles.labelEn, { color: variantStyles.textColor }]}>{label.en}</Text>
       )}
     </Pressable>
   );

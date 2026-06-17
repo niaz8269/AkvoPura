@@ -107,7 +107,6 @@ export function SalesmanExpensesScreen({ navigation }: any) {
     <Screen padded={false}>
       <View style={styles.header}>
         <Text style={styles.title}>My expenses</Text>
-        <Text style={styles.titleUr}>میرے اخراجات</Text>
         <View style={styles.kpiRow}>
           <View style={styles.kpi}>
             <Text style={[styles.kpiValue, pendingCount > 0 ? styles.kpiValueWarn : null]}>

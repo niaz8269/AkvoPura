@@ -39,7 +39,7 @@ export function LoginScreen({ navigation }: { navigation: any }) {
     const result = await login(identifier, password);
     setSubmitting(false);
     if (!result.ok) {
-      setError(strings.loginFailed.en + ' / ' + strings.loginFailed.ur);
+      setError(strings.loginFailed.en);
     }
   };
 
@@ -58,10 +58,7 @@ export function LoginScreen({ navigation }: { navigation: any }) {
         <View style={styles.brandBlock}>
           <Image source={brandLogo} style={styles.logo} resizeMode="contain" />
           <Text style={styles.appName}>{strings.appName.en}</Text>
-          <Text style={styles.appNameUr}>{strings.appName.ur}</Text>
-          <Text style={styles.tagline}>
-            {strings.tagline.en}  •  {strings.tagline.ur}
-          </Text>
+          <Text style={styles.tagline}>{strings.tagline.en}</Text>
         </View>
 
         <View style={styles.form}>
@@ -107,7 +104,6 @@ export function LoginScreen({ navigation }: { navigation: any }) {
 
         <View style={styles.testBlock}>
           <Text style={styles.testHintEn}>{strings.testAccountsHint.en}</Text>
-          <Text style={styles.testHintUr}>{strings.testAccountsHint.ur}</Text>
           <View style={styles.chipRow}>
             {mockAccounts.map((acc) => (
               <Pressable
