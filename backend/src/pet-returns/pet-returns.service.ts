@@ -65,10 +65,21 @@ export class PetReturnsService {
         params.pet600Packs * params.pricePet600 +
         params.pet1500Packs * params.pricePet1500;
 
+      // No-penny-lost guard: refusing to record a refund larger than
+      // the customer's debt. The surplus would silently disappear with
+      // the old Math.max(0, ...). If the customer is genuinely owed
+      // cash back, the manager handles it as an explicit cash refund
+      // outside this flow.
+      if (refund > customer.outstandingDebt) {
+        throw new BadRequestException(
+          `Refund Rs ${refund} exceeds outstanding debt Rs ${customer.outstandingDebt}. Take only enough returns to cover the debt; give the rest back to the customer in cash.`,
+        );
+      }
+
       await tx.petCustomer.update({
         where: { id: customer.id },
         data: {
-          outstandingDebt: Math.max(0, customer.outstandingDebt - refund),
+          outstandingDebt: customer.outstandingDebt - refund,
         },
       });
 

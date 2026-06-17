@@ -69,12 +69,20 @@ export class CGCollectionsService {
       const bank = Math.max(0, params.bankCollected ?? 0);
       const totalPaid = cash + bank;
 
+      // No-penny-lost guard: reject overpayments on collection (the
+      // customer can't owe less than zero).
+      if (totalPaid > customer.outstandingDebt) {
+        throw new BadRequestException(
+          `Overpayment: collected Rs ${totalPaid} but customer only owes Rs ${customer.outstandingDebt}. Give change and re-enter the correct amount.`,
+        );
+      }
+
       await tx.cGCustomer.update({
         where: { id: customer.id },
         data: {
           emptyCansHeld: Math.max(0, customer.emptyCansHeld - params.cansCollected),
           emptyGallonsHeld: Math.max(0, customer.emptyGallonsHeld - params.gallonsCollected),
-          outstandingDebt: Math.max(0, customer.outstandingDebt - totalPaid),
+          outstandingDebt: customer.outstandingDebt - totalPaid,
           ...(totalPaid > 0 ? { lastActivityAt: new Date() } : {}),
         },
       });

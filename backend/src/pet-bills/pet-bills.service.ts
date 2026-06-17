@@ -72,13 +72,21 @@ export class PetBillsService {
       const bankCollected = Math.max(0, params.bankCollected ?? 0);
       const totalPaid = params.cashCollected + bankCollected;
 
+      // No-penny-lost guard: reject overpayments before they vanish into
+      // Math.max(0, ...). The salesman should record only what's actually
+      // owed (this bill + old debt). Surplus handed back as change is the
+      // salesman's responsibility, not a database operation.
+      const maxAllowedPayment = customer.outstandingDebt + billed;
+      if (totalPaid > maxAllowedPayment) {
+        throw new BadRequestException(
+          `Overpayment: paid Rs ${totalPaid} but customer only owes Rs ${maxAllowedPayment} (Rs ${customer.outstandingDebt} old + Rs ${billed} this bill). Give change and re-enter the correct amount.`,
+        );
+      }
+
       await tx.petCustomer.update({
         where: { id: customer.id },
         data: {
-          outstandingDebt: Math.max(
-            0,
-            customer.outstandingDebt + billed - totalPaid,
-          ),
+          outstandingDebt: customer.outstandingDebt + billed - totalPaid,
           lastActivityAt: new Date(),
         },
       });

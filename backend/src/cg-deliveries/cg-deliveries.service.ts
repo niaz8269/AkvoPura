@@ -74,6 +74,14 @@ export class CGDeliveriesService {
       const bankCollected = Math.max(0, params.bankCollected ?? 0);
       const totalPaid = params.cashCollected + bankCollected;
 
+      // No-penny-lost guard: reject overpayments.
+      const maxAllowedPayment = customer.outstandingDebt + billed;
+      if (totalPaid > maxAllowedPayment) {
+        throw new BadRequestException(
+          `Overpayment: paid Rs ${totalPaid} but customer only owes Rs ${maxAllowedPayment} (Rs ${customer.outstandingDebt} old + Rs ${billed} this delivery). Give change and re-enter the correct amount.`,
+        );
+      }
+
       await tx.cGCustomer.update({
         where: { id: customer.id },
         data: {
@@ -85,10 +93,7 @@ export class CGDeliveriesService {
             customer.emptyGallonsHeld +
             params.gallonsDelivered -
             params.emptyGallonsCollected,
-          outstandingDebt: Math.max(
-            0,
-            customer.outstandingDebt + billed - totalPaid,
-          ),
+          outstandingDebt: customer.outstandingDebt + billed - totalPaid,
           lastActivityAt: new Date(),
         },
       });
