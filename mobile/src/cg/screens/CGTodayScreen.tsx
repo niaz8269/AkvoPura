@@ -77,7 +77,10 @@ export function CGTodayScreen({ navigation }: { navigation: Nav }) {
       <CycleFilter selected={cycle} onSelect={setCycle} counts={countByCycle} />
       <RouteTabs selected={route} onSelect={setRoute} countByRoute={countByRoute} />
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.list}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.list, { paddingBottom: tabBarHeight + 80 }]}
+      >
         {visible.map((c) => {
           const todays = deliveriesForCustomer(c.id);
           const status = statusForCustomer(c, todays);

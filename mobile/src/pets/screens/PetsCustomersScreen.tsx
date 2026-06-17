@@ -53,7 +53,10 @@ export function PetsCustomersScreen({ navigation }: { navigation: Nav }) {
         autoCorrect={false}
       />
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.list}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.list, { paddingBottom: tabBarHeight + 80 }]}
+      >
         {filtered.map((c) => {
           const billed = billsForCustomer(c.id);
           const billedToday = billed.length > 0;

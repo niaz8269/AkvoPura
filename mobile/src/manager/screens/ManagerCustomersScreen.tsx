@@ -205,7 +205,10 @@ export function ManagerCustomersScreen({ navigation }: { navigation: Nav }) {
         </View>
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.list}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[styles.list, { paddingBottom: tabBarHeight + spacing.lg }]}
+      >
         <Pressable
           onPress={() => navigation.navigate('AgingReport')}
           style={({ pressed }) => [

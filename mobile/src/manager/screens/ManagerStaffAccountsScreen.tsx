@@ -117,7 +117,7 @@ export function ManagerStaffAccountsScreen({ navigation }: any) {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.body}
+        contentContainerStyle={[styles.body, { paddingBottom: tabBarHeight + 80 }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }

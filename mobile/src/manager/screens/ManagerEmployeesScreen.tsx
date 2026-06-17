@@ -8,6 +8,7 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
@@ -44,6 +45,7 @@ type Nav = {
 };
 
 export function ManagerEmployeesScreen({ navigation }: { navigation: Nav }) {
+  const tabBarHeight = useBottomTabBarHeight();
   const { user } = useAuth();
   const { employees, todayEntryForEmployee } = useEmployees();
   const [filter, setFilter] = useState<RoleFilter>('all');
@@ -110,7 +112,10 @@ export function ManagerEmployeesScreen({ navigation }: { navigation: Nav }) {
         })}
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.list}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.list, { paddingBottom: tabBarHeight + 80 }]}
+      >
         <Pressable
           onPress={() => navigation.navigate('StaffAccounts')}
           style={({ pressed }) => [
@@ -141,11 +146,12 @@ export function ManagerEmployeesScreen({ navigation }: { navigation: Nav }) {
         )}
       </ScrollView>
 
-      {/* Floating "+" button to add a new employee */}
+      {/* Floating "+" button to add a new employee — lifted above tab bar */}
       <Pressable
         onPress={() => navigation.navigate('AddEmployee')}
         style={({ pressed }) => [
           styles.fab,
+          { bottom: tabBarHeight + spacing.md },
           pressed ? { opacity: 0.85 } : null,
         ]}
         accessibilityLabel="Add employee"
@@ -355,7 +361,7 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: spacing.lg,
-    bottom: spacing.lg,
+    bottom: spacing.lg, // tabBarHeight added inline via props since hook value is dynamic
     width: 56,
     height: 56,
     borderRadius: 28,
