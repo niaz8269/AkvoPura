@@ -17,8 +17,13 @@ type Props = PropsWithChildren<{
 }>;
 
 export function Screen({ children, scroll = false, padded = true, style }: Props) {
-  const containerStyle = [
-    styles.container,
+  // Scroll mode uses flexGrow on contentContainerStyle so content can grow
+  // beyond the viewport (that's what makes the ScrollView actually scroll).
+  // Non-scroll mode uses flex:1 on the outer View so it constrains its
+  // children to the screen — otherwise inner ScrollViews inherit unbounded
+  // height and lose their scroll viewport.
+  const innerStyle = [
+    scroll ? styles.scrollContent : styles.viewBox,
     padded ? styles.padded : null,
     style,
   ];
@@ -26,13 +31,13 @@ export function Screen({ children, scroll = false, padded = true, style }: Props
   const Body = scroll ? (
     <ScrollView
       style={styles.scrollFlex}
-      contentContainerStyle={containerStyle}
+      contentContainerStyle={innerStyle}
       keyboardShouldPersistTaps="handled"
     >
       {children}
     </ScrollView>
   ) : (
-    <View style={containerStyle}>{children}</View>
+    <View style={innerStyle}>{children}</View>
   );
 
   return (
@@ -51,8 +56,12 @@ const styles = StyleSheet.create({
   scrollFlex: {
     flex: 1,
   },
-  container: {
+  scrollContent: {
     flexGrow: 1,
+    backgroundColor: colors.background,
+  },
+  viewBox: {
+    flex: 1,
     backgroundColor: colors.background,
   },
   padded: {
