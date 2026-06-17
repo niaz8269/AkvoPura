@@ -138,6 +138,21 @@ export function ManagerStaffAccountsScreen({ navigation }: any) {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
+        <Pressable
+          onPress={() => navigation.navigate('PendingRegistrations')}
+          style={({ pressed }) => [
+            styles.pendingLink,
+            pressed ? { opacity: 0.85 } : null,
+          ]}
+        >
+          <Ionicons name="hourglass-outline" size={22} color={colors.warning} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.pendingLinkTitle}>Pending registrations</Text>
+            <Text style={styles.pendingLinkSub}>Customers waiting for your approval</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.warning} />
+        </Pressable>
+
         {error ? (
           <View style={styles.errorCard}>
             <Ionicons name="warning" size={20} color={colors.danger} />
@@ -264,6 +279,27 @@ const styles = StyleSheet.create({
   },
 
   body: { padding: spacing.lg },
+  pendingLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.warning + '12',
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.warning,
+  },
+  pendingLinkTitle: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  pendingLinkSub: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   loadingText: { marginTop: spacing.md, color: colors.textMuted, fontSize: fontSizes.sm },
 

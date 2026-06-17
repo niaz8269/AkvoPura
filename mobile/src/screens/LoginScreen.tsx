@@ -25,7 +25,8 @@ import { mockAccounts } from '../auth/mockUsers';
 
 const brandLogo = require('../../assets/brand/akvopura-brand.png');
 
-export function LoginScreen() {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function LoginScreen({ navigation }: { navigation: any }) {
   const { login } = useAuth();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -90,6 +91,18 @@ export function LoginScreen() {
             loading={submitting}
             disabled={!identifier || !password}
           />
+
+          <Pressable
+            onPress={() => navigation.navigate('Register')}
+            style={({ pressed }) => [
+              styles.registerLink,
+              pressed ? { opacity: 0.6 } : null,
+            ]}
+            accessibilityLabel="Create a customer account"
+          >
+            <Text style={styles.registerLinkPrefix}>New customer?</Text>
+            <Text style={styles.registerLinkAction}>Create account →</Text>
+          </Pressable>
         </View>
 
         <View style={styles.testBlock}>
@@ -151,6 +164,22 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.sm,
     marginBottom: spacing.md,
     textAlign: 'center',
+  },
+  registerLink: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  registerLinkPrefix: {
+    fontSize: fontSizes.sm,
+    color: colors.textMuted,
+  },
+  registerLinkAction: {
+    fontSize: fontSizes.sm,
+    fontWeight: '800',
+    color: colors.primary,
   },
   testBlock: {
     marginTop: spacing.xl,

@@ -9,10 +9,14 @@ export type ApiUser = {
   id: string;
   identifier: string;
   name: string;
+  phone?: string | null;
   role: Role;
   branchSlug: Branch | null;
   active: boolean;
+  verified?: boolean;
+  pendingCustomerKind?: 'cg' | 'pets' | null;
   linkedCgCustomerId: string | null;
+  linkedPetCustomerId?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -58,5 +62,53 @@ export function resetUserPassword(id: string, newPassword: string) {
   return apiRequest<{ ok: true }>(`/users/${id}/reset-password`, {
     method: 'POST',
     body: { newPassword },
+  });
+}
+
+// ---- Self-registration + verification ----
+
+export type RegisterCustomerInput = {
+  identifier: string;
+  name: string;
+  password: string;
+  phone: string;
+  branchSlug: Branch;
+  customerKind: 'cg' | 'pets';
+  address?: string;
+};
+
+export type RegisterResponse = {
+  ok: true;
+  message: string;
+  userId: string;
+};
+
+export function registerCustomer(input: RegisterCustomerInput) {
+  return apiRequest<RegisterResponse>('/auth/register', {
+    method: 'POST',
+    body: input,
+    auth: false,
+  });
+}
+
+export function listPendingRegistrations() {
+  return apiRequest<ApiUser[]>('/users/pending');
+}
+
+export type VerifyCustomerInput = {
+  address: string;
+  cgRoute?: 'hospital' | 'bypass' | 'others';
+  cgPaymentCycle?: 'daily' | 'weekly';
+  pricePerCan?: number;
+  pricePerGallon?: number;
+  petArea?: string;
+  pricePet600?: number;
+  pricePet1500?: number;
+};
+
+export function verifyCustomer(id: string, input: VerifyCustomerInput) {
+  return apiRequest<ApiUser>(`/users/${id}/verify`, {
+    method: 'POST',
+    body: input,
   });
 }

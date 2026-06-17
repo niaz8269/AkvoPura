@@ -24,6 +24,8 @@ import { ManagerExpensesScreen } from './screens/ManagerExpensesScreen';
 import { ManagerStaffAccountsScreen } from './screens/ManagerStaffAccountsScreen';
 import { ManagerAddStaffAccountScreen } from './screens/ManagerAddStaffAccountScreen';
 import { ManagerStaffAccountDetailScreen } from './screens/ManagerStaffAccountDetailScreen';
+import { ManagerPendingRegistrationsScreen } from './screens/ManagerPendingRegistrationsScreen';
+import { ManagerVerifyCustomerScreen } from './screens/ManagerVerifyCustomerScreen';
 import { ManagerOrdersScreen } from './screens/ManagerOrdersScreen';
 import { ManagerComplaintsScreen } from './screens/ManagerComplaintsScreen';
 import { ComplaintDetailScreen } from '../complaints/ComplaintDetailScreen';
@@ -192,6 +194,16 @@ function TeamStack() {
         name="StaffAccountDetail"
         component={ManagerStaffAccountDetailScreen}
         options={{ title: 'Staff account' }}
+      />
+      <Stack.Screen
+        name="PendingRegistrations"
+        component={ManagerPendingRegistrationsScreen}
+        options={{ title: 'Pending registrations' }}
+      />
+      <Stack.Screen
+        name="VerifyCustomer"
+        component={ManagerVerifyCustomerScreen}
+        options={{ title: 'Verify customer' }}
       />
     </Stack.Navigator>
   );

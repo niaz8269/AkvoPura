@@ -14,6 +14,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { useAuth } from '../auth/AuthContext';
 import { LoginScreen } from '../screens/LoginScreen';
+import { RegisterScreen } from '../screens/RegisterScreen';
 import { RoleHomeScreen } from '../screens/RoleHomeScreen';
 import { CGSalesmanNavigator } from '../cg/navigator';
 import { PetsSalesmanNavigator } from '../pets/navigator';
@@ -67,7 +68,10 @@ export function RootNavigator() {
           {user ? (
             <Stack.Screen name="Home" component={AuthedScreen} />
           ) : (
-            <Stack.Screen name="Login" component={LoginScreen} />
+            <>
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="Register" component={RegisterScreen} />
+            </>
           )}
         </Stack.Navigator>
       </NavigationContainer>
