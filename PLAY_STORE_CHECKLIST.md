@@ -17,9 +17,12 @@ accessible URL. Fastest free option: GitHub Pages.
 - [ ] Wait ~2 minutes
 - [ ] Your privacy policy will be live at:
   ```
-  https://niaz8269.github.io/AkvoPura/PRIVACY_POLICY
+  https://niaz8269.github.io/AkvoPura/PRIVACY_POLICY.html
   ```
-  (note: `.md` extension is dropped, GitHub Pages renders Markdown as HTML)
+  Home page (linked from the privacy policy) is at:
+  ```
+  https://niaz8269.github.io/AkvoPura/
+  ```
 - [ ] Test the URL — confirm the page loads with the privacy policy text
 
 ---
