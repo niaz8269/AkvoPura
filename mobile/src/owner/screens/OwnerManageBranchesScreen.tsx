@@ -158,7 +158,6 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   title: { fontSize: fontSizes.title, fontWeight: '800', color: colors.primaryDark },
-  titleUr: { fontSize: fontSizes.body, color: colors.primary, marginTop: 2 },
   subtitle: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 4 },
 
   body: { padding: spacing.lg, paddingBottom: spacing.xxxl + 56 },
@@ -197,7 +196,6 @@ const styles = StyleSheet.create({
   iconInactive: { backgroundColor: colors.surfaceMuted },
   name: { fontSize: fontSizes.body, fontWeight: '800', color: colors.text },
   nameInactive: { color: colors.textMuted },
-  nameUr: { fontSize: fontSizes.sm, color: colors.primary, fontWeight: '600' },
   slug: {
     fontSize: fontSizes.xs,
     color: colors.textMuted,

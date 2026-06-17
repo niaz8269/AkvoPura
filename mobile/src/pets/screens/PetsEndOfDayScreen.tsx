@@ -148,12 +148,12 @@ export function PetsEndOfDayScreen({ navigation }: any) {
 
       <View style={{ marginTop: spacing.lg, gap: spacing.md }}>
         <BilingualButton
-          label={{ en: 'Submit closure to manager', ur: '  ' }}
+          label={{ en: 'Submit closure to manager' }}
           onPress={submit}
           disabled={bills.length === 0 && returns.length === 0}
         />
         <BilingualButton
-          label={{ en: 'Add field expense', ur: '  ' }}
+          label={{ en: 'Add field expense' }}
           variant="secondary"
           onPress={() =>
             navigation.getParent()?.navigate('SubmitExpense') ??
@@ -215,7 +215,6 @@ function Row({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   title: { fontSize: fontSizes.heading, fontWeight: '800', color: colors.primaryDark },
-  titleUr: { fontSize: fontSizes.body, color: colors.primary, marginBottom: spacing.lg },
   cashCard: {
     backgroundColor: colors.primary,
     borderRadius: radii.lg,
@@ -224,7 +223,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cashLabel: { color: 'rgba(255,255,255,0.85)', fontSize: fontSizes.body, fontWeight: '600' },
-  cashLabelUr: { color: 'rgba(255,255,255,0.7)', fontSize: fontSizes.sm },
   cashValue: {
     color: colors.textInverse,
     fontSize: fontSizes.display,

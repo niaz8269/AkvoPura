@@ -310,7 +310,6 @@ export function ManagerStaffAccountDetailScreen({ route }: any) {
           <BilingualButton
             label={{
               en: saving ? 'Saving…' : 'Save changes',
-              ur: ' ',
             }}
             onPress={save}
             disabled={!dirty || saving || isReadOnly}

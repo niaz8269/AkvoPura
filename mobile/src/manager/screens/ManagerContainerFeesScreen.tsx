@@ -119,14 +119,14 @@ function ChargeRow({
 
       <QuantityStepper
         label="Cans to charge"
-        labelUr="  "
+
         value={cans}
         onChange={setCans}
         max={customer.emptyCansHeld}
       />
       <QuantityStepper
         label="Gallons to charge"
-        labelUr="  "
+
         value={gallons}
         onChange={setGallons}
         max={customer.emptyGallonsHeld}

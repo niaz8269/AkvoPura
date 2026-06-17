@@ -270,7 +270,6 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   title: { fontSize: fontSizes.title, fontWeight: '800', color: colors.primaryDark },
-  titleUr: { fontSize: fontSizes.body, color: colors.primary, marginTop: 2 },
   subtitle: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 4 },
 
   body: { padding: spacing.lg },

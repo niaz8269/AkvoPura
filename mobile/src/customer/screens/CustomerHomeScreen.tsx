@@ -57,9 +57,6 @@ export function CustomerHomeScreen({ navigation }: { navigation: Nav }) {
         <Text style={[styles.balanceLabel, debt > 0 ? styles.balanceLabelDebt : null]}>
           {debt > 0 ? 'You owe' : 'You are settled up'}
         </Text>
-        <Text style={[styles.balanceLabelUr, debt > 0 ? styles.balanceLabelDebt : null]}>
-          {debt > 0 ? '  ' : '  '}
-        </Text>
         <Text style={[styles.balanceValue, debt > 0 ? styles.balanceValueDebt : null]}>
           Rs {debt.toLocaleString()}
         </Text>
@@ -210,7 +207,6 @@ const styles = StyleSheet.create({
   },
   logo: { width: 56, height: 56 },
   welcome: { fontSize: fontSizes.body, color: colors.textMuted },
-  welcomeUr: { fontSize: fontSizes.sm, color: colors.textMuted },
   userName: {
     fontSize: fontSizes.title,
     fontWeight: '800',
@@ -233,7 +229,6 @@ const styles = StyleSheet.create({
   },
   balanceLabel: { fontSize: fontSizes.body, fontWeight: '600', color: colors.success },
   balanceLabelDebt: { color: colors.danger },
-  balanceLabelUr: { fontSize: fontSizes.sm, color: colors.success },
   balanceValue: {
     fontSize: fontSizes.display,
     fontWeight: '900',

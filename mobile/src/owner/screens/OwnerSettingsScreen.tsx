@@ -59,7 +59,7 @@ export function OwnerSettingsScreen() {
 
       <View style={{ marginTop: spacing.lg }}>
         <BilingualButton
-          label={{ en: 'Reset all to defaults', ur: '    ' }}
+          label={{ en: 'Reset all to defaults' }}
           variant="secondary"
           onPress={() => {
             Alert.alert(
@@ -120,7 +120,6 @@ function RunCronButton() {
     <BilingualButton
       label={{
         en: busy ? 'Running…' : "Generate today's subscription orders",
-        ur: '    ',
       }}
       onPress={run}
       disabled={busy}
@@ -160,7 +159,7 @@ function FeeCard({
 
       <QuantityStepper
         label="New fee (Rs)"
-        labelUr=" "
+
         value={draft}
         onChange={setDraft}
         max={5000}
@@ -169,7 +168,7 @@ function FeeCard({
       {dirty ? (
         <View style={styles.actionRow}>
           <BilingualButton
-            label={{ en: 'Save', ur: ' ' }}
+            label={{ en: 'Save' }}
             onPress={() => {
               onSave(draft);
               Alert.alert('Saved', `${label.en} fee is now Rs ${draft.toLocaleString()}.`);
@@ -178,7 +177,7 @@ function FeeCard({
           />
           <View style={{ width: spacing.md }} />
           <BilingualButton
-            label={{ en: 'Discard', ur: '' }}
+            label={{ en: 'Discard' }}
             variant="secondary"
             onPress={() => setDraft(value)}
             style={{ flex: 1 }}
@@ -218,7 +217,7 @@ function PriceCard({
 
       <QuantityStepper
         label="New price (Rs)"
-        labelUr=" "
+
         value={draft}
         onChange={setDraft}
         max={5000}
@@ -227,7 +226,7 @@ function PriceCard({
       {dirty ? (
         <View style={styles.actionRow}>
           <BilingualButton
-            label={{ en: 'Save', ur: ' ' }}
+            label={{ en: 'Save' }}
             onPress={() => {
               onSave(draft);
               Alert.alert('Saved', `${label.en} default is now Rs ${draft.toLocaleString()}.`);
@@ -236,7 +235,7 @@ function PriceCard({
           />
           <View style={{ width: spacing.md }} />
           <BilingualButton
-            label={{ en: 'Discard', ur: '' }}
+            label={{ en: 'Discard' }}
             variant="secondary"
             onPress={() => setDraft(value)}
             style={{ flex: 1 }}
@@ -249,7 +248,6 @@ function PriceCard({
 
 const styles = StyleSheet.create({
   title: { fontSize: fontSizes.heading, fontWeight: '800', color: colors.primaryDark },
-  titleUr: { fontSize: fontSizes.body, color: colors.primary },
   intro: {
     fontSize: fontSizes.sm,
     color: colors.textMuted,
@@ -281,7 +279,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   productName: { fontSize: fontSizes.body, fontWeight: '800', color: colors.primaryDark },
-  productNameUr: { fontSize: fontSizes.sm, color: colors.primary },
   productDesc: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 2 },
   priceChip: {
     paddingHorizontal: spacing.md,

@@ -173,7 +173,7 @@ export function SubmitExpenseScreen({ navigation }: any) {
           />
 
           <BilingualButton
-            label={{ en: 'Submit for approval', ur: '   ' }}
+            label={{ en: 'Submit for approval' }}
             onPress={submit}
             disabled={!valid || submitting}
           />

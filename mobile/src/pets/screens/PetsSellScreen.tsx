@@ -272,7 +272,7 @@ export function PetsSellScreen() {
 
               <QuantityStepper
                 label="600 ml packs"
-                labelUr="  "
+
                 value={pet600}
                 onChange={setPet600}
                 max={vanLoad.pet600Packs}
@@ -290,7 +290,7 @@ export function PetsSellScreen() {
 
               <QuantityStepper
                 label="1.5 L packs"
-                labelUr=".  "
+
                 value={pet1500}
                 onChange={setPet1500}
                 max={vanLoad.pet1500Packs}
@@ -404,9 +404,9 @@ export function PetsSellScreen() {
               <SwipeToConfirm
                 key={resetKey}
                 labelEn="Swipe to finalize bill  ›››"
-                labelUr="    "
+
                 doneLabelEn="Bill saved ✓"
-                doneLabelUr="   "
+
                 done={confirmed}
                 disabled={!canSwipe}
                 onConfirm={onConfirm}
@@ -521,7 +521,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: { fontSize: fontSizes.title, fontWeight: '800', color: colors.primaryDark },
-  titleUr: { fontSize: fontSizes.body, color: colors.primary },
   vanChip: {
     backgroundColor: colors.surfaceMuted,
     paddingHorizontal: spacing.md,
@@ -658,7 +657,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   discountLabel: { fontSize: fontSizes.sm, fontWeight: '700', color: colors.warning },
-  discountLabelUr: { fontSize: fontSizes.xs, color: colors.warning },
   discountInputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -692,7 +690,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   totalLabel: { color: 'rgba(255,255,255,0.85)', fontSize: fontSizes.body, fontWeight: '600' },
-  totalLabelUr: { color: 'rgba(255,255,255,0.7)', fontSize: fontSizes.xs },
   totalValue: {
     color: colors.textInverse,
     fontSize: fontSizes.heading,
@@ -731,7 +728,6 @@ const styles = StyleSheet.create({
   checkBoxOn: { backgroundColor: colors.success, borderColor: colors.success },
   checkMark: { color: colors.textInverse, fontWeight: '900', fontSize: 16 },
   paidLabel: { fontSize: fontSizes.body, fontWeight: '700', color: colors.text },
-  paidLabelUr: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 1 },
   swipe: { marginTop: spacing.sm },
 
   paymentCard: {
@@ -759,7 +755,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   payLabel: { fontSize: fontSizes.body, fontWeight: '700', color: colors.text },
-  payLabelUr: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 1 },
   payInputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -812,7 +807,6 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   creditLabel: { fontSize: fontSizes.body, fontWeight: '700', color: colors.text },
-  creditLabelUr: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 1 },
   creditValue: {
     fontSize: fontSizes.title,
     fontWeight: '900',

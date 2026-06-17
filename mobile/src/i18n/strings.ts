@@ -1,46 +1,44 @@
 /**
- * Bilingual strings (English + Urdu).
- * Per spec: bilingual labels are mandatory on every important button.
- *
- * Each key has an `en` (English) and `ur` (Urdu) value.
- * Components display either one, or both stacked, depending on context.
+ * English-only labels. The historical "BilingualString" shape ({ en, ur })
+ * is kept as `{ en: string }` so existing callers don't need rewriting.
+ * The `ur` field has been dropped — every screen is English-only now.
  */
 
-export type BilingualString = { en: string; ur: string };
+export type BilingualString = { en: string };
 
 export const strings = {
   // App
-  appName: { en: 'AkvoPura', ur: ' ' },
-  tagline: { en: 'Pure Water, Pure Trust', ur: '   ' },
+  appName: { en: 'AkvoPura' },
+  tagline: { en: 'Pure Water, Pure Trust' },
 
   // Auth
-  login: { en: 'Login', ur: ' ' },
-  logout: { en: 'Logout', ur: ' ' },
-  phoneOrEmail: { en: 'Phone or Email', ur: '   ' },
-  password: { en: 'Password', ur: ' ' },
-  loginFailed: { en: 'Wrong phone/email or password', ur: ' /    ' },
-  loggingIn: { en: 'Signing in...', ur: '    ...' },
-  testAccountsHint: { en: 'Tap a test account to log in:', ur: '        :' },
+  login: { en: 'Login' },
+  logout: { en: 'Logout' },
+  phoneOrEmail: { en: 'Phone or Email' },
+  password: { en: 'Password' },
+  loginFailed: { en: 'Wrong phone/email or password' },
+  loggingIn: { en: 'Signing in...' },
+  testAccountsHint: { en: 'Tap a test account to log in:' },
 
   // Roles (display labels)
-  roleOwner: { en: 'Owner', ur: '' },
-  roleManager: { en: 'Manager', ur: '' },
-  rolePetsSalesman: { en: 'Pets Salesman', ur: '  ' },
-  roleCansSalesman: { en: 'Cans/Gallons Salesman', ur: '/  ' },
-  roleCustomer: { en: 'Customer', ur: '' },
+  roleOwner: { en: 'Owner' },
+  roleManager: { en: 'Manager' },
+  rolePetsSalesman: { en: 'Pets Salesman' },
+  roleCansSalesman: { en: 'Cans/Gallons Salesman' },
+  roleCustomer: { en: 'Customer' },
 
   // Branches
-  branchTimergara: { en: 'Timergara', ur: '' },
-  branchShergarh: { en: 'Shergarh', ur: ' ' },
+  branchTimergara: { en: 'Timergara' },
+  branchShergarh: { en: 'Shergarh' },
 
   // Common
-  welcome: { en: 'Welcome', ur: ' ' },
-  branch: { en: 'Branch', ur: '' },
-  comingSoon: { en: 'This dashboard will be built next.', ur: '        ' },
-  cancel: { en: 'Cancel', ur: '' },
-  confirm: { en: 'Confirm', ur: '' },
-  yes: { en: 'Yes', ur: ' ' },
-  no: { en: 'No', ur: '' },
+  welcome: { en: 'Welcome' },
+  branch: { en: 'Branch' },
+  comingSoon: { en: 'This dashboard will be built next.' },
+  cancel: { en: 'Cancel' },
+  confirm: { en: 'Confirm' },
+  yes: { en: 'Yes' },
+  no: { en: 'No' },
 } as const;
 
 export type StringKey = keyof typeof strings;

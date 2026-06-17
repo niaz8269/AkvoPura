@@ -219,7 +219,6 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   title: { fontSize: fontSizes.title, fontWeight: '800', color: colors.primaryDark },
-  titleUr: { fontSize: fontSizes.body, color: colors.primary, marginTop: 2 },
   kpiRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   kpi: {
     flex: 1,

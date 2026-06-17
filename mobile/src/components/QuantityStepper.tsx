@@ -20,7 +20,7 @@ import { colors, fontSizes, radii, spacing, tapTarget } from '../theme';
 
 type Props = {
   label: string;
-  labelUr?: string;
+
   value: number;
   onChange: (next: number) => void;
   min?: number;
@@ -31,7 +31,6 @@ type Props = {
 
 export function QuantityStepper({
   label,
-  labelUr,
   value,
   onChange,
   min = 0,
@@ -132,11 +131,6 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.body,
     fontWeight: '700',
     color: colors.text,
-  },
-  labelUr: {
-    fontSize: fontSizes.sm,
-    color: colors.textMuted,
-    marginTop: 1,
   },
   controls: {
     flexDirection: 'row',

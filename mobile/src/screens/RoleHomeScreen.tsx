@@ -30,7 +30,7 @@ const ROLE_LABEL: Partial<Record<Role, BilingualString>> = {
   customer: strings.roleCustomer,
 };
 
-const FALLBACK_ROLE_LABEL: BilingualString = { en: 'Staff', ur: '' };
+const FALLBACK_ROLE_LABEL: BilingualString = { en: 'Staff' };
 
 /** Built-in branch labels for the original two branches; for branches added
  *  later we just show the slug capitalised. */

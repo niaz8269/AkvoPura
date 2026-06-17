@@ -192,7 +192,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   totalLabel: { color: 'rgba(255,255,255,0.85)', fontSize: fontSizes.body, fontWeight: '600' },
-  totalLabelUr: { color: 'rgba(255,255,255,0.7)', fontSize: fontSizes.sm },
   totalValue: {
     color: colors.textInverse,
     fontSize: fontSizes.display,
@@ -256,7 +255,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.primaryDark,
   },
-  branchNameUr: { fontSize: fontSizes.sm, color: colors.primary, marginTop: 2 },
   liveDot: {
     flexDirection: 'row',
     alignItems: 'center',

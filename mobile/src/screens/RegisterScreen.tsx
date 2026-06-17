@@ -33,15 +33,13 @@ const BRANCH_LABELS: Record<Branch, string> = {
   shergarh: 'Shergarh',
 };
 
-const KIND_LABELS: Record<CustomerKind, { en: string; ur: string; desc: string }> = {
+const KIND_LABELS: Record<CustomerKind, { en: string; desc: string }> = {
   cg: {
     en: 'Cans / Gallons',
-    ur: ' / ',
     desc: 'Daily or weekly delivery of refillable cans and gallons',
   },
   pets: {
     en: 'Bottled (Pets)',
-    ur: '',
     desc: '600ml and 1.5L bottle packs delivered to shops, offices, homes',
   },
 };
@@ -114,7 +112,7 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
         </View>
 
         <TextField
-          label={{ en: 'Full name *', ur: '' }}
+          label={{ en: 'Full name *' }}
           value={name}
           onChangeText={setName}
           placeholder="e.g. Akbar Khan"
@@ -122,7 +120,7 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
         />
 
         <TextField
-          label={{ en: 'Login username *', ur: ' ' }}
+          label={{ en: 'Login username *' }}
           value={identifier}
           onChangeText={(t) => setIdentifier(t.toLowerCase())}
           placeholder="e.g. akbar03001234567"
@@ -134,7 +132,7 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
         </Text>
 
         <TextField
-          label={{ en: 'Phone *', ur: '' }}
+          label={{ en: 'Phone *' }}
           value={phone}
           onChangeText={setPhone}
           placeholder="0300-1234567"
@@ -142,7 +140,7 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
         />
 
         <TextField
-          label={{ en: 'Password *', ur: '' }}
+          label={{ en: 'Password *' }}
           value={password}
           onChangeText={setPassword}
           placeholder="Min. 6 characters"
@@ -212,7 +210,6 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
         <BilingualButton
           label={{
             en: submitting ? 'Submitting…' : 'Create account',
-            ur: ' ',
           }}
           onPress={submit}
           disabled={!valid || submitting}
@@ -307,7 +304,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.primaryDark,
   },
-  kindTitleUr: { fontSize: fontSizes.sm, color: colors.primary },
   kindTitleActive: { color: colors.textInverse },
   kindDesc: {
     fontSize: fontSizes.xs,

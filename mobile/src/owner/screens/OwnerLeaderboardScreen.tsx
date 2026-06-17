@@ -166,7 +166,6 @@ function LeaderboardRow({
 
 const styles = StyleSheet.create({
   title: { fontSize: fontSizes.heading, fontWeight: '800', color: colors.primaryDark },
-  titleUr: { fontSize: fontSizes.body, color: colors.primary },
   intro: {
     fontSize: fontSizes.sm,
     color: colors.textMuted,

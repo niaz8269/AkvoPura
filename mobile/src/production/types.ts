@@ -74,9 +74,9 @@ export const RECIPE: Record<
   },
 };
 
-export const PRODUCT_LABEL: Record<ProducedProduct, { en: string; ur: string }> = {
-  pet600: { en: '600 ml pack', ur: '  ' },
-  pet1500: { en: '1.5 L pack', ur: '.  ' },
-  can: { en: 'Filled can', ur: ' ' },
-  gallon: { en: 'Filled gallon', ur: ' ' },
+export const PRODUCT_LABEL: Record<ProducedProduct, { en: string }> = {
+  pet600: { en: '600 ml pack' },
+  pet1500: { en: '1.5 L pack' },
+  can: { en: 'Filled can' },
+  gallon: { en: 'Filled gallon' },
 };

@@ -302,7 +302,6 @@ const styles = StyleSheet.create({
   },
   headerRow: { flexDirection: 'row', alignItems: 'center' },
   branchName: { fontSize: fontSizes.title, fontWeight: '800', color: colors.primaryDark },
-  branchNameUr: { fontSize: fontSizes.sm, color: colors.primary, marginTop: 2 },
   liveBadge: {
     flexDirection: 'row',
     alignItems: 'center',

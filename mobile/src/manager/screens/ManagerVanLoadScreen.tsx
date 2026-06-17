@@ -122,14 +122,14 @@ export function ManagerVanLoadScreen() {
 
         <QuantityStepper
           label="600 ml packs"
-          labelUr="  "
+
           value={pet600}
           onChange={setPet600}
         />
         <View style={styles.divider} />
         <QuantityStepper
           label="1.5 L packs"
-          labelUr=".  "
+
           value={pet1500}
           onChange={setPet1500}
         />
@@ -142,7 +142,7 @@ export function ManagerVanLoadScreen() {
         </View>
 
         <BilingualButton
-          label={{ en: 'Save Pets van load', ur: '   ' }}
+          label={{ en: 'Save Pets van load' }}
           onPress={savePets}
           disabled={!petsDirty}
           variant={petsDirty ? 'primary' : 'secondary'}
@@ -183,7 +183,7 @@ export function ManagerVanLoadScreen() {
 
         <QuantityStepper
           label="Filled cans"
-          labelUr=" "
+
           value={filledCans}
           onChange={setFilledCans}
           icon={canIcon}
@@ -191,7 +191,7 @@ export function ManagerVanLoadScreen() {
         <View style={styles.divider} />
         <QuantityStepper
           label="Filled gallons"
-          labelUr=" "
+
           value={filledGallons}
           onChange={setFilledGallons}
           icon={gallonIcon}
@@ -208,7 +208,7 @@ export function ManagerVanLoadScreen() {
         </View>
 
         <BilingualButton
-          label={{ en: 'Save C/G van load', ur: '/  ' }}
+          label={{ en: 'Save C/G van load' }}
           onPress={saveCG}
           disabled={!cgDirty}
           variant={cgDirty ? 'primary' : 'secondary'}
@@ -284,7 +284,6 @@ function SalesmanPicker({
 
 const styles = StyleSheet.create({
   title: { fontSize: fontSizes.heading, fontWeight: '800', color: colors.primaryDark },
-  titleUr: { fontSize: fontSizes.body, color: colors.primary },
   intro: {
     fontSize: fontSizes.sm,
     color: colors.textMuted,
@@ -304,7 +303,6 @@ const styles = StyleSheet.create({
   },
   cardHeader: { marginBottom: spacing.md },
   cardTitle: { fontSize: fontSizes.title, fontWeight: '800', color: colors.primaryDark },
-  cardTitleUr: { fontSize: fontSizes.sm, color: colors.primary, marginTop: 2 },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.sm },
   summary: {
     backgroundColor: colors.surfaceMuted,

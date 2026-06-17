@@ -78,7 +78,7 @@ export function CGCustomerDetailScreen({ route }: { route: Route }) {
           <CycleOption
             value="daily"
             label="Daily"
-            labelUr=""
+
             sub="Pays on every visit"
             active={customer.paymentCycle === 'daily'}
             onPress={() => setPaymentCycle(customer.id, 'daily')}
@@ -86,7 +86,7 @@ export function CGCustomerDetailScreen({ route }: { route: Route }) {
           <CycleOption
             value="weekly"
             label="Weekly"
-            labelUr=" "
+
             sub="Settles once a week"
             active={customer.paymentCycle === 'weekly'}
             onPress={() => setPaymentCycle(customer.id, 'weekly')}
@@ -160,14 +160,12 @@ export function CGCustomerDetailScreen({ route }: { route: Route }) {
 function CycleOption({
   value,
   label,
-  labelUr,
   sub,
   active,
   onPress,
 }: {
   value: PaymentCycle;
   label: string;
-  labelUr: string;
   sub: string;
   active: boolean;
   onPress: () => void;
@@ -194,9 +192,6 @@ function CycleOption({
       <View style={{ flex: 1 }}>
         <Text style={[styles.cycleLabel, active ? styles.cycleLabelActive : null]}>
           {label}
-        </Text>
-        <Text style={[styles.cycleLabelUr, active ? styles.cycleLabelUrActive : null]}>
-          {labelUr}
         </Text>
         <Text style={[styles.cycleSub, active ? styles.cycleSubActive : null]}>{sub}</Text>
       </View>
@@ -444,7 +439,6 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   cycleLabelActive: { color: colors.primaryDark },
-  cycleLabelUr: { fontSize: fontSizes.xs, color: colors.textMuted },
   cycleLabelUrActive: { color: colors.primary },
   cycleSub: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 2 },
   cycleSubActive: { color: colors.primaryDark },

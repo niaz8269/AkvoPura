@@ -157,9 +157,9 @@ export function CustomerOrderScreen() {
             labelEn={`Swipe to place order  (${itemCount} item${
               itemCount === 1 ? '' : 's'
             })`}
-            labelUr="     "
+
             doneLabelEn="Order placed ✓"
-            doneLabelUr="  "
+
             done={confirmed}
             disabled={total === 0 || confirmed}
             onConfirm={onConfirm}
@@ -194,7 +194,6 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   title: { fontSize: fontSizes.title, fontWeight: '800', color: colors.primaryDark },
-  titleUr: { fontSize: fontSizes.body, color: colors.primary },
 
   body: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
 
@@ -218,7 +217,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.primaryDark,
   },
-  productNameUr: { fontSize: fontSizes.sm, color: colors.primary, marginTop: 2 },
   productPrice: {
     fontSize: fontSizes.body,
     fontWeight: '800',
@@ -268,7 +266,6 @@ const styles = StyleSheet.create({
     marginVertical: spacing.md,
   },
   totalLabel: { color: 'rgba(255,255,255,0.85)', fontSize: fontSizes.body, fontWeight: '600' },
-  totalLabelUr: { color: 'rgba(255,255,255,0.7)', fontSize: fontSizes.sm },
   totalValue: {
     color: colors.textInverse,
     fontSize: fontSizes.heading,

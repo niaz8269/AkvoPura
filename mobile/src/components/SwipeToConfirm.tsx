@@ -29,9 +29,9 @@ import { colors, fontSizes, radii, spacing, tapTarget } from '../theme';
 
 type Props = {
   labelEn: string;
-  labelUr?: string;
+
   doneLabelEn?: string;
-  doneLabelUr?: string;
+
   done?: boolean;
   disabled?: boolean;
   onConfirm: () => void;
@@ -42,9 +42,7 @@ const THUMB = tapTarget.min + 8;
 
 export function SwipeToConfirm({
   labelEn,
-  labelUr,
   doneLabelEn = 'Done',
-  doneLabelUr = '',
   done,
   disabled,
   onConfirm,
@@ -191,10 +189,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.primaryDark,
     letterSpacing: 0.5,
-  },
-  labelUr: {
-    fontSize: fontSizes.sm,
-    color: colors.textMuted,
   },
   labelDone: {
     color: colors.success,

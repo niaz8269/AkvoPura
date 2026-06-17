@@ -10,7 +10,7 @@ export type BranchKey = 'timergara' | 'shergarh';
 
 export type BranchSummary = {
   key: BranchKey;
-  name: { en: string; ur: string };
+  name: { en: string };
 
   // Sales
   cashCollectedToday: number;

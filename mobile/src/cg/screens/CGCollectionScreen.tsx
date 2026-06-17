@@ -292,7 +292,7 @@ function CollectionRow({
 
       <QuantityStepper
         label="Cans collected"
-        labelUr="  "
+
         value={cans}
         onChange={setCans}
         max={customer.emptyCansHeld}
@@ -300,7 +300,7 @@ function CollectionRow({
       />
       <QuantityStepper
         label="Gallons collected"
-        labelUr="  "
+
         value={gallons}
         onChange={setGallons}
         max={customer.emptyGallonsHeld}
@@ -364,9 +364,9 @@ function CollectionRow({
         <SwipeToConfirm
           key={resetKey}
           labelEn="Swipe to record  ›››"
-          labelUr="     "
+
           doneLabelEn="Recorded ✓"
-          doneLabelUr="  "
+
           done={confirmed}
           disabled={!canSwipe}
           onConfirm={() => {

@@ -256,7 +256,6 @@ export function CGAddCustomerScreen({ navigation }: { navigation: Nav }) {
           <BilingualButton
             label={{
               en: submitting ? 'Adding…' : 'Add customer',
-              ur: '  ',
             }}
             onPress={submit}
             disabled={!valid || submitting}
@@ -279,7 +278,6 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     marginTop: spacing.md,
   },
-  fieldLabelUr: { fontSize: fontSizes.xs, color: colors.primary, marginBottom: 6 },
   input: {
     borderWidth: 1.5,
     borderColor: colors.border,

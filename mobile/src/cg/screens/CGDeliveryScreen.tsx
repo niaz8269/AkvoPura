@@ -253,14 +253,14 @@ function DeliveryRow({
 
       <QuantityStepper
         label="Cans"
-        labelUr=""
+
         value={cans}
         onChange={setCans}
         icon={canIcon}
       />
       <QuantityStepper
         label="Gallons"
-        labelUr=""
+
         value={gallons}
         onChange={setGallons}
         icon={gallonIcon}
@@ -270,9 +270,9 @@ function DeliveryRow({
         <SwipeToConfirm
           key={resetKey}
           labelEn="Swipe to deliver  ›››"
-          labelUr="     "
+
           doneLabelEn="Delivered ✓"
-          doneLabelUr="  "
+
           done={confirmed}
           disabled={!canSwipe}
           onConfirm={onConfirm}

@@ -30,12 +30,12 @@ import type {
   ComplaintStatus,
 } from '../types';
 
-const CATEGORIES: { id: ComplaintCategory; en: string; ur: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { id: 'delivery', en: 'Delivery', ur: '', icon: 'cube-outline' },
-  { id: 'product_quality', en: 'Product quality', ur: '  ', icon: 'water-outline' },
-  { id: 'billing', en: 'Billing', ur: '', icon: 'receipt-outline' },
-  { id: 'salesman_behavior', en: 'Salesman behaviour', ur: '   ', icon: 'person-outline' },
-  { id: 'other', en: 'Other', ur: '', icon: 'ellipsis-horizontal-outline' },
+const CATEGORIES: { id: ComplaintCategory; en: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { id: 'delivery', en: 'Delivery', icon: 'cube-outline' },
+  { id: 'product_quality', en: 'Product quality', icon: 'water-outline' },
+  { id: 'billing', en: 'Billing', icon: 'receipt-outline' },
+  { id: 'salesman_behavior', en: 'Salesman behaviour', icon: 'person-outline' },
+  { id: 'other', en: 'Other', icon: 'ellipsis-horizontal-outline' },
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -120,13 +120,13 @@ export function CustomerComplaintsScreen({ navigation }: any) {
             <View style={styles.recipientRow}>
               <RecipientPill
                 label="Salesman"
-                labelUr=" "
+
                 active={recipient === 'salesman'}
                 onPress={() => setRecipient('salesman')}
               />
               <RecipientPill
                 label="Manager"
-                labelUr=""
+
                 active={recipient === 'manager'}
                 onPress={() => setRecipient('manager')}
               />
@@ -144,7 +144,7 @@ export function CustomerComplaintsScreen({ navigation }: any) {
             />
 
             <BilingualButton
-              label={{ en: 'Submit complaint', ur: ' ' }}
+              label={{ en: 'Submit complaint' }}
               onPress={submit}
               disabled={description.trim().length === 0}
             />
@@ -174,12 +174,10 @@ export function CustomerComplaintsScreen({ navigation }: any) {
 
 function RecipientPill({
   label,
-  labelUr,
   active,
   onPress,
 }: {
   label: string;
-  labelUr: string;
   active: boolean;
   onPress: () => void;
 }) {
@@ -194,14 +192,6 @@ function RecipientPill({
     >
       <Text style={[styles.recipientText, active ? styles.recipientTextActive : null]}>
         {label}
-      </Text>
-      <Text
-        style={[
-          styles.recipientTextUr,
-          active ? styles.recipientTextUrActive : null,
-        ]}
-      >
-        {labelUr}
       </Text>
     </Pressable>
   );
@@ -308,7 +298,6 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   title: { fontSize: fontSizes.title, fontWeight: '800', color: colors.primaryDark },
-  titleUr: { fontSize: fontSizes.body, color: colors.primary },
 
   body: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
 
@@ -384,7 +373,6 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
   },
   recipientTextActive: { color: colors.textInverse },
-  recipientTextUr: { fontSize: fontSizes.xs, color: colors.textMuted },
   recipientTextUrActive: { color: 'rgba(255,255,255,0.85)' },
 
   descInput: {

@@ -291,14 +291,14 @@ function NewSubscriptionForm({
 
       <View style={styles.formActions}>
         <BilingualButton
-          label={{ en: 'Cancel', ur: '' }}
+          label={{ en: 'Cancel' }}
           variant="secondary"
           onPress={onCancel}
           style={{ flex: 1 }}
         />
         <View style={{ width: spacing.md }} />
         <BilingualButton
-          label={{ en: 'Save subscription', ur: ' ' }}
+          label={{ en: 'Save subscription' }}
           onPress={submit}
           disabled={totalItems === 0}
           style={{ flex: 1 }}

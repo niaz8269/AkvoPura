@@ -353,7 +353,6 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   title: { fontSize: fontSizes.title, fontWeight: '800', color: colors.primaryDark },
-  titleUr: { fontSize: fontSizes.body, color: colors.primary, marginBottom: spacing.md },
   tabRow: { flexDirection: 'row', gap: spacing.sm },
   tab: {
     flex: 1,

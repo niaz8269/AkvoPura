@@ -517,7 +517,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cashLabel: { color: 'rgba(255,255,255,0.85)', fontSize: fontSizes.body, fontWeight: '600' },
-  cashLabelUr: { color: 'rgba(255,255,255,0.7)', fontSize: fontSizes.sm },
   cashValue: {
     color: colors.textInverse,
     fontSize: fontSizes.display,

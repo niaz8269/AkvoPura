@@ -183,7 +183,7 @@ export function OwnerEditBranchScreen({ route }: any) {
           />
 
           <BilingualButton
-            label={{ en: saving ? 'Saving…' : 'Save changes', ur: ' ' }}
+            label={{ en: saving ? 'Saving…' : 'Save changes' }}
             onPress={save}
             disabled={!dirty || saving}
             style={{ marginTop: spacing.lg }}

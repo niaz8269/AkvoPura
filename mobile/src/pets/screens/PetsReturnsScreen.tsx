@@ -123,14 +123,14 @@ export function PetsReturnsScreen() {
 
               <QuantityStepper
                 label="600 ml packs returned"
-                labelUr="   "
+
                 value={pet600}
                 onChange={setPet600}
               />
               <View style={styles.divider} />
               <QuantityStepper
                 label="1.5 L packs returned"
-                labelUr=" .  "
+
                 value={pet1500}
                 onChange={setPet1500}
               />
@@ -154,9 +154,9 @@ export function PetsReturnsScreen() {
               <SwipeToConfirm
                 key={resetKey}
                 labelEn="Swipe to record return  ›››"
-                labelUr="      "
+
                 doneLabelEn="Return saved ✓"
-                doneLabelUr="   "
+
                 done={confirmed}
                 disabled={!canSwipe}
                 onConfirm={onConfirm}
@@ -185,7 +185,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   title: { fontSize: fontSizes.title, fontWeight: '800', color: colors.primaryDark },
-  titleUr: { fontSize: fontSizes.body, color: colors.primary },
   headerHint: { fontSize: fontSizes.xs, color: colors.textMuted, fontStyle: 'italic' },
   undoBtn: {
     alignSelf: 'flex-start',
@@ -229,7 +228,6 @@ const styles = StyleSheet.create({
     borderColor: colors.warning,
   },
   refundLabel: { fontSize: fontSizes.sm, fontWeight: '700', color: colors.warning },
-  refundLabelUr: { fontSize: fontSizes.xs, color: colors.warning },
   refundValue: {
     fontSize: fontSizes.heading,
     fontWeight: '900',
@@ -242,7 +240,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginTop: spacing.lg,
   },
-  reasonLabelUr: { fontSize: fontSizes.xs, color: colors.textMuted, marginBottom: spacing.sm },
   reasonInput: {
     borderWidth: 1.5,
     borderColor: colors.border,

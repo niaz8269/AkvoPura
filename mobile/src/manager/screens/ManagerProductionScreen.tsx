@@ -252,7 +252,7 @@ function TodayPanel() {
           />
 
           <BilingualButton
-            label={{ en: 'Log batch', ur: '  ' }}
+            label={{ en: 'Log batch' }}
             onPress={submit}
             disabled={!valid}
             style={{ marginTop: spacing.md }}
