@@ -83,6 +83,7 @@ export function CustomerComplaintsScreen({ navigation }: any) {
         </View>
 
         <ScrollView
+          style={{ flex: 1 }}
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
         >

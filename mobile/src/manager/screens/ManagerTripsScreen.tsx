@@ -35,7 +35,7 @@ export function ManagerTripsScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.body}>
         {tab === 'cg' ? <CGSection /> : <PetsSection />}
       </ScrollView>
     </Screen>

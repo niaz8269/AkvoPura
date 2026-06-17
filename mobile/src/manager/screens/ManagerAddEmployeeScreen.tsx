@@ -96,6 +96,7 @@ export function ManagerAddEmployeeScreen({ navigation }: any) {
         style={{ flex: 1 }}
       >
         <ScrollView
+          style={{ flex: 1 }}
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
         >

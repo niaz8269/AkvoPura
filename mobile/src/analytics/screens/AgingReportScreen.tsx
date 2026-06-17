@@ -81,7 +81,7 @@ export function AgingReportScreen() {
 
   return (
     <Screen padded={false}>
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.body}>
         <View style={styles.summaryCard}>
           <Text style={styles.summaryLabel}>Total outstanding</Text>
           <Text style={styles.summaryValue}>Rs {totalDebt.toLocaleString()}</Text>

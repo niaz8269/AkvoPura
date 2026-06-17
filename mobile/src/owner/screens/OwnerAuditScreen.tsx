@@ -70,7 +70,7 @@ export function OwnerAuditScreen() {
         </Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.body}>
         {visible.length === 0 ? (
           <Text style={styles.empty}>No audit entries yet for this filter.</Text>
         ) : (

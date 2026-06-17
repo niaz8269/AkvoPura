@@ -25,6 +25,7 @@ export function Screen({ children, scroll = false, padded = true, style }: Props
 
   const Body = scroll ? (
     <ScrollView
+      style={styles.scrollFlex}
       contentContainerStyle={containerStyle}
       keyboardShouldPersistTaps="handled"
     >
@@ -46,6 +47,9 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  scrollFlex: {
+    flex: 1,
   },
   container: {
     flexGrow: 1,

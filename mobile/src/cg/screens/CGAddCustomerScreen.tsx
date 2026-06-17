@@ -101,6 +101,7 @@ export function CGAddCustomerScreen({ navigation }: { navigation: Nav }) {
         style={{ flex: 1 }}
       >
         <ScrollView
+          style={{ flex: 1 }}
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
         >

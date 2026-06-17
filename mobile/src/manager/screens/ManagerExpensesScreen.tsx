@@ -50,7 +50,7 @@ export function ManagerExpensesScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.body}>
         <SectionTitle text={`Pending (${pendingExpenses.length})`} subtitle="منظوری کا انتظار" />
         {pendingExpenses.length === 0 ? (
           <EmptyCard text="No pending expenses. You're all caught up." />

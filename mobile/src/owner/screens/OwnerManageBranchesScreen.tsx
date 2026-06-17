@@ -78,6 +78,7 @@ export function OwnerManageBranchesScreen({ navigation }: any) {
       </View>
 
       <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={[styles.body, { paddingBottom: tabBarHeight + 80 }]}
         refreshControl={
           <RefreshControl

@@ -54,7 +54,7 @@ export function OwnerForwardedScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.body}>
         <SectionTitle text={`Awaiting decision (${forwarded.length})`} />
         {forwarded.length === 0 ? (
           <EmptyCard text="Nothing forwarded right now. The Manager hasn't pushed anything to you for review." />

@@ -68,6 +68,7 @@ export function PetsAddCustomerScreen({ navigation }: { navigation: Nav }) {
         style={{ flex: 1 }}
       >
         <ScrollView
+          style={{ flex: 1 }}
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
         >
