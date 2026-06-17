@@ -2,7 +2,7 @@
   "expo": {
     "name": "AkvoPura",
     "slug": "akvopura",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/brand/akvopura-brand.png",
     "userInterfaceStyle": "light",
