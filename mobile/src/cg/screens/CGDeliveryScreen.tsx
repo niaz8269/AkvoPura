@@ -35,7 +35,8 @@ import { useCGSalesman } from '../state';
 import { RouteTabs } from '../components/RouteTabs';
 import { CycleFilter, type CycleFilterValue } from '../components/CycleFilter';
 import type { CGCustomer, CGRoute } from '../types';
-import { generateAndShareBill, type BillItem } from '../../billing/pdf';
+import { generateAndShareBill, generateBillPdfBase64, type BillItem } from '../../billing/pdf';
+import { archiveBillEmail } from '../../api/billArchive';
 import { useAuth } from '../../auth/AuthContext';
 
 const canIcon = require('../../../assets/brand/14ltr-can.webp');
@@ -185,6 +186,48 @@ function DeliveryRow({
     if (entry) {
       setLastEntry(entry);
       setConfirmed(true);
+      // Fire-and-forget: email a copy of the bill to akvopura4@gmail.com
+      // so the owner has an archive of every delivery.
+      void (async () => {
+        try {
+          const items: BillItem[] = [];
+          if (entry.cansDelivered > 0) {
+            items.push({ name: '14 L can', qty: entry.cansDelivered, unitPrice: customer.pricePerCan });
+          }
+          if (entry.gallonsDelivered > 0) {
+            items.push({ name: '19 L gallon', qty: entry.gallonsDelivered, unitPrice: customer.pricePerGallon });
+          }
+          const branchName = user?.branch === 'shergarh' ? 'Shergarh' : 'Timergara';
+          const pdfBase64 = await generateBillPdfBase64({
+            billNumber: entry.id.slice(-6).toUpperCase(),
+            dateTime: entry.timestamp,
+            customerName: customer.name,
+            customerAddress: customer.address,
+            customerPhone: customer.phone,
+            branchName,
+            salesmanName: user?.name,
+            items,
+            paid: entry.cashCollected,
+            credit: entry.amountBilled - entry.cashCollected,
+          });
+          await archiveBillEmail({
+            customerName: customer.name,
+            customerType: 'Cans/Gallons',
+            branchName,
+            salesmanName: user?.name,
+            totalRs: entry.amountBilled,
+            paidRs: entry.cashCollected,
+            creditRs: Math.max(0, entry.amountBilled - entry.cashCollected),
+            itemsSummary: items
+              .map((it) => `${it.qty}x ${it.name} @ Rs ${it.unitPrice}`)
+              .join(', '),
+            pdfBase64: pdfBase64 ?? undefined,
+            pdfFilename: `bill-${entry.id.slice(-6)}.pdf`,
+          });
+        } catch {
+          // Don't block the salesman if email fails.
+        }
+      })();
     }
   };
 

@@ -9,6 +9,7 @@
 
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export type BillItem = {
   name: string;
@@ -299,4 +300,24 @@ export async function generateAndShareBill(bill: BillData): Promise<boolean> {
   });
 
   return true;
+}
+
+/**
+ * Generate the PDF and return it as base64. Used for the auto-archive
+ * email so the backend can attach the bill without the user touching
+ * Share. Returns null if PDF generation fails.
+ */
+export async function generateBillPdfBase64(
+  bill: BillData,
+): Promise<string | null> {
+  try {
+    const html = generateBillHtml(bill);
+    const { uri } = await Print.printToFileAsync({ html, base64: true });
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    return base64;
+  } catch {
+    return null;
+  }
 }

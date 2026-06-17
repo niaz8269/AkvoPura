@@ -8,7 +8,7 @@
  * to the next customer.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -21,6 +21,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { Screen } from '../../components';
 import { QuantityStepper } from '../../components/QuantityStepper';
@@ -29,8 +30,9 @@ import { colors, fontSizes, radii, spacing } from '../../theme';
 import { CustomerPicker } from '../components/CustomerPicker';
 import { usePetsSalesman } from '../state';
 import type { PetCustomer } from '../types';
-import { generateAndShareBill, type BillItem } from '../../billing/pdf';
+import { generateAndShareBill, generateBillPdfBase64, type BillItem } from '../../billing/pdf';
 import { useAuth } from '../../auth/AuthContext';
+import { archiveBillEmail } from '../../api/billArchive';
 
 export function PetsSellScreen() {
   const {
@@ -118,25 +120,61 @@ export function PetsSellScreen() {
 
   const canSwipe = !!selected && pet600 + pet1500 > 0 && !confirmed;
 
-  useEffect(() => {
-    if (!confirmed) return;
-    // Longer auto-reset window so the user has time to tap Share PDF.
-    const t = setTimeout(() => {
-      setConfirmed(false);
-      setSelected(null);
-      setPet600(0);
-      setPet1500(0);
-      setPrice600(null);
-      setPrice1500(null);
-      setDiscountStr('');
-      setCashStr(null);
-      setBankStr('');
-      setPaymentRef('');
-      setLastReceipt(null);
-      setResetKey((k) => k + 1);
-    }, 7000);
-    return () => clearTimeout(t);
-  }, [confirmed]);
+  // Auto-archive the bill (emails a copy to akvopura4@gmail.com) when the
+  // salesman leaves the customer — either by tapping "Change" (selected
+  // becomes null) or by navigating away (screen unmount). We capture the
+  // last receipt via a ref so the archive call survives the cleanup tick.
+  const archiveRef = React.useRef<typeof lastReceipt>(null);
+  React.useEffect(() => {
+    if (lastReceipt) archiveRef.current = lastReceipt;
+  }, [lastReceipt]);
+
+  const fireArchive = React.useCallback(async () => {
+    const r = archiveRef.current;
+    if (!r) return;
+    archiveRef.current = null; // prevent double-send
+    try {
+      const items: BillItem[] = [];
+      if (r.pet600 > 0) items.push({ name: '600 ml pack', qty: r.pet600, unitPrice: r.unit600 });
+      if (r.pet1500 > 0) items.push({ name: '1.5 L pack', qty: r.pet1500, unitPrice: r.unit1500 });
+      const pdfBase64 = await generateBillPdfBase64({
+        billNumber: r.billId.slice(-6).toUpperCase(),
+        dateTime: Date.now(),
+        customerName: r.customer.name,
+        customerAddress: r.customer.address,
+        customerPhone: r.customer.phone,
+        branchName: user?.branch === 'shergarh' ? 'Shergarh' : 'Timergara',
+        salesmanName: user?.name,
+        items,
+        discount: r.discount,
+        paid: r.cash,
+        credit: r.amount - r.cash,
+      });
+      await archiveBillEmail({
+        customerName: r.customer.name,
+        customerType: 'Pets',
+        branchName: user?.branch === 'shergarh' ? 'Shergarh' : 'Timergara',
+        salesmanName: user?.name,
+        totalRs: r.amount,
+        paidRs: r.cash,
+        creditRs: Math.max(0, r.amount - r.cash),
+        itemsSummary: items
+          .map((it) => `${it.qty}x ${it.name} @ Rs ${it.unitPrice}`)
+          .join(', '),
+        pdfBase64: pdfBase64 ?? undefined,
+        pdfFilename: `bill-${r.billId.slice(-6)}.pdf`,
+      });
+    } catch {
+      // Fire-and-forget — if email fails we don't block the salesman.
+    }
+  }, [user?.branch, user?.name]);
+
+  // Archive when the screen loses focus (salesman taps another tab).
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => { void fireArchive(); };
+    }, [fireArchive]),
+  );
 
   const onConfirm = () => {
     if (!selected) return;
@@ -256,6 +294,9 @@ export function PetsSellScreen() {
             customers={customers}
             selected={selected}
             onSelect={(c) => {
+              // Salesman is leaving this customer (tapped Change or picked
+              // another). Fire the bill archive email once before clearing.
+              if (archiveRef.current) void fireArchive();
               setSelected(c);
               setPet600(0);
               setPet1500(0);
@@ -263,6 +304,7 @@ export function PetsSellScreen() {
               setPrice1500(null);
               setDiscountStr('');
               setLastReceipt(null);
+              setConfirmed(false);
             }}
           />
 
