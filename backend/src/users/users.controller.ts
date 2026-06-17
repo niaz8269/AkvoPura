@@ -20,6 +20,7 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyUserDto } from './dto/verify-user.dto';
 import type { JwtPayload } from '../auth/jwt.strategy';
 
 @Controller('users')
@@ -58,6 +59,47 @@ export class UsersController {
   }
 
   // ---- endpoints ------------------------------------------------------
+
+  /**
+   * Pending customer registrations awaiting branch-manager approval.
+   * Always scoped to the caller's branch (owner not expected to verify).
+   */
+  @Get('pending')
+  async listPending(@Req() req: Request) {
+    const me = req.user as JwtPayload;
+    if (me.role !== 'manager' && me.role !== 'owner') {
+      throw new ForbiddenException('Only managers and the owner can view pending registrations');
+    }
+    if (me.role === 'manager' && !me.branch) {
+      throw new ForbiddenException('Manager has no branch assigned');
+    }
+    // Owners see nothing here (they don't approve customers) unless we
+    // later add an owner-only "all branches" filter. For now, owner gets
+    // an empty list — managers are the ones who verify.
+    if (me.role === 'owner') return [];
+    return this.users.listPending(me.branch!);
+  }
+
+  /** Approve a pending customer + create their linked customer record. */
+  @Post(':id/verify')
+  async verify(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() dto: VerifyUserDto,
+  ) {
+    const me = req.user as JwtPayload;
+    if (me.role !== 'manager') {
+      throw new ForbiddenException('Only branch managers can verify customer registrations');
+    }
+    if (!me.branch) throw new ForbiddenException('Manager has no branch assigned');
+
+    const target = await this.users.findById(id);
+    if (!target) throw new NotFoundException('User not found');
+    if (target.branchSlug !== me.branch) {
+      throw new ForbiddenException('Cannot verify a customer of another branch');
+    }
+    return this.users.verifyCustomer(id, dto);
+  }
 
   @Get()
   async list(

@@ -561,11 +561,25 @@ model User {
   passwordHash String
   role         Role
 
+  /// Optional contact phone — populated for self-registered customers
+  /// (managers need it to verify the registration) and for staff records.
+  phone        String?
+
   branchSlug   String?
   branch       Branch?  @relation(fields: [branchSlug], references: [slug])
 
   /// Soft-delete flag. When false, login is blocked.
   active       Boolean  @default(true)
+
+  /// False while a self-registered customer is waiting for their branch
+  /// manager to approve. Login is blocked until this flips to true.
+  /// Existing users (created by staff or seed) default to true.
+  verified     Boolean  @default(true)
+
+  /// When a customer self-registers they pick 'cg' or 'pets' so the
+  /// manager knows which kind of customer record to create at verify time.
+  /// Null for staff users and for already-verified customers.
+  pendingCustomerKind String?
 
   // Customer-role users link to a CG customer record + a Pets customer
   // record. Auto-populated when an order is fulfilled if missing.
@@ -575,5 +589,6 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  @@index([branchSlug, verified])
   @@map("users")
 }

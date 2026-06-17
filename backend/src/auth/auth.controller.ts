@@ -12,6 +12,7 @@ import type { Request } from 'express';
 
 import { AuthService, type AuthenticatedUser } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 import { UsersService } from '../users/users.service';
 
 @Controller('auth')
@@ -24,6 +25,20 @@ export class AuthController {
   @Post('login')
   login(@Body() body: LoginDto) {
     return this.auth.login(body.identifier, body.password);
+  }
+
+  /** Public customer self-registration. Returns no token. */
+  @Post('register')
+  register(@Body() body: RegisterDto) {
+    return this.auth.register({
+      identifier: body.identifier,
+      name: body.name,
+      password: body.password,
+      phone: body.phone,
+      branchSlug: body.branchSlug,
+      customerKind: body.customerKind,
+      address: body.address,
+    });
   }
 
   @Get('me')
@@ -43,6 +58,7 @@ export class AuthController {
       role: user.role,
       branch: user.branchSlug,
       active: user.active,
+      verified: user.verified,
       linkedCgCustomerId: user.linkedCgCustomerId,
       linkedPetCustomerId: user.linkedPetCustomerId,
     };
