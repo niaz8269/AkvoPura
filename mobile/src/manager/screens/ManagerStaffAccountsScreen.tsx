@@ -62,7 +62,10 @@ export function ManagerStaffAccountsScreen({ navigation }: any) {
     try {
       setError(null);
       const result = await listUsers();
-      setUsers(result);
+      // Staff Accounts is for STAFF only — customers belong in the
+      // Customers tab (linked CGCustomer / PetCustomer records). Hide
+      // role=customer rows so the two lists don't overlap.
+      setUsers(result.filter((u) => u.role !== 'customer'));
     } catch (e: unknown) {
       const msg =
         e instanceof ApiError
