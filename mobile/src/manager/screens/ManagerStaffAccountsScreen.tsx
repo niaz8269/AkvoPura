@@ -108,17 +108,32 @@ export function ManagerStaffAccountsScreen({ navigation }: any) {
   return (
     <Screen padded={false}>
       <View style={styles.header}>
-        <Text style={styles.title}>Staff accounts</Text>
-        <Text style={styles.titleUr}>عملہ کے اکاؤنٹس</Text>
-        <Text style={styles.subtitle}>
-          {users?.length ?? 0} account{users?.length === 1 ? '' : 's'} who can
-          log into the app
-        </Text>
+        <View style={styles.titleRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Staff accounts</Text>
+            <Text style={styles.titleUr}>عملہ کے اکاؤنٹس</Text>
+            <Text style={styles.subtitle}>
+              {users?.length ?? 0} account{users?.length === 1 ? '' : 's'} who can
+              log into the app
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => navigation.navigate('AddStaffAccount')}
+            style={({ pressed }) => [
+              styles.addBtn,
+              pressed ? { opacity: 0.85 } : null,
+            ]}
+            accessibilityLabel="Add staff account"
+          >
+            <Ionicons name="add" size={18} color={colors.textInverse} />
+            <Text style={styles.addBtnText}>Add</Text>
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={[styles.body, { paddingBottom: tabBarHeight + 80 }]}
+        contentContainerStyle={[styles.body, { paddingBottom: tabBarHeight + spacing.lg }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -209,18 +224,6 @@ export function ManagerStaffAccountsScreen({ navigation }: any) {
           </Pressable>
         ))}
       </ScrollView>
-
-      <Pressable
-        onPress={() => navigation.navigate('AddStaffAccount')}
-        style={({ pressed }) => [
-          styles.fab,
-          { bottom: tabBarHeight + spacing.md },
-          pressed ? { opacity: 0.85 } : null,
-        ]}
-        accessibilityLabel="Add staff account"
-      >
-        <Ionicons name="add" size={28} color={colors.textInverse} />
-      </Pressable>
     </Screen>
   );
 }
@@ -233,6 +236,24 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.primary,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+  },
+  addBtnText: {
+    fontSize: fontSizes.sm,
+    fontWeight: '800',
+    color: colors.textInverse,
   },
   title: { fontSize: fontSizes.title, fontWeight: '800', color: colors.primaryDark },
   titleUr: { fontSize: fontSizes.body, color: colors.primary, marginTop: 2 },
