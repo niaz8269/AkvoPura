@@ -19,7 +19,6 @@ import { ProductionModule } from './production/production.module';
 import { OrdersModule } from './orders/orders.module';
 import { ComplaintsModule } from './complaints/complaints.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
-import { EmployeesModule } from './employees/employees.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -42,7 +41,6 @@ import { HealthController } from './health.controller';
     OrdersModule,
     ComplaintsModule,
     SubscriptionsModule,
-    EmployeesModule,
     AuthModule,
   ],
   controllers: [HealthController],

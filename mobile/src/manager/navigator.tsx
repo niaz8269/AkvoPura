@@ -4,8 +4,8 @@
  *   Home / Customers / Trips / Expenses / Team
  *
  * Home is a stack so the legacy "Van Load" screen is still reachable
- * (the assignments card on Home navigates there). Team is a stack with
- * Today's Attendance as the landing screen + Employees list + detail.
+ * (the assignments card on Home navigates there). Team is the staff
+ * accounts stack — manage who can log into the app.
  */
 
 import React from 'react';
@@ -21,10 +21,6 @@ import { ManagerVanLoadScreen } from './screens/ManagerVanLoadScreen';
 import { ManagerCustomersScreen } from './screens/ManagerCustomersScreen';
 import { ManagerTripsScreen } from './screens/ManagerTripsScreen';
 import { ManagerExpensesScreen } from './screens/ManagerExpensesScreen';
-import { ManagerEmployeesScreen } from './screens/ManagerEmployeesScreen';
-import { ManagerAttendanceScreen } from './screens/ManagerAttendanceScreen';
-import { ManagerEmployeeDetailScreen } from './screens/ManagerEmployeeDetailScreen';
-import { ManagerAddEmployeeScreen } from './screens/ManagerAddEmployeeScreen';
 import { ManagerStaffAccountsScreen } from './screens/ManagerStaffAccountsScreen';
 import { ManagerAddStaffAccountScreen } from './screens/ManagerAddStaffAccountScreen';
 import { ManagerStaffAccountDetailScreen } from './screens/ManagerStaffAccountDetailScreen';
@@ -182,38 +178,6 @@ function ComplaintsStack() {
 function TeamStack() {
   return (
     <Stack.Navigator screenOptions={baseStackOptions}>
-      <Stack.Screen
-        name="Attendance"
-        component={ManagerAttendanceScreen}
-        options={({ navigation }) => ({
-          title: "Today's attendance",
-          headerRight: () => (
-            <Pressable
-              onPress={() => navigation.navigate('Employees')}
-              style={({ pressed }) => [styles.headerLink, pressed ? styles.logoutPressed : null]}
-              accessibilityLabel="All employees"
-            >
-              <Ionicons name="people-outline" size={20} color={colors.primaryDark} />
-              <Text style={styles.headerLinkText}>All</Text>
-            </Pressable>
-          ),
-        })}
-      />
-      <Stack.Screen
-        name="Employees"
-        component={ManagerEmployeesScreen}
-        options={{ title: 'All employees' }}
-      />
-      <Stack.Screen
-        name="EmployeeDetail"
-        component={ManagerEmployeeDetailScreen}
-        options={{ title: 'Employee' }}
-      />
-      <Stack.Screen
-        name="AddEmployee"
-        component={ManagerAddEmployeeScreen}
-        options={{ title: 'New employee' }}
-      />
       <Stack.Screen
         name="StaffAccounts"
         component={ManagerStaffAccountsScreen}

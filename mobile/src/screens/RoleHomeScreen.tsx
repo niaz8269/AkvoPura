@@ -141,7 +141,7 @@ const STUB_CONTENT: Partial<Record<
     points: [
       'Branch overview: Timergara & Shergarh',
       'Inventory, production, sales, expenses, P&L',
-      'Employee management and audit logs',
+      'Staff accounts and audit logs',
       'Cross-branch comparison and exports',
     ],
   },

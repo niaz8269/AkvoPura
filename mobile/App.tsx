@@ -9,7 +9,6 @@ import { ManagerProvider } from './src/manager/state';
 import { CustomerProvider } from './src/customer/state';
 import { PricingProvider } from './src/pricing/state';
 import { AssignmentsProvider } from './src/assignments/state';
-import { EmployeesProvider } from './src/employees/state';
 import { ProductionProvider } from './src/production/state';
 import { TutorialProvider } from './src/tutorial/state';
 import { RootNavigator } from './src/navigation/RootNavigator';
@@ -23,17 +22,15 @@ export default function App() {
             <PetsSalesmanProvider>
               <CGSalesmanProvider>
                 <AssignmentsProvider>
-                  <EmployeesProvider>
-                    <ProductionProvider>
-                      <ManagerProvider>
-                        <CustomerProvider>
-                          <TutorialProvider>
-                            <RootNavigator />
-                          </TutorialProvider>
-                        </CustomerProvider>
-                      </ManagerProvider>
-                    </ProductionProvider>
-                  </EmployeesProvider>
+                  <ProductionProvider>
+                    <ManagerProvider>
+                      <CustomerProvider>
+                        <TutorialProvider>
+                          <RootNavigator />
+                        </TutorialProvider>
+                      </CustomerProvider>
+                    </ManagerProvider>
+                  </ProductionProvider>
                 </AssignmentsProvider>
               </CGSalesmanProvider>
             </PetsSalesmanProvider>

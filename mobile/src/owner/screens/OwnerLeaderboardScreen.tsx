@@ -46,8 +46,7 @@ export function OwnerLeaderboardScreen() {
       <Text style={styles.title}>Salesman leaderboard</Text>
       <Text style={styles.titleUr}>سیلز مین کی کارکردگی</Text>
       <Text style={styles.intro}>
-        Today's ranking by cash collected. Tap into a salesman from the Team
-        screen for their attendance + history.
+        Today's ranking by cash collected.
       </Text>
 
       {topPerformer && topPerformer.cashCollected > 0 ? (

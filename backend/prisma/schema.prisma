@@ -75,11 +75,6 @@ enum SubscriptionCadence {
   weekly
 }
 
-enum EmploymentType {
-  salaried
-  hourly
-}
-
 enum ComplaintCategory {
   delivery
   product_quality
@@ -118,7 +113,6 @@ model Branch {
   customerOrders CustomerOrder[]
   complaints    Complaint[]
   subscriptions Subscription[]
-  employees     Employee[]
 
   @@map("branches")
 }
@@ -558,74 +552,6 @@ model Subscription {
   @@index([branchSlug, active])
   @@index([customerUserId])
   @@map("subscriptions")
-}
-
-/// Employee record — tracks who works at the company (whether or not
-/// they have a User login). Salaried employees have a fixed monthly
-/// amount; hourly employees earn rate × hours from Attendance.
-model Employee {
-  id              String              @id @default(cuid())
-  name            String
-  phone           String
-  role            Role
-  branchSlug      String
-  branch          Branch              @relation(fields: [branchSlug], references: [slug])
-  employmentType  EmploymentType
-  /// PKR/month for salaried; null for hourly.
-  monthlySalary   Int?
-  /// PKR/hour for hourly; null for salaried.
-  hourlyRate      Int?
-  active          Boolean             @default(true)
-  hiredAt         DateTime            @default(now())
-  notes           String?
-  /// Optional link to a User row for employees who also have a login.
-  /// Unique so the same User isn't represented twice.
-  linkedUserId    String?             @unique
-
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-
-  attendance      Attendance[]
-  disbursements   SalaryDisbursement[]
-
-  @@index([branchSlug, active])
-  @@map("employees")
-}
-
-/// One attendance row per employee per calendar day. Composite unique
-/// on (employeeId, date) prevents accidental duplicate check-ins.
-model Attendance {
-  id           String    @id @default(cuid())
-  employeeId   String
-  employee     Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  /// yyyy-mm-dd in the branch's local time.
-  date         String
-  checkInAt    DateTime
-  checkOutAt   DateTime?
-  note         String?
-
-  createdAt    DateTime  @default(now())
-
-  @@unique([employeeId, date])
-  @@index([date])
-  @@map("attendance")
-}
-
-/// Salary disbursement audit row — records when a salary or hourly-
-/// wage payment was actually made. One row per employee per period.
-model SalaryDisbursement {
-  id           String    @id @default(cuid())
-  employeeId   String
-  employee     Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  /// Period in yyyy-mm format (e.g., '2026-05' for May 2026).
-  period       String
-  amount       Int
-  paidAt       DateTime  @default(now())
-  paidById     String?
-  notes        String?
-
-  @@index([employeeId, period])
-  @@map("salary_disbursements")
 }
 
 model User {

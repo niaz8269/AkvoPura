@@ -84,12 +84,12 @@ export const TUTORIAL_STEPS: Partial<Record<Role, TutorialStep[]>> = {
     },
     {
       icon: 'briefcase-outline',
-      titleEn: 'Team + attendance',
-      titleUr: 'ٹیم اور حاضری',
+      titleEn: 'Staff accounts',
+      titleUr: 'عملے کے اکاؤنٹس',
       bodyEn:
-        'The Team tab shows today\'s attendance — check employees in and out, see live hourly earnings, edit anyone\'s pay.',
+        'The Team tab manages who can log into the app — add staff accounts, set roles, deactivate when needed.',
       bodyUr:
-        'Team ٹیب میں ملازمین کی آج کی حاضری ہے — چیک ان/آؤٹ، گھنٹہ وار کمائی، تنخواہ میں تبدیلی۔',
+        'Team ٹیب میں اپنے عملے کے لاگ ان اکاؤنٹس ہیں — نئے بنائیں، کردار طے کریں، غیر فعال کریں۔',
     },
     {
       icon: 'wallet-outline',
