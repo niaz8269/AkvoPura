@@ -60,9 +60,9 @@ export function CGAddCustomerScreen({ navigation }: { navigation: Nav }) {
   const [notes, setNotes] = useState('');
 
   const valid =
-    name.trim().length > 0 &&
-    phone.trim().length > 0 &&
-    address.trim().length > 0 &&
+    name.trim().length >= 2 &&
+    phone.trim().length >= 4 &&
+    address.trim().length >= 2 &&
     pricePerCan > 0 &&
     pricePerGallon > 0;
 

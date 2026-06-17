@@ -33,10 +33,10 @@ export function PetsAddCustomerScreen({ navigation }: { navigation: Nav }) {
   const [notes, setNotes] = useState('');
 
   const valid =
-    name.trim().length > 0 &&
-    phone.trim().length > 0 &&
-    address.trim().length > 0 &&
-    area.trim().length > 0;
+    name.trim().length >= 2 &&
+    phone.trim().length >= 4 &&
+    address.trim().length >= 2 &&
+    area.trim().length >= 2;
 
   const [submitting, setSubmitting] = useState(false);
 
