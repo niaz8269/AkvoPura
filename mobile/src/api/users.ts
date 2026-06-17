@@ -112,3 +112,11 @@ export function verifyCustomer(id: string, input: VerifyCustomerInput) {
     body: input,
   });
 }
+
+/** Logged-in user changes their own password. */
+export function changeMyPassword(currentPassword: string, newPassword: string) {
+  return apiRequest<{ ok: true }>('/auth/change-password', {
+    method: 'POST',
+    body: { currentPassword, newPassword },
+  });
+}

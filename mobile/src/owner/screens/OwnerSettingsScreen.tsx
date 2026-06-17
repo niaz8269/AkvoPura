@@ -7,7 +7,8 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { BilingualButton, Screen } from '../../components';
 import { QuantityStepper } from '../../components/QuantityStepper';
@@ -22,7 +23,8 @@ import {
 import { ApiError } from '../../api/client';
 import { runSubscriptionsCronApi } from '../../api/subscriptions';
 
-export function OwnerSettingsScreen() {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function OwnerSettingsScreen({ navigation }: { navigation: any }) {
   const { prices, fees, setPrice, setFee, resetPrices } = usePricing();
 
   return (
@@ -32,6 +34,38 @@ export function OwnerSettingsScreen() {
         Set the default price for each product. Per-customer custom prices (set
         on a customer's record) override these defaults at bill time.
       </Text>
+
+      <Text style={styles.sectionTitle}>Account</Text>
+
+      <Pressable
+        onPress={() => navigation.navigate('ChangeMyPassword')}
+        style={({ pressed }) => [
+          styles.linkCard,
+          pressed ? { opacity: 0.85 } : null,
+        ]}
+      >
+        <Ionicons name="key-outline" size={20} color={colors.primary} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.linkTitle}>Change my password</Text>
+          <Text style={styles.linkSub}>Update the password you use to log in</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
+      </Pressable>
+
+      <Pressable
+        onPress={() => navigation.navigate('ManageManagers')}
+        style={({ pressed }) => [
+          styles.linkCard,
+          pressed ? { opacity: 0.85 } : null,
+        ]}
+      >
+        <Ionicons name="people-outline" size={20} color={colors.primary} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.linkTitle}>Branch managers</Text>
+          <Text style={styles.linkSub}>Add, edit, deactivate, or reset password for managers</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
+      </Pressable>
 
       <Text style={styles.sectionTitle}>Default product prices</Text>
       <Text style={styles.sectionSub}>  </Text>
@@ -261,6 +295,28 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   sectionSub: { fontSize: fontSizes.xs, color: colors.textMuted, marginBottom: spacing.md },
+
+  linkCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginTop: spacing.sm,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
+  },
+  linkTitle: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  linkSub: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
 
   card: {
     backgroundColor: colors.surface,

@@ -1,7 +1,14 @@
-import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 
+import { PrismaService } from '../prisma/prisma.service';
 import { UsersService, type RegisterCustomerParams } from '../users/users.service';
 
 export type AuthenticatedUser = {
@@ -21,6 +28,7 @@ export class AuthService {
   constructor(
     private readonly users: UsersService,
     private readonly jwt: JwtService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async login(identifier: string, password: string) {
@@ -70,5 +78,28 @@ export class AuthService {
         'Account created. Your branch manager will verify it shortly. You will be able to log in once approved.',
       userId: created.id,
     };
+  }
+
+  /**
+   * Self-service password change for the currently logged-in user.
+   * Requires the user to type their current password — protects against a
+   * stolen-phone scenario where someone could change the password without
+   * knowing the old one.
+   */
+  async changeMyPassword(userId: string, currentPassword: string, newPassword: string) {
+    if (newPassword.length < 6) {
+      throw new BadRequestException('New password must be at least 6 characters');
+    }
+    const user = await this.users.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    const ok = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!ok) throw new UnauthorizedException('Current password is wrong');
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+    return { ok: true };
   }
 }

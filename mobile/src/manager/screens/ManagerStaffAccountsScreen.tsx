@@ -155,6 +155,21 @@ export function ManagerStaffAccountsScreen({ navigation }: any) {
           <Ionicons name="chevron-forward" size={18} color={colors.warning} />
         </Pressable>
 
+        <Pressable
+          onPress={() => navigation.navigate('ChangeMyPassword')}
+          style={({ pressed }) => [
+            styles.myAccountLink,
+            pressed ? { opacity: 0.85 } : null,
+          ]}
+        >
+          <Ionicons name="key-outline" size={20} color={colors.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.myAccountTitle}>Change my password</Text>
+            <Text style={styles.myAccountSub}>Update your own login password</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
+        </Pressable>
+
         {error ? (
           <View style={styles.errorCard}>
             <Ionicons name="warning" size={20} color={colors.danger} />
@@ -297,6 +312,27 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
   },
   pendingLinkSub: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  myAccountLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.primary + '0C',
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
+  },
+  myAccountTitle: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  myAccountSub: {
     fontSize: fontSizes.xs,
     color: colors.textMuted,
     marginTop: 2,

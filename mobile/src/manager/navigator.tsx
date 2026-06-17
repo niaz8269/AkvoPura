@@ -22,6 +22,7 @@ import { ManagerCustomersScreen } from './screens/ManagerCustomersScreen';
 import { ManagerTripsScreen } from './screens/ManagerTripsScreen';
 import { ManagerExpensesScreen } from './screens/ManagerExpensesScreen';
 import { ManagerStaffAccountsScreen } from './screens/ManagerStaffAccountsScreen';
+import { ChangeMyPasswordScreen } from '../screens/ChangeMyPasswordScreen';
 import { ManagerAddStaffAccountScreen } from './screens/ManagerAddStaffAccountScreen';
 import { ManagerStaffAccountDetailScreen } from './screens/ManagerStaffAccountDetailScreen';
 import { ManagerPendingRegistrationsScreen } from './screens/ManagerPendingRegistrationsScreen';
@@ -204,6 +205,11 @@ function TeamStack() {
         name="VerifyCustomer"
         component={ManagerVerifyCustomerScreen}
         options={{ title: 'Verify customer' }}
+      />
+      <Stack.Screen
+        name="ChangeMyPassword"
+        component={ChangeMyPasswordScreen}
+        options={{ title: 'Change my password' }}
       />
     </Stack.Navigator>
   );

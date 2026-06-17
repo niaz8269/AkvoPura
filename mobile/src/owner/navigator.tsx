@@ -21,6 +21,10 @@ import { OwnerLeaderboardScreen } from './screens/OwnerLeaderboardScreen';
 import { OwnerManageBranchesScreen } from './screens/OwnerManageBranchesScreen';
 import { OwnerAddBranchScreen } from './screens/OwnerAddBranchScreen';
 import { OwnerEditBranchScreen } from './screens/OwnerEditBranchScreen';
+import { OwnerManageManagersScreen } from './screens/OwnerManageManagersScreen';
+import { ManagerStaffAccountDetailScreen } from '../manager/screens/ManagerStaffAccountDetailScreen';
+import { ManagerAddStaffAccountScreen } from '../manager/screens/ManagerAddStaffAccountScreen';
+import { ChangeMyPasswordScreen } from '../screens/ChangeMyPasswordScreen';
 import { AgingReportScreen } from '../analytics/screens/AgingReportScreen';
 import { useManager } from '../manager/state';
 import type { BranchKey } from './types';
@@ -37,6 +41,7 @@ export type OwnerStackParamList = {
 };
 
 const Stack = createNativeStackNavigator<OwnerStackParamList>();
+const SettingsStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function HeaderRight() {
@@ -236,7 +241,7 @@ function WrappedAudit() {
 
 function WrappedSettings() {
   return (
-    <Stack.Navigator
+    <SettingsStack.Navigator
       screenOptions={{
         headerStyle: { backgroundColor: colors.surface },
         headerTitleStyle: { color: colors.primaryDark, fontWeight: '800' },
@@ -244,12 +249,32 @@ function WrappedSettings() {
         headerRight: () => <HeaderRight />,
       }}
     >
-      <Stack.Screen
+      <SettingsStack.Screen
         name="Landing"
         component={OwnerSettingsScreen}
         options={{ title: 'Settings' }}
       />
-    </Stack.Navigator>
+      <SettingsStack.Screen
+        name="ChangeMyPassword"
+        component={ChangeMyPasswordScreen}
+        options={{ title: 'Change my password' }}
+      />
+      <SettingsStack.Screen
+        name="ManageManagers"
+        component={OwnerManageManagersScreen}
+        options={{ title: 'Branch managers' }}
+      />
+      <SettingsStack.Screen
+        name="StaffAccountDetail"
+        component={ManagerStaffAccountDetailScreen}
+        options={{ title: 'Manager account' }}
+      />
+      <SettingsStack.Screen
+        name="AddStaffAccount"
+        component={ManagerAddStaffAccountScreen}
+        options={{ title: 'New manager' }}
+      />
+    </SettingsStack.Navigator>
   );
 }
 

@@ -13,6 +13,7 @@ import type { Request } from 'express';
 import { AuthService, type AuthenticatedUser } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { UsersService } from '../users/users.service';
 
 @Controller('auth')
@@ -39,6 +40,14 @@ export class AuthController {
       customerKind: body.customerKind,
       address: body.address,
     });
+  }
+
+  /** Self-service password change for the logged-in user (any role). */
+  @Post('change-password')
+  @UseGuards(AuthGuard('jwt'))
+  async changePassword(@Req() req: Request, @Body() body: ChangePasswordDto) {
+    const jwtUser = req.user as { sub: string };
+    return this.auth.changeMyPassword(jwtUser.sub, body.currentPassword, body.newPassword);
   }
 
   @Get('me')
