@@ -1,9 +1,8 @@
 /**
  * LoginScreen — entry point.
  *
- * Shows the AkvoPura brand, identifier + password fields, and a Login button.
- * For Slice 1 it also shows quick-fill chips for each test account so you can
- * demo every role with one tap. The chips are removed once a real backend is wired up.
+ * Brand logo, identifier + password fields, Login button, and a link to the
+ * customer self-registration form.
  */
 
 import React, { useState } from 'react';
@@ -18,10 +17,9 @@ import {
 } from 'react-native';
 
 import { BilingualButton, Screen, TextField } from '../components';
-import { colors, fontSizes, radii, spacing } from '../theme';
+import { colors, fontSizes, spacing } from '../theme';
 import { strings } from '../i18n/strings';
 import { useAuth } from '../auth/AuthContext';
-import { mockAccounts } from '../auth/mockUsers';
 
 const brandLogo = require('../../assets/brand/akvopura-brand.png');
 
@@ -43,12 +41,6 @@ export function LoginScreen({ navigation }: { navigation: any }) {
     }
   };
 
-  const fillTestAccount = (id: string, pw: string) => {
-    setIdentifier(id);
-    setPassword(pw);
-    setError(null);
-  };
-
   return (
     <Screen scroll>
       <KeyboardAvoidingView
@@ -66,7 +58,7 @@ export function LoginScreen({ navigation }: { navigation: any }) {
             label={strings.phoneOrEmail}
             value={identifier}
             onChangeText={setIdentifier}
-            placeholder="e.g. owner / manager_t / pets"
+            placeholder="Your username"
             autoCapitalize="none"
             autoComplete="username"
             testID="login-identifier"
@@ -100,25 +92,6 @@ export function LoginScreen({ navigation }: { navigation: any }) {
             <Text style={styles.registerLinkPrefix}>New customer?</Text>
             <Text style={styles.registerLinkAction}>Create account →</Text>
           </Pressable>
-        </View>
-
-        <View style={styles.testBlock}>
-          <Text style={styles.testHintEn}>{strings.testAccountsHint.en}</Text>
-          <View style={styles.chipRow}>
-            {mockAccounts.map((acc) => (
-              <Pressable
-                key={acc.user.id}
-                onPress={() => fillTestAccount(acc.user.identifier, acc.password)}
-                style={({ pressed }) => [
-                  styles.chip,
-                  pressed ? styles.chipPressed : null,
-                ]}
-              >
-                <Text style={styles.chipLabel}>{acc.user.name}</Text>
-                <Text style={styles.chipSub}>{acc.user.identifier}</Text>
-              </Pressable>
-            ))}
-          </View>
         </View>
       </KeyboardAvoidingView>
     </Screen>
@@ -176,48 +149,5 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.sm,
     fontWeight: '800',
     color: colors.primary,
-  },
-  testBlock: {
-    marginTop: spacing.xl,
-    paddingTop: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  testHintEn: {
-    fontSize: fontSizes.sm,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  testHintUr: {
-    fontSize: fontSizes.sm,
-    color: colors.textMuted,
-    marginBottom: spacing.md,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  chip: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.primaryLight,
-    borderRadius: radii.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    minWidth: 130,
-  },
-  chipPressed: {
-    backgroundColor: colors.surfaceMuted,
-  },
-  chipLabel: {
-    fontSize: fontSizes.sm,
-    fontWeight: '700',
-    color: colors.primaryDark,
-  },
-  chipSub: {
-    fontSize: fontSizes.xs,
-    color: colors.textMuted,
-    marginTop: 2,
   },
 });

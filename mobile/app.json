@@ -23,10 +23,16 @@
         "backgroundColor": "#F4FAFE"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "versionCode": 2
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "475c97ab-7601-4f80-a63c-ad6df953c471"
+      }
     }
   }
 }

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><style>
+  body { margin: 0; padding: 0; background: #fff; }
+  .fg {
+    width: 1024px;
+    height: 500px;
+    background: linear-gradient(135deg, #0A6CB7 0%, #054E86 100%);
+    color: white;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 80px;
+    box-sizing: border-box;
+    overflow: hidden;
+    position: relative;
+  }
+  .fg::before {
+    content: '';
+    position: absolute;
+    top: -200px;
+    right: -200px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(0,181,194,0.3) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .left { z-index: 1; }
+  .brand {
+    font-size: 84px;
+    font-weight: 900;
+    letter-spacing: -2px;
+    margin-bottom: 8px;
+    line-height: 1;
+  }
+  .tagline {
+    font-size: 28px;
+    font-weight: 400;
+    opacity: 0.95;
+    margin-bottom: 20px;
+  }
+  .badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.18);
+    padding: 8px 20px;
+    border-radius: 30px;
+    font-size: 18px;
+    font-weight: 700;
+    backdrop-filter: blur(8px);
+  }
+  .right { z-index: 1; }
+  .drop {
+    font-size: 280px;
+    line-height: 1;
+    filter: drop-shadow(0 10px 30px rgba(0,0,0,0.25));
+  }
+</style></head><body>
+  <div class="fg">
+    <div class="left">
+      <div class="brand">AkvoPura</div>
+      <div class="tagline">Pure water, pure trust.</div>
+      <div class="badge">Order • Deliver • Track</div>
+    </div>
+    <div class="right">
+      <div class="drop">💧</div>
+    </div>
+  </div>
+</body></html>
