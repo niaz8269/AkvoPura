@@ -1,16 +1,19 @@
 /**
- * QuantityStepper — `−` value `+` control with optional product icon.
+ * QuantityStepper — `−` [ N ] `+` control with optional product icon.
  *
- * Per spec: numbers are entered via tap counters, never typed on the keyboard.
- * Long-press on `−` or `+` repeats — useful for jumping by 5/10.
+ * The centre value is a real TextInput so the user can tap it and type a
+ * number directly — critical when a customer places a large order (e.g.
+ * 150 packs) and clicking + one hundred times isn't reasonable. The +/-
+ * buttons still work for small adjustments and long-press repeats.
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Image,
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
   type ImageSourcePropType,
   type ViewStyle,
@@ -41,6 +44,23 @@ export function QuantityStepper({
   const clamp = (v: number) => Math.max(min, Math.min(max, v));
   const dec = () => onChange(clamp(value - 1));
   const inc = () => onChange(clamp(value + 1));
+
+  // Local text state for the typed value — decoupled from the numeric prop
+  // so the user can mid-type an empty string or partial number without the
+  // parent snapping it back to 0.
+  const [text, setText] = useState<string>(String(value));
+  useEffect(() => {
+    // If the parent changes value externally (e.g. reset after submit),
+    // sync the input.
+    setText(String(value));
+  }, [value]);
+
+  const commit = () => {
+    const parsed = parseInt(text.replace(/[^0-9]/g, ''), 10);
+    const next = clamp(Number.isFinite(parsed) ? parsed : min);
+    setText(String(next));
+    if (next !== value) onChange(next);
+  };
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stop = () => {
@@ -86,7 +106,18 @@ export function QuantityStepper({
           <Text style={styles.btnText}>−</Text>
         </Pressable>
 
-        <Text style={styles.value}>{value}</Text>
+        <TextInput
+          value={text}
+          onChangeText={(t) => setText(t.replace(/[^0-9]/g, ''))}
+          onBlur={commit}
+          onSubmitEditing={commit}
+          keyboardType="number-pad"
+          returnKeyType="done"
+          selectTextOnFocus
+          maxLength={5}
+          style={styles.valueInput}
+          accessibilityLabel={`${label} quantity`}
+        />
 
         <Pressable
           onPress={inc}
@@ -167,12 +198,18 @@ const styles = StyleSheet.create({
   btnTextPlus: {
     color: colors.textInverse,
   },
-  value: {
-    minWidth: 56,
+  valueInput: {
+    minWidth: 72,
+    height: tapTarget.min,
+    marginHorizontal: spacing.xs,
     textAlign: 'center',
     fontSize: fontSizes.heading,
     fontWeight: '800',
     color: colors.primaryDark,
-    paddingHorizontal: spacing.sm,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 4,
   },
 });
