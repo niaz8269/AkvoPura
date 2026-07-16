@@ -3,9 +3,10 @@ import { PassportModule } from '@nestjs/passport';
 
 import { CGDeliveriesService } from './cg-deliveries.service';
 import { CGDeliveriesController } from './cg-deliveries.controller';
+import { TripsModule } from '../trips/trips.module';
 
 @Module({
-  imports: [PassportModule],
+  imports: [PassportModule, TripsModule],
   providers: [CGDeliveriesService],
   controllers: [CGDeliveriesController],
   exports: [CGDeliveriesService],

@@ -20,6 +20,7 @@ import { OrdersModule } from './orders/orders.module';
 import { ComplaintsModule } from './complaints/complaints.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { EmailModule } from './email/email.module';
+import { TripsModule } from './trips/trips.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -43,6 +44,7 @@ import { HealthController } from './health.controller';
     ComplaintsModule,
     SubscriptionsModule,
     EmailModule,
+    TripsModule,
     AuthModule,
   ],
   controllers: [HealthController],

@@ -3,9 +3,10 @@ import { PassportModule } from '@nestjs/passport';
 
 import { PetReturnsService } from './pet-returns.service';
 import { PetReturnsController } from './pet-returns.controller';
+import { TripsModule } from '../trips/trips.module';
 
 @Module({
-  imports: [PassportModule],
+  imports: [PassportModule, TripsModule],
   providers: [PetReturnsService],
   controllers: [PetReturnsController],
   exports: [PetReturnsService],

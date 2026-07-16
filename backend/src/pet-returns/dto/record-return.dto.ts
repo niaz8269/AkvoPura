@@ -23,4 +23,7 @@ export class RecordReturnDto {
 
   @IsOptional() @Type(() => Number) @IsInt() @Min(1)
   tripNumber?: number;
+
+  @IsString()
+  tripId!: string;
 }

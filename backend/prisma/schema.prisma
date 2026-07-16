@@ -41,6 +41,12 @@ enum ExpenseCategory {
   utilities
   salary
   raw_material
+  vehicle_maintenance
+  plant_maintenance
+  marketing
+  rent
+  insurance
+  refreshments
   other
 }
 
@@ -88,6 +94,11 @@ enum ComplaintRecipient {
   manager
 }
 
+enum TripRole {
+  cg
+  pets
+}
+
 enum ComplaintStatus {
   open
   in_review
@@ -113,6 +124,7 @@ model Branch {
   customerOrders CustomerOrder[]
   complaints    Complaint[]
   subscriptions Subscription[]
+  trips         Trip[]
 
   @@map("branches")
 }
@@ -322,6 +334,64 @@ model PetCustomer {
 }
 
 /// One Pets bill (sale). Mutates the customer's outstanding debt.
+/// One delivery trip taken by a salesman on a specific vehicle. Every
+/// delivery / bill / collection / return is logged against a Trip, so the
+/// manager can see per-vehicle activity without conflating simultaneous
+/// trips by two different salesmen.
+///
+/// Lifecycle:
+///   1. Salesman calls POST /trips with vehicleLabel + initial load counts
+///      (openedAt is set to now).
+///   2. Deliveries / collections / bills / returns are recorded with
+///      tripId set. They are rejected if the trip is already closed.
+///   3. Salesman calls PATCH /trips/:id/end with final on-van counts and
+///      declared cash. closedAt is set. No further activity accepted.
+model Trip {
+  id                  String    @id @default(cuid())
+  salesmanId          String
+  salesman            User      @relation(fields: [salesmanId], references: [id])
+  branchSlug          String
+  branch              Branch    @relation(fields: [branchSlug], references: [slug])
+  role                TripRole
+  /// Human-readable van identifier (number plate or nickname) so managers
+  /// can tell trips apart at a glance. Required — no unlabelled trips.
+  vehicleLabel        String
+
+  /// Snapshot of what was loaded onto the van at start of trip.
+  /// For CG trips: cans + gallons. For Pets trips: 600ml + 1.5L packs.
+  initialCansLoaded     Int     @default(0)
+  initialGallonsLoaded  Int     @default(0)
+  initialPet600Packs    Int     @default(0)
+  initialPet1500Packs   Int     @default(0)
+
+  /// Populated when the trip is closed (PATCH /trips/:id/end).
+  finalCansOnVan        Int?
+  finalGallonsOnVan     Int?
+  finalEmptyCansOnVan   Int?
+  finalEmptyGallonsOnVan Int?
+  finalPet600Packs      Int?
+  finalPet1500Packs     Int?
+  /// Cash the salesman declares on hand when returning. Should tally
+  /// against sum(cashCollected) across the trip's deliveries/bills; any
+  /// mismatch is shown to the manager for follow-up.
+  declaredCashOnHand    Int?
+
+  notes               String?
+
+  openedAt            DateTime  @default(now())
+  closedAt            DateTime?
+
+  deliveries          CGDelivery[]
+  collections         CGCollection[]
+  bills               PetBill[]
+  returns             PetReturn[]
+
+  @@index([branchSlug, openedAt])
+  @@index([salesmanId, openedAt])
+  @@index([closedAt])
+  @@map("trips")
+}
+
 model PetBill {
   id            String      @id @default(cuid())
   customerId    String
@@ -345,12 +415,17 @@ model PetBill {
   /// Free-text reference for the digital payment (TXN id, sender name).
   paymentReference String?
   tripNumber    Int         @default(1)
+  /// FK to the trip this bill was recorded under. Nullable for legacy
+  /// pre-trip-model rows; every NEW bill requires an active trip.
+  tripId        String?
+  trip          Trip?       @relation(fields: [tripId], references: [id])
 
   loggedAt      DateTime    @default(now())
 
   @@index([branchSlug, loggedAt])
   @@index([salesmanId, loggedAt])
   @@index([customerId, loggedAt])
+  @@index([tripId])
   @@map("pet_bills")
 }
 
@@ -368,12 +443,15 @@ model PetReturn {
   refundAmount  Int
   reason        String?
   tripNumber    Int         @default(1)
+  tripId        String?
+  trip          Trip?       @relation(fields: [tripId], references: [id])
 
   loggedAt      DateTime    @default(now())
 
   @@index([branchSlug, loggedAt])
   @@index([salesmanId, loggedAt])
   @@index([customerId, loggedAt])
+  @@index([tripId])
   @@map("pet_returns")
 }
 
@@ -402,12 +480,15 @@ model CGDelivery {
   amountBilled          Int
   /// Which trip of the day (1, 2, ...).
   tripNumber            Int        @default(1)
+  tripId                String?
+  trip                  Trip?      @relation(fields: [tripId], references: [id])
 
   loggedAt              DateTime   @default(now())
 
   @@index([branchSlug, loggedAt])
   @@index([salesmanId, loggedAt])
   @@index([customerId, loggedAt])
+  @@index([tripId])
   @@map("cg_deliveries")
 }
 
@@ -432,12 +513,15 @@ model CGCollection {
   paymentReference  String?
 
   tripNumber        Int        @default(1)
+  tripId            String?
+  trip              Trip?      @relation(fields: [tripId], references: [id])
 
   loggedAt          DateTime   @default(now())
 
   @@index([branchSlug, loggedAt])
   @@index([salesmanId, loggedAt])
   @@index([customerId, loggedAt])
+  @@index([tripId])
   @@map("cg_collections")
 }
 
@@ -478,6 +562,20 @@ model CGCustomer {
   active          Boolean    @default(true)
 
   notes           String?
+
+  /// Next-visit intent — captured during a collection when the customer
+  /// tells the salesman what they want (or don't want) on the next visit.
+  /// nextVisitDate is a YYYY-MM-DD string in local time; frontend/backend
+  /// treat the intent as expired once "today" moves past this date.
+  /// Auto-cleared when a delivery is recorded for this customer.
+  nextVisitDate     String?
+  /// True = customer said "skip". Overrides cans/gallons values.
+  nextVisitSkip     Boolean?
+  /// Custom quantity requested for next visit (null = use usualCans).
+  nextVisitCans     Int?
+  nextVisitGallons  Int?
+  /// Free-text note captured with the intent, e.g. "vacation until Friday".
+  nextVisitNote     String?
 
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
@@ -588,6 +686,8 @@ model User {
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  trips        Trip[]
 
   @@index([branchSlug, verified])
   @@map("users")

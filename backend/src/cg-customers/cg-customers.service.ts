@@ -85,6 +85,32 @@ export class CGCustomersService {
     return this.prisma.cGCustomer.update({ where: { id }, data: input });
   }
 
+  /** Set (or clear) the customer's next-visit intent. Pass all fields
+   *  null to clear. Called from the CG collection flow. */
+  async setNextVisit(
+    id: string,
+    input: {
+      nextVisitDate?: string | null;
+      nextVisitSkip?: boolean | null;
+      nextVisitCans?: number | null;
+      nextVisitGallons?: number | null;
+      nextVisitNote?: string | null;
+    },
+  ) {
+    const c = await this.prisma.cGCustomer.findUnique({ where: { id } });
+    if (!c) throw new NotFoundException('Customer not found');
+    return this.prisma.cGCustomer.update({
+      where: { id },
+      data: {
+        nextVisitDate: input.nextVisitDate ?? null,
+        nextVisitSkip: input.nextVisitSkip ?? null,
+        nextVisitCans: input.nextVisitCans ?? null,
+        nextVisitGallons: input.nextVisitGallons ?? null,
+        nextVisitNote: input.nextVisitNote?.trim() || null,
+      },
+    });
+  }
+
   /** Charge a customer for lost / damaged containers. Removes the
    *  empties and adds the charge to outstanding debt. */
   async chargeLoss(

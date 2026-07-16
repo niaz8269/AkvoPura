@@ -29,4 +29,8 @@ export class RecordDeliveryDto {
 
   @IsOptional() @Type(() => Number) @IsInt() @Min(1)
   tripNumber?: number;
+
+  /** Required — id of the salesman's currently-open trip. */
+  @IsString()
+  tripId!: string;
 }

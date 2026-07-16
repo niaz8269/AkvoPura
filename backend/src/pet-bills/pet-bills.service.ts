@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { TripsService } from '../trips/trips.service';
 
 export type RecordBillParams = {
   customerId: string;
@@ -19,11 +20,15 @@ export type RecordBillParams = {
   bankCollected?: number;
   paymentReference?: string;
   tripNumber?: number;
+  tripId: string;
 };
 
 @Injectable()
 export class PetBillsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly trips: TripsService,
+  ) {}
 
   list(params: { branchSlug?: string; salesmanId?: string; date?: string } = {}) {
     let dateRange: { gte: Date; lt: Date } | undefined;
@@ -58,11 +63,24 @@ export class PetBillsService {
 
   /** Atomic: insert bill row + add unpaid balance to customer debt. */
   async record(params: RecordBillParams) {
+    const trip = await this.trips.requireOpenTripForSalesman(
+      params.tripId,
+      params.salesmanId,
+    );
+    if (trip.role !== 'pets') {
+      throw new BadRequestException('Active trip is not a Pets trip');
+    }
+
     return this.prisma.$transaction(async (tx) => {
       const customer = await tx.petCustomer.findUnique({
         where: { id: params.customerId },
       });
       if (!customer) throw new NotFoundException('Customer not found');
+      if (customer.branchSlug !== trip.branchSlug) {
+        throw new BadRequestException(
+          'Customer belongs to a different branch than the active trip',
+        );
+      }
 
       const subtotal =
         params.pet600Packs * params.pricePet600 +
@@ -105,6 +123,7 @@ export class PetBillsService {
           bankCollected,
           paymentReference: params.paymentReference?.trim() || null,
           tripNumber: params.tripNumber ?? 1,
+          tripId: params.tripId,
         },
       });
     });

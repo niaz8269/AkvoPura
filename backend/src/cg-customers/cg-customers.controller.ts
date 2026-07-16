@@ -18,6 +18,7 @@ import { CGCustomersService } from './cg-customers.service';
 import { CreateCGCustomerDto } from './dto/create-cg-customer.dto';
 import { UpdateCGCustomerDto } from './dto/update-cg-customer.dto';
 import { ChargeLossDto } from './dto/charge-loss.dto';
+import { SetNextVisitDto } from './dto/set-next-visit.dto';
 import type { JwtPayload } from '../auth/jwt.strategy';
 
 const ALLOWED_ROLES = new Set(['owner', 'manager', 'cans_gallons_salesman']);
@@ -99,6 +100,20 @@ export class CGCustomersController {
     if (!target) throw new NotFoundException('Customer not found');
     this.resolveScope(me, target.branchSlug);
     return this.customers.update(id, dto);
+  }
+
+  @Patch(':id/next-visit')
+  async setNextVisit(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() dto: SetNextVisitDto,
+  ) {
+    const me = req.user as JwtPayload;
+    this.assertCanAccess(me);
+    const target = await this.customers.findById(id);
+    if (!target) throw new NotFoundException('Customer not found');
+    this.resolveScope(me, target.branchSlug);
+    return this.customers.setNextVisit(id, dto);
   }
 
   @Post(':id/charge-loss')

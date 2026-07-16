@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { TripsService } from '../trips/trips.service';
 
 export type RecordDeliveryParams = {
   customerId: string;
@@ -18,11 +19,17 @@ export type RecordDeliveryParams = {
   bankCollected?: number;
   paymentReference?: string;
   tripNumber?: number;
+  /** REQUIRED for new deliveries — links to the salesman's currently-open
+   *  trip. Guard: the trip must belong to this salesman and be still open. */
+  tripId: string;
 };
 
 @Injectable()
 export class CGDeliveriesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly trips: TripsService,
+  ) {}
 
   /** List deliveries — optionally scoped by branch / salesman / date.
    *  date is ISO yyyy-mm-dd; if omitted, no date filter. */
@@ -62,11 +69,25 @@ export class CGDeliveriesService {
 
   /** Atomic: insert delivery row + mutate the customer's balance. */
   async record(params: RecordDeliveryParams) {
+    // Trip check outside the transaction — it's a read-only guard.
+    const trip = await this.trips.requireOpenTripForSalesman(
+      params.tripId,
+      params.salesmanId,
+    );
+    if (trip.role !== 'cg') {
+      throw new BadRequestException('Active trip is not a CG trip');
+    }
+
     return this.prisma.$transaction(async (tx) => {
       const customer = await tx.cGCustomer.findUnique({
         where: { id: params.customerId },
       });
       if (!customer) throw new NotFoundException('Customer not found');
+      if (customer.branchSlug !== trip.branchSlug) {
+        throw new BadRequestException(
+          'Customer belongs to a different branch than the active trip',
+        );
+      }
 
       const billed =
         params.cansDelivered * customer.pricePerCan +
@@ -95,6 +116,13 @@ export class CGDeliveriesService {
             params.emptyGallonsCollected,
           outstandingDebt: customer.outstandingDebt + billed - totalPaid,
           lastActivityAt: new Date(),
+          // A delivery just happened → any next-visit intent captured
+          // earlier is fulfilled. Clear it so tomorrow's route is clean.
+          nextVisitDate: null,
+          nextVisitSkip: null,
+          nextVisitCans: null,
+          nextVisitGallons: null,
+          nextVisitNote: null,
         },
       });
 
@@ -112,6 +140,7 @@ export class CGDeliveriesService {
           paymentReference: params.paymentReference?.trim() || null,
           amountBilled: billed,
           tripNumber: params.tripNumber ?? 1,
+          tripId: params.tripId,
         },
       });
     });

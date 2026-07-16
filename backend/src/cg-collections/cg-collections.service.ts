@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { TripsService } from '../trips/trips.service';
 
 export type RecordCollectionParams = {
   customerId: string;
@@ -16,11 +17,15 @@ export type RecordCollectionParams = {
   bankCollected?: number;
   paymentReference?: string;
   tripNumber?: number;
+  tripId: string;
 };
 
 @Injectable()
 export class CGCollectionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly trips: TripsService,
+  ) {}
 
   list(params: { branchSlug?: string; salesmanId?: string; date?: string } = {}) {
     let dateRange: { gte: Date; lt: Date } | undefined;
@@ -59,11 +64,24 @@ export class CGCollectionsService {
   /** Atomic: insert collection row + decrement customer's empties + reduce
    *  customer's outstanding debt by cash + bank received. */
   async record(params: RecordCollectionParams) {
+    const trip = await this.trips.requireOpenTripForSalesman(
+      params.tripId,
+      params.salesmanId,
+    );
+    if (trip.role !== 'cg') {
+      throw new BadRequestException('Active trip is not a CG trip');
+    }
+
     return this.prisma.$transaction(async (tx) => {
       const customer = await tx.cGCustomer.findUnique({
         where: { id: params.customerId },
       });
       if (!customer) throw new NotFoundException('Customer not found');
+      if (customer.branchSlug !== trip.branchSlug) {
+        throw new BadRequestException(
+          'Customer belongs to a different branch than the active trip',
+        );
+      }
 
       const cash = Math.max(0, params.cashCollected ?? 0);
       const bank = Math.max(0, params.bankCollected ?? 0);
@@ -98,6 +116,7 @@ export class CGCollectionsService {
           bankCollected: bank,
           paymentReference: params.paymentReference?.trim() || null,
           tripNumber: params.tripNumber ?? 1,
+          tripId: params.tripId,
         },
       });
     });
