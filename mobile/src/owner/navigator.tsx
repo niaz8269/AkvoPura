@@ -144,7 +144,7 @@ function WrappedSettings() {
       <SettingsStack.Screen
         name="ChangeMyPassword"
         component={ChangeMyPasswordScreen}
-        options={{ title: 'Change my password' }}
+        options={{ title: 'Account settings' }}
       />
       <SettingsStack.Screen
         name="ManageManagers"

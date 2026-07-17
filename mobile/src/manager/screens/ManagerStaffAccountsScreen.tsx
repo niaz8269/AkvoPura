@@ -163,10 +163,10 @@ export function ManagerStaffAccountsScreen({ navigation }: any) {
             pressed ? { opacity: 0.85 } : null,
           ]}
         >
-          <Ionicons name="key-outline" size={20} color={colors.primary} />
+          <Ionicons name="person-circle-outline" size={20} color={colors.primary} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.myAccountTitle}>Change my password</Text>
-            <Text style={styles.myAccountSub}>Update your own login password</Text>
+            <Text style={styles.myAccountTitle}>Account settings</Text>
+            <Text style={styles.myAccountSub}>Change your username or password</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
         </Pressable>

@@ -44,10 +44,10 @@ export function OwnerSettingsScreen({ navigation }: { navigation: any }) {
           pressed ? { opacity: 0.85 } : null,
         ]}
       >
-        <Ionicons name="key-outline" size={20} color={colors.primary} />
+        <Ionicons name="person-circle-outline" size={20} color={colors.primary} />
         <View style={{ flex: 1 }}>
-          <Text style={styles.linkTitle}>Change my password</Text>
-          <Text style={styles.linkSub}>Update the password you use to log in</Text>
+          <Text style={styles.linkTitle}>Account settings</Text>
+          <Text style={styles.linkSub}>Change your username or password</Text>
         </View>
         <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
       </Pressable>

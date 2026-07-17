@@ -120,3 +120,12 @@ export function changeMyPassword(currentPassword: string, newPassword: string) {
     body: { currentPassword, newPassword },
   });
 }
+
+/** Logged-in user changes their own username (identifier). Requires the
+ *  current password. Server rejects if the identifier is already taken. */
+export function changeMyIdentifier(currentPassword: string, newIdentifier: string) {
+  return apiRequest<{ ok: true; identifier: string }>('/auth/change-identifier', {
+    method: 'POST',
+    body: { currentPassword, newIdentifier },
+  });
+}
