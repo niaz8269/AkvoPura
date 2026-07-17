@@ -6,20 +6,38 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
 import { usePetsSalesman } from '../state';
+import { useTrip } from '../../trips/state';
 
 type Nav = {
   navigate: (screen: string, params?: { customerId?: string }) => void;
 };
 
 export function PetsCustomersScreen({ navigation }: { navigation: Nav }) {
-  const tabBarHeight = useBottomTabBarHeight();
-  const { customers, vanLoad, billsForCustomer, currentTripNumber } = usePetsSalesman();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = insets.bottom + 24;
+  const { customers, bills, billsForCustomer } = usePetsSalesman();
+  const { activeTrip } = useTrip();
   const [query, setQuery] = useState('');
+
+  // Derive on-van counts from the active trip's initial load minus what's
+  // been sold and plus what's been returned so far this trip. If no active
+  // trip, we don't show the on-van chip at all — the manager hasn't
+  // assigned one yet (or the salesman closed the previous one).
+  const onVan = useMemo(() => {
+    if (!activeTrip) return null;
+    const sold600 = bills.reduce((s, b) => s + b.pet600Packs, 0);
+    const sold1500 = bills.reduce((s, b) => s + b.pet1500Packs, 0);
+    return {
+      pet600: Math.max(0, activeTrip.initialPet600Packs - sold600),
+      pet1500: Math.max(0, activeTrip.initialPet1500Packs - sold1500),
+      vehicle: activeTrip.vehicleLabel,
+    };
+  }, [activeTrip, bills]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -34,15 +52,34 @@ export function PetsCustomersScreen({ navigation }: { navigation: Nav }) {
 
   return (
     <Screen padded={false}>
-      <View style={styles.headerBar}>
-        <View style={styles.tripChip}>
-          <Text style={styles.tripChipText}>Trip #{currentTripNumber}</Text>
+      {onVan ? (
+        <View style={styles.headerBar}>
+          <View style={styles.tripChip}>
+            <Text style={styles.tripChipText}>Van {onVan.vehicle}</Text>
+          </View>
+          <Text style={styles.headerStat}>
+            On van: <Text style={styles.headerStatVal}>{onVan.pet600}</Text> × 600ml ·{' '}
+            <Text style={styles.headerStatVal}>{onVan.pet1500}</Text> × 1.5L
+          </Text>
         </View>
-        <Text style={styles.headerStat}>
-          On van: <Text style={styles.headerStatVal}>{vanLoad.pet600Packs}</Text> × 600ml ·{' '}
-          <Text style={styles.headerStatVal}>{vanLoad.pet1500Packs}</Text> × 1.5L
-        </Text>
-      </View>
+      ) : (
+        <Pressable
+          onPress={() => navigation.navigate('Assignments' as never)}
+          style={({ pressed }) => [
+            styles.noTripCard,
+            pressed ? { opacity: 0.85 } : null,
+          ]}
+        >
+          <Ionicons name="alert-circle" size={20} color={colors.warning} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.noTripCardTitle}>No active trip</Text>
+            <Text style={styles.noTripCardSub}>
+              Tap here to see your assignments and start one before generating bills.
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
+        </Pressable>
+      )}
 
       <TextInput
         value={query}
@@ -149,6 +186,35 @@ const styles = StyleSheet.create({
   headerStatVal: {
     color: colors.primaryDark,
     fontWeight: '800',
+  },
+  noTripText: {
+    fontSize: fontSizes.xs,
+    fontStyle: 'italic',
+    color: colors.textMuted,
+    flex: 1,
+  },
+  noTripCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.warning + '18',
+    padding: spacing.md,
+    marginHorizontal: spacing.md,
+    marginVertical: spacing.sm,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    borderColor: colors.warning,
+  },
+  noTripCardTitle: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  noTripCardSub: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+    lineHeight: 16,
   },
   tripChip: {
     paddingHorizontal: spacing.sm,

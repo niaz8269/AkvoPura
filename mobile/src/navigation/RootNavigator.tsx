@@ -8,11 +8,13 @@
  */
 
 import React, { useEffect } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 
-import { useAuth } from '../auth/AuthContext';
+import { useAuth, type ViewAsPayload, type ViewAsRole } from '../auth/AuthContext';
 import { LoginScreen } from '../screens/LoginScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
 import { RoleHomeScreen } from '../screens/RoleHomeScreen';
@@ -23,6 +25,8 @@ import { OwnerNavigator } from '../owner/navigator';
 import { CustomerNavigator } from '../customer/navigator';
 import { TutorialOverlay } from '../tutorial/TutorialOverlay';
 import { useTutorial } from '../tutorial/state';
+import { ActiveTripBanner } from '../trips/ActiveTripBanner';
+import { navigationRef } from './navigationRef';
 import { colors, fontSizes, spacing } from '../theme';
 import { strings } from '../i18n/strings';
 import type { Role } from '../auth/types';
@@ -43,7 +47,7 @@ const ROLE_SCREENS: Partial<Record<Role, React.ComponentType<any>>> = {
 };
 
 export function RootNavigator() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, viewAs } = useAuth();
   const { hasSeen, setActiveRole } = useTutorial();
 
   // When a user logs in (or restored on launch), kick off the tutorial if
@@ -59,14 +63,20 @@ export function RootNavigator() {
 
   if (isLoading) return <Splash />;
 
-  const AuthedScreen = (user && ROLE_SCREENS[user.role]) ?? RoleHomeScreen;
+  // Owner can temporarily "view as" a manager/salesman in a specific
+  // branch — swap the top navigator to that role's dashboard while keeping
+  // the auth user as owner. Data providers pick up the branch from
+  // effectiveBranch in AuthContext.
+  const effectiveRole =
+    user?.role === 'owner' && viewAs ? viewAs.role : user?.role;
+  const AuthedScreen = (user && effectiveRole && ROLE_SCREENS[effectiveRole]) ?? RoleHomeScreen;
 
   return (
     <>
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           {user ? (
-            <Stack.Screen name="Home" component={AuthedScreen} />
+            <Stack.Screen name="Root" component={AuthedScreen} />
           ) : (
             <>
               <Stack.Screen name="Login" component={LoginScreen} />
@@ -75,8 +85,41 @@ export function RootNavigator() {
           )}
         </Stack.Navigator>
       </NavigationContainer>
+      {user ? <ActiveTripBanner /> : null}
+      {user?.role === 'owner' && viewAs ? <ImpersonationBanner payload={viewAs} /> : null}
       <TutorialOverlay />
     </>
+  );
+}
+
+const VIEW_AS_LABELS: Record<ViewAsRole, string> = {
+  manager: 'Manager',
+  pets_salesman: 'Pets Salesman',
+  cans_gallons_salesman: 'Cans/Gallons Salesman',
+};
+
+function ImpersonationBanner({ payload }: { payload: ViewAsPayload }) {
+  const insets = useSafeAreaInsets();
+  const { setViewAs } = useAuth();
+  return (
+    <View
+      pointerEvents="box-none"
+      style={[styles.bannerWrap, { top: insets.top }]}
+    >
+      <View style={styles.banner}>
+        <Ionicons name="eye-outline" size={16} color={colors.textInverse} />
+        <Text style={styles.bannerText} numberOfLines={1}>
+          {VIEW_AS_LABELS[payload.role]} · {payload.branchName}
+        </Text>
+        <Pressable
+          onPress={() => setViewAs(null)}
+          style={({ pressed }) => [styles.exitBtn, pressed ? { opacity: 0.85 } : null]}
+          hitSlop={8}
+        >
+          <Text style={styles.exitBtnText}>Exit</Text>
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
@@ -110,5 +153,43 @@ const styles = StyleSheet.create({
   appNameUr: {
     fontSize: fontSizes.title,
     color: colors.primary,
+  },
+  bannerWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.primaryDark,
+    borderRadius: 999,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  bannerText: {
+    color: colors.textInverse,
+    fontSize: fontSizes.xs,
+    fontWeight: '800',
+  },
+  exitBtn: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 999,
+    marginLeft: 4,
+  },
+  exitBtnText: {
+    color: colors.textInverse,
+    fontSize: fontSizes.xs,
+    fontWeight: '800',
   },
 });

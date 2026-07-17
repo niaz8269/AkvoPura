@@ -17,7 +17,7 @@ import React, {
   type PropsWithChildren,
 } from 'react';
 
-import { demoComplaints, demoOrders, productCatalog } from './demoData';
+import { productCatalog } from './demoData';
 import { useAuth } from '../auth/AuthContext';
 import {
   listOrders,
@@ -127,9 +127,9 @@ const Ctx = createContext<State | undefined>(undefined);
 
 export function CustomerProvider({ children }: PropsWithChildren) {
   const { user } = useAuth();
-  const [orders, setOrders] = useState<CustomerOrder[]>(demoOrders);
+  const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
-  const [complaints, setComplaints] = useState<Complaint[]>(demoComplaints);
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
 
   // Customer self-service state — populated for customer-role users by

@@ -1,423 +1,303 @@
 /**
- * ManagerTripsScreen — auditable view of today's salesman activity.
+ * ManagerTripsScreen — assignment-based trip view.
  *
- * Two tabs (Cans/Gallons / Pets) — each shows the chronological list of
- * deliveries / bills / collections / returns with totals and reconciliation.
+ * Three buckets: Waiting for salesman (prepared, not started), On the road
+ * (active), Closed (ended/cancelled). Manager can prep a new trip via FAB
+ * and cancel a still-prepared trip inline.
  */
 
-import React, { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
-import { useCGSalesman } from '../../cg/state';
-import { usePetsSalesman } from '../../pets/state';
-import { initialVanLoad as cgInitialLoad } from '../../cg/demoData';
-import { initialPetVanLoad } from '../../pets/demoData';
+import { ApiError } from '../../api/client';
+import { cancelTrip, listTrips, type ApiTripSummary } from '../../api/trips';
 
-const canIcon = require('../../../assets/brand/14ltr-can.webp');
-const gallonIcon = require('../../../assets/brand/19ltr-gallon.webp');
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function ManagerTripsScreen({ navigation }: any) {
+  const [trips, setTrips] = useState<ApiTripSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-type Tab = 'cg' | 'pets';
+  const load = useCallback(async () => {
+    try {
+      setError(null);
+      const rows = await listTrips();
+      setTrips(rows);
+    } catch (e) {
+      const msg =
+        e instanceof ApiError
+          ? e.code === 'network_error'
+            ? 'Cannot reach the server. Check Wi-Fi.'
+            : `Server error: ${e.message}`
+          : 'Unknown error';
+      setError(msg);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
-export function ManagerTripsScreen() {
-  const [tab, setTab] = useState<Tab>('cg');
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  const waiting = trips.filter((t) => !t.openedAt && !t.cancelledAt);
+  const active = trips.filter((t) => t.openedAt && !t.closedAt && !t.cancelledAt);
+  const closed = trips.filter((t) => t.closedAt || t.cancelledAt);
+
+  const onCancel = (trip: ApiTripSummary) => {
+    Alert.alert(
+      'Cancel trip?',
+      `Cancel the ${trip.vehicleLabel} assignment for ${trip.salesman?.name ?? 'salesman'}? Salesman won't be able to start it.`,
+      [
+        { text: 'Keep', style: 'cancel' },
+        {
+          text: 'Cancel trip',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await cancelTrip(trip.id);
+              load();
+            } catch (e) {
+              const msg = e instanceof ApiError ? e.message || e.code : 'Failed';
+              Alert.alert('Could not cancel', msg);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <Screen padded={false}>
       <View style={styles.header}>
-        <Text style={styles.title}>Today's Trips</Text>
-
-        <View style={styles.tabRow}>
-          <TabPill label="Cans / Gallons" active={tab === 'cg'} onPress={() => setTab('cg')} />
-          <TabPill label="Pets" active={tab === 'pets'} onPress={() => setTab('pets')} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>Trips</Text>
+          <Text style={styles.subtitle}>
+            {waiting.length} waiting · {active.length} on the road · {closed.length} closed
+          </Text>
         </View>
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.body}>
-        {tab === 'cg' ? <CGSection /> : <PetsSection />}
+      <ScrollView
+        contentContainerStyle={styles.body}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              load();
+            }}
+          />
+        }
+      >
+        {loading && trips.length === 0 ? (
+          <View style={styles.centerPad}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : null}
+
+        {error ? (
+          <View style={styles.errorCard}>
+            <Ionicons name="warning" size={20} color={colors.danger} />
+            <Text style={styles.errorMsg}>{error}</Text>
+          </View>
+        ) : null}
+
+        {waiting.length > 0 ? (
+          <>
+            <Text style={styles.sectionTitle}>Waiting for salesman</Text>
+            {waiting.map((t) => (
+              <TripCard
+                key={t.id}
+                trip={t}
+                bucket="waiting"
+                onPress={() => navigation.navigate('TripDetail', { tripId: t.id })}
+                onCancel={() => onCancel(t)}
+              />
+            ))}
+          </>
+        ) : null}
+
+        {active.length > 0 ? (
+          <>
+            <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>On the road</Text>
+            {active.map((t) => (
+              <TripCard
+                key={t.id}
+                trip={t}
+                bucket="active"
+                onPress={() => navigation.navigate('TripDetail', { tripId: t.id })}
+              />
+            ))}
+          </>
+        ) : null}
+
+        {closed.length > 0 ? (
+          <>
+            <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>Closed</Text>
+            {closed.map((t) => (
+              <TripCard
+                key={t.id}
+                trip={t}
+                bucket="closed"
+                onPress={() => navigation.navigate('TripDetail', { tripId: t.id })}
+              />
+            ))}
+          </>
+        ) : null}
+
+        {!loading && trips.length === 0 && !error ? (
+          <View style={styles.emptyCard}>
+            <Ionicons name="car-outline" size={40} color={colors.textMuted} />
+            <Text style={styles.emptyTitle}>No trips yet</Text>
+            <Text style={styles.emptySub}>
+              Tap the + button to assign the first trip to one of your salesmen.
+            </Text>
+          </View>
+        ) : null}
       </ScrollView>
+
+      <Pressable
+        onPress={() => navigation.navigate('PrepareTrip')}
+        style={({ pressed }) => [styles.fab, pressed ? { opacity: 0.85 } : null]}
+        accessibilityLabel="Assign a trip"
+      >
+        <Ionicons name="add" size={28} color={colors.textInverse} />
+      </Pressable>
     </Screen>
   );
 }
 
-function TabPill({
-  label,
-  active,
+type Bucket = 'waiting' | 'active' | 'closed';
+
+function TripCard({
+  trip,
+  bucket,
   onPress,
+  onCancel,
 }: {
-  label: string;
-  active: boolean;
+  trip: ApiTripSummary;
+  bucket: Bucket;
   onPress: () => void;
+  onCancel?: () => void;
 }) {
+  const stateChip =
+    bucket === 'waiting'
+      ? { label: 'WAITING', bg: colors.warning + '22', color: colors.warning }
+      : bucket === 'active'
+        ? { label: 'ON THE ROAD', bg: colors.success + '22', color: colors.success }
+        : trip.cancelledAt
+          ? { label: 'CANCELLED', bg: colors.textMuted + '22', color: colors.textMuted }
+          : { label: 'CLOSED', bg: colors.textMuted + '22', color: colors.textMuted };
+
+  const borderColor =
+    bucket === 'waiting'
+      ? colors.warning
+      : bucket === 'active'
+        ? colors.success
+        : colors.textMuted;
+
+  const timeText = trip.openedAt
+    ? trip.closedAt
+      ? `${formatTime(trip.openedAt)} → ${formatTime(trip.closedAt)}`
+      : `Started ${formatTime(trip.openedAt)} · ${elapsedMin(trip.openedAt, null)}m`
+    : `Assigned ${formatTime(trip.preparedAt)}`;
+
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
-        styles.tab,
-        active ? styles.tabActive : null,
-        pressed && !active ? styles.tabPressed : null,
+        styles.card,
+        { borderLeftColor: borderColor },
+        pressed ? { opacity: 0.85 } : null,
       ]}
     >
-      <Text style={[styles.tabText, active ? styles.tabTextActive : null]}>
-        {label}
+      <View style={styles.cardHeader}>
+        <View style={styles.vehicleBadge}>
+          <Ionicons name="car" size={16} color={colors.primaryDark} />
+          <Text style={styles.vehicleText}>{trip.vehicleLabel}</Text>
+        </View>
+        <View style={[styles.statusChip, { backgroundColor: stateChip.bg }]}>
+          <Text style={[styles.statusText, { color: stateChip.color }]}>{stateChip.label}</Text>
+        </View>
+      </View>
+
+      <Text style={styles.salesmanName}>
+        {trip.salesman?.name ?? 'Salesman'}
+        <Text style={styles.roleTag}>
+          {' · ' + (trip.role === 'cg' ? 'Cans/Gallons' : 'Pets')}
+        </Text>
       </Text>
+
+      <View style={styles.metaRow}>
+        <Ionicons name="time-outline" size={14} color={colors.textMuted} />
+        <Text style={styles.metaText}>{timeText}</Text>
+      </View>
+
+      {bucket === 'waiting' ? (
+        <View style={styles.loadRow}>
+          <Ionicons name="cube-outline" size={14} color={colors.textMuted} />
+          <Text style={styles.metaText}>
+            {trip.role === 'cg'
+              ? `${trip.initialCansLoaded} cans · ${trip.initialGallonsLoaded} gallons`
+              : `${trip.initialPet600Packs} × 600ml · ${trip.initialPet1500Packs} × 1.5L`}
+          </Text>
+        </View>
+      ) : null}
+
+      {bucket === 'waiting' && onCancel ? (
+        <Pressable onPress={onCancel} style={styles.cancelBtn} hitSlop={8}>
+          <Ionicons name="close-circle-outline" size={16} color={colors.danger} />
+          <Text style={styles.cancelBtnText}>Cancel assignment</Text>
+        </Pressable>
+      ) : null}
     </Pressable>
   );
 }
 
-function CGSection() {
-  const cg = useCGSalesman();
-
-  const totalCash = cg.deliveries.reduce((s, d) => s + d.cashCollected, 0);
-  const totalBilled = cg.deliveries.reduce((s, d) => s + d.amountBilled, 0);
-  const cans = cg.deliveries.reduce((s, d) => s + d.cansDelivered, 0);
-  const gallons = cg.deliveries.reduce((s, d) => s + d.gallonsDelivered, 0);
-  const colCans = cg.collections.reduce((s, c) => s + c.cansCollected, 0);
-  const colGallons = cg.collections.reduce((s, c) => s + c.gallonsCollected, 0);
-
-  const events = [
-    ...cg.deliveries.map((d) => ({ kind: 'delivery' as const, ts: d.timestamp, data: d })),
-    ...cg.collections.map((c) => ({ kind: 'collection' as const, ts: c.timestamp, data: c })),
-  ].sort((a, b) => b.ts - a.ts);
-
-  return (
-    <>
-      <View style={styles.kpiRow}>
-        <Kpi label="Cash" value={`Rs ${totalCash.toLocaleString()}`} accent />
-        <Kpi label="Billed" value={`Rs ${totalBilled.toLocaleString()}`} />
-      </View>
-      <View style={styles.kpiRow}>
-        <Kpi label="Cans delivered" value={cans} icon={canIcon} />
-        <Kpi label="Gallons delivered" value={gallons} icon={gallonIcon} />
-      </View>
-      <View style={styles.kpiRow}>
-        <Kpi label="Empty cans collected" value={colCans} icon={canIcon} muted />
-        <Kpi label="Empty gallons collected" value={colGallons} icon={gallonIcon} muted />
-      </View>
-
-      <ReconCard
-        title="Van reconciliation"
-        rows={[
-          [
-            'Filled cans loaded → on van',
-            `${cgInitialLoad.filledCans} → ${cg.vanLoad.filledCans}`,
-          ],
-          [
-            'Filled gallons loaded → on van',
-            `${cgInitialLoad.filledGallons} → ${cg.vanLoad.filledGallons}`,
-          ],
-          ['Empty cans on van (collected)', String(cg.vanLoad.emptyCansAboard)],
-          ['Empty gallons on van (collected)', String(cg.vanLoad.emptyGallonsAboard)],
-        ]}
-      />
-
-      <SectionTitle text={`Activity feed — currently on trip #${cg.currentTripNumber}`} />
-      {events.length === 0 ? (
-        <Empty text="No trip activity yet today." />
-      ) : (
-        renderGrouped(
-          events,
-          (ev) => ev.data.tripNumber,
-          (ev) => {
-            const cust = cg.customerById(ev.data.customerId);
-            if (ev.kind === 'delivery') {
-              const d = ev.data;
-              return (
-                <View key={d.id} style={styles.eventRow}>
-                  <View style={[styles.kindChip, styles.chipDeliver]}>
-                    <Text style={styles.kindChipText}>Deliver</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.eventName}>{cust?.name ?? '—'}</Text>
-                    <Text style={styles.eventLine}>
-                      {d.cansDelivered} cans • {d.gallonsDelivered} gallons • Rs{' '}
-                      {d.cashCollected.toLocaleString()}/{d.amountBilled.toLocaleString()}
-                    </Text>
-                  </View>
-                  <Text style={styles.eventTime}>{formatTime(d.timestamp)}</Text>
-                </View>
-              );
-            }
-            const c = ev.data;
-            return (
-              <View key={c.id} style={styles.eventRow}>
-                <View style={[styles.kindChip, styles.chipCollect]}>
-                  <Text style={styles.kindChipText}>Collect</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.eventName}>{cust?.name ?? '—'}</Text>
-                  <Text style={styles.eventLine}>
-                    {c.cansCollected} cans • {c.gallonsCollected} gallons returned
-                  </Text>
-                </View>
-                <Text style={styles.eventTime}>{formatTime(c.timestamp)}</Text>
-              </View>
-            );
-          }
-        )
-      )}
-    </>
-  );
-}
-
-/** Groups timestamp-sorted events by trip number with a small section header
- *  before each group ("Trip #1", "Trip #2"). Returns React nodes. */
-function renderGrouped<T>(
-  items: T[],
-  tripOf: (item: T) => number,
-  renderItem: (item: T) => React.ReactNode
-): React.ReactNode {
-  if (items.length === 0) return null;
-  const groups = new Map<number, T[]>();
-  items.forEach((it) => {
-    const t = tripOf(it);
-    if (!groups.has(t)) groups.set(t, []);
-    groups.get(t)!.push(it);
-  });
-  // Sort by trip number desc so most-recent trip comes first
-  const sortedTrips = [...groups.keys()].sort((a, b) => b - a);
-  return sortedTrips.map((tripNum) => (
-    <React.Fragment key={`trip-${tripNum}`}>
-      <View style={styles.tripGroupHeader}>
-        <Text style={styles.tripGroupText}>Trip #{tripNum}</Text>
-        <View style={styles.tripGroupCount}>
-          <Text style={styles.tripGroupCountText}>
-            {groups.get(tripNum)!.length} {groups.get(tripNum)!.length === 1 ? 'event' : 'events'}
-          </Text>
-        </View>
-      </View>
-      {groups.get(tripNum)!.map(renderItem)}
-    </React.Fragment>
-  ));
-}
-
-function PetsSection() {
-  const pets = usePetsSalesman();
-
-  const totalCash = pets.bills.reduce((s, b) => s + b.cashCollected, 0);
-  const totalBilled = pets.bills.reduce((s, b) => s + b.amountBilled, 0);
-  const sold600 = pets.bills.reduce((s, b) => s + b.pet600Packs, 0);
-  const sold1500 = pets.bills.reduce((s, b) => s + b.pet1500Packs, 0);
-  const refunds = pets.returns.reduce((s, r) => s + r.refundAmount, 0);
-
-  const events = [
-    ...pets.bills.map((b) => ({ kind: 'bill' as const, ts: b.timestamp, data: b })),
-    ...pets.returns.map((r) => ({ kind: 'return' as const, ts: r.timestamp, data: r })),
-  ].sort((a, b) => b.ts - a.ts);
-
-  return (
-    <>
-      <View style={styles.kpiRow}>
-        <Kpi label="Cash" value={`Rs ${totalCash.toLocaleString()}`} accent />
-        <Kpi label="Billed" value={`Rs ${totalBilled.toLocaleString()}`} />
-      </View>
-      <View style={styles.kpiRow}>
-        <Kpi label="600ml packs sold" value={sold600} />
-        <Kpi label="1.5L packs sold" value={sold1500} />
-      </View>
-      <View style={styles.kpiRow}>
-        <Kpi label="Refunds issued" value={`Rs ${refunds.toLocaleString()}`} muted />
-      </View>
-
-      <ReconCard
-        title="Van reconciliation"
-        rows={[
-          [
-            '600 ml packs loaded → on van',
-            `${initialPetVanLoad.pet600Packs} → ${pets.vanLoad.pet600Packs}`,
-          ],
-          [
-            '1.5 L packs loaded → on van',
-            `${initialPetVanLoad.pet1500Packs} → ${pets.vanLoad.pet1500Packs}`,
-          ],
-        ]}
-      />
-
-      <SectionTitle text={`Activity feed — currently on trip #${pets.currentTripNumber}`} />
-      {events.length === 0 ? (
-        <Empty text="No trip activity yet today." />
-      ) : (
-        renderGrouped(
-          events,
-          (ev) => ev.data.tripNumber,
-          (ev) => {
-            const cust = pets.customerById(ev.data.customerId);
-            if (ev.kind === 'bill') {
-              const b = ev.data;
-              return (
-                <View key={b.id} style={styles.eventRow}>
-                  <View style={[styles.kindChip, styles.chipBill]}>
-                    <Text style={styles.kindChipText}>Bill</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.eventName}>{cust?.name ?? '—'}</Text>
-                    <Text style={styles.eventLine}>
-                      {b.pet600Packs} × 600ml • {b.pet1500Packs} × 1.5L • Rs{' '}
-                      {b.cashCollected.toLocaleString()}/{b.amountBilled.toLocaleString()}
-                    </Text>
-                  </View>
-                  <Text style={styles.eventTime}>{formatTime(b.timestamp)}</Text>
-                </View>
-              );
-            }
-            const r = ev.data;
-            return (
-              <View key={r.id} style={styles.eventRow}>
-                <View style={[styles.kindChip, styles.chipReturn]}>
-                  <Text style={styles.kindChipText}>Return</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.eventName}>{cust?.name ?? '—'}</Text>
-                  <Text style={styles.eventLine}>
-                    {r.pet600Packs} × 600ml • {r.pet1500Packs} × 1.5L • refund Rs{' '}
-                    {r.refundAmount.toLocaleString()}
-                  </Text>
-                </View>
-                <Text style={styles.eventTime}>{formatTime(r.timestamp)}</Text>
-              </View>
-            );
-          }
-        )
-      )}
-    </>
-  );
-}
-
-function Kpi({
-  label,
-  value,
-  icon,
-  accent,
-  muted,
-}: {
-  label: string;
-  value: number | string;
-  icon?: ReturnType<typeof require>;
-  accent?: boolean;
-  muted?: boolean;
-}) {
-  return (
-    <View style={[styles.kpi, accent ? styles.kpiAccent : null, muted ? styles.kpiMuted : null]}>
-      {icon ? <Image source={icon} style={styles.kpiIcon} resizeMode="contain" /> : null}
-      <Text
-        style={[
-          styles.kpiValue,
-          accent ? styles.kpiValueAccent : null,
-        ]}
-      >
-        {value}
-      </Text>
-      <Text style={[styles.kpiLabel, accent ? styles.kpiLabelAccent : null]}>{label}</Text>
-    </View>
-  );
-}
-
-function ReconCard({ title, rows }: { title: string; rows: [string, string][] }) {
-  return (
-    <View style={styles.reconCard}>
-      <Text style={styles.reconTitle}>{title}</Text>
-      {rows.map(([k, v], i) => (
-        <View
-          key={k}
-          style={[styles.reconRow, i === rows.length - 1 ? styles.reconRowLast : null]}
-        >
-          <Text style={styles.reconLabel}>{k}</Text>
-          <Text style={styles.reconValue}>{v}</Text>
-        </View>
-      ))}
-    </View>
-  );
-}
-
-function SectionTitle({ text }: { text: string }) {
-  return <Text style={styles.sectionTitle}>{text}</Text>;
-}
-
-function Empty({ text }: { text: string }) {
-  return <Text style={styles.empty}>{text}</Text>;
-}
-
-function formatTime(ts: number) {
-  const d = new Date(ts);
+function formatTime(iso: string) {
+  const d = new Date(iso);
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function elapsedMin(openedAt: string, closedAt: string | null): number {
+  const start = Date.parse(openedAt);
+  const end = closedAt ? Date.parse(closedAt) : Date.now();
+  return Math.max(0, Math.round((end - start) / 60000));
 }
 
 const styles = StyleSheet.create({
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.lg,
     paddingTop: 4,
-    paddingBottom: 4,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   title: { fontSize: fontSizes.title, fontWeight: '800', color: colors.primaryDark },
-  tabRow: { flexDirection: 'row', gap: spacing.sm },
-  tab: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.pill,
-    borderWidth: 1.5,
-    borderColor: colors.primaryLight,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-  },
-  tabActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primaryDark,
-  },
-  tabPressed: { backgroundColor: colors.surfaceMuted },
-  tabText: { fontSize: fontSizes.body, fontWeight: '700', color: colors.primaryDark },
-  tabTextActive: { color: colors.textInverse },
+  subtitle: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 2 },
 
-  body: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
-  kpiRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
-  kpi: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-    alignItems: 'center',
-  },
-  kpiAccent: { backgroundColor: colors.primary },
-  kpiMuted: { backgroundColor: colors.surfaceMuted },
-  kpiIcon: { width: 32, height: 32, marginBottom: spacing.xs },
-  kpiValue: {
-    fontSize: fontSizes.title,
-    fontWeight: '900',
-    color: colors.primaryDark,
-  },
-  kpiValueAccent: { color: colors.textInverse },
-  kpiLabel: { fontSize: fontSizes.xs, color: colors.textMuted, textAlign: 'center' },
-  kpiLabelAccent: { color: 'rgba(255,255,255,0.85)' },
-
-  reconCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  reconTitle: {
-    fontSize: fontSizes.body,
-    fontWeight: '800',
-    color: colors.primaryDark,
-    marginBottom: spacing.sm,
-  },
-  reconRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  reconRowLast: { borderBottomWidth: 0 },
-  reconLabel: { fontSize: fontSizes.sm, color: colors.text, flex: 1 },
-  reconValue: {
-    fontSize: fontSizes.sm,
-    fontWeight: '800',
-    color: colors.primaryDark,
-  },
+  body: { padding: spacing.lg, paddingBottom: spacing.xxl + 60 },
 
   sectionTitle: {
     fontSize: fontSizes.body,
@@ -425,62 +305,113 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
     marginBottom: spacing.sm,
   },
-  empty: {
-    fontStyle: 'italic',
-    color: colors.textMuted,
-    fontSize: fontSizes.sm,
-    paddingVertical: spacing.lg,
-    textAlign: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-  },
-  eventRow: {
+
+  centerPad: { padding: spacing.xxl, alignItems: 'center' },
+  errorCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.danger + '18',
     borderRadius: radii.md,
     padding: spacing.md,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
-  kindChip: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radii.pill,
-    minWidth: 64,
-    alignItems: 'center',
-  },
-  chipDeliver: { backgroundColor: colors.primary + '22' },
-  chipCollect: { backgroundColor: colors.warning + '22' },
-  chipBill: { backgroundColor: colors.accent + '22' },
-  chipReturn: { backgroundColor: colors.danger + '22' },
-  kindChipText: { fontSize: 10, fontWeight: '800', color: colors.primaryDark },
-  eventName: { fontSize: fontSizes.sm, fontWeight: '800', color: colors.text },
-  eventLine: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 2 },
-  eventTime: { fontSize: fontSizes.xs, color: colors.textMuted },
+  errorMsg: { flex: 1, fontSize: fontSizes.sm, color: colors.danger, fontWeight: '700' },
 
-  tripGroupHeader: {
+  emptyCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.xxl,
+    alignItems: 'center',
+    marginTop: spacing.lg,
+  },
+  emptyTitle: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+    marginTop: spacing.sm,
+  },
+  emptySub: {
+    fontSize: fontSizes.sm,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    borderLeftWidth: 4,
+  },
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.accent + '15',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: radii.md,
-    marginTop: spacing.sm,
-    marginBottom: 6,
+    marginBottom: spacing.sm,
   },
-  tripGroupText: {
-    fontSize: 12,
+  vehicleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radii.pill,
+  },
+  vehicleText: {
+    fontSize: fontSizes.sm,
     fontWeight: '900',
-    color: colors.accent,
+    color: colors.primaryDark,
     letterSpacing: 0.5,
   },
-  tripGroupCount: {
+  statusChip: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: radii.pill,
-    backgroundColor: 'rgba(0,0,0,0.05)',
   },
-  tripGroupCountText: { fontSize: 10, fontWeight: '700', color: colors.textMuted },
+  statusText: { fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
+
+  salesmanName: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  roleTag: { fontSize: fontSizes.sm, color: colors.textMuted, fontWeight: '600' },
+
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  loadRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  metaText: { fontSize: fontSizes.xs, color: colors.textMuted },
+
+  cancelBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: spacing.sm,
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.danger + '55',
+  },
+  cancelBtnText: { fontSize: fontSizes.xs, fontWeight: '800', color: colors.danger },
+
+  fab: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: spacing.lg,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
 });

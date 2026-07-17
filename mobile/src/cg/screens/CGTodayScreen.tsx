@@ -9,11 +9,12 @@
 import React, { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
 import { useCGSalesman } from '../state';
+import { useTrip } from '../../trips/state';
 import { CustomerCard } from '../components/CustomerCard';
 import { RouteTabs } from '../components/RouteTabs';
 import { CycleFilter, type CycleFilterValue } from '../components/CycleFilter';
@@ -28,9 +29,24 @@ type Nav = {
 };
 
 export function CGTodayScreen({ navigation }: { navigation: Nav }) {
-  const tabBarHeight = useBottomTabBarHeight();
-  const { customers, vanLoad, deliveries, deliveriesForCustomer, currentTripNumber } =
-    useCGSalesman();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = insets.bottom + 24;
+  const { customers, deliveries, deliveriesForCustomer } = useCGSalesman();
+  const { activeTrip } = useTrip();
+
+  // Derive live on-van counts from the active trip's initial load minus
+  // what's been delivered so far. If no active trip, don't show numbers —
+  // the manager hasn't assigned one yet.
+  const onVan = useMemo(() => {
+    if (!activeTrip) return null;
+    const cansDelivered = deliveries.reduce((s, d) => s + d.cansDelivered, 0);
+    const gallonsDelivered = deliveries.reduce((s, d) => s + d.gallonsDelivered, 0);
+    return {
+      cans: Math.max(0, activeTrip.initialCansLoaded - cansDelivered),
+      gallons: Math.max(0, activeTrip.initialGallonsLoaded - gallonsDelivered),
+      vehicle: activeTrip.vehicleLabel,
+    };
+  }, [activeTrip, deliveries]);
 
   const [cycle, setCycle] = useState<CycleFilterValue>('all');
   const [route, setRoute] = useState<CGRoute>('hospital');
@@ -65,14 +81,33 @@ export function CGTodayScreen({ navigation }: { navigation: Nav }) {
 
   return (
     <Screen padded={false}>
-      <View style={styles.vanBar}>
-        <View style={styles.tripChip}>
-          <Text style={styles.tripChipText}>Trip #{currentTripNumber}</Text>
+      {onVan ? (
+        <View style={styles.vanBar}>
+          <View style={styles.tripChip}>
+            <Text style={styles.tripChipText}>Van {onVan.vehicle}</Text>
+          </View>
+          <VanStat icon={canIcon} label="Cans" value={onVan.cans} />
+          <View style={styles.vanDivider} />
+          <VanStat icon={gallonIcon} label="Gallons" value={onVan.gallons} />
         </View>
-        <VanStat icon={canIcon} label="Cans" value={vanLoad.filledCans} />
-        <View style={styles.vanDivider} />
-        <VanStat icon={gallonIcon} label="Gallons" value={vanLoad.filledGallons} />
-      </View>
+      ) : (
+        <Pressable
+          onPress={() => navigation.navigate('Assignments' as never)}
+          style={({ pressed }) => [
+            styles.noTripCard,
+            pressed ? { opacity: 0.85 } : null,
+          ]}
+        >
+          <Ionicons name="alert-circle" size={20} color={colors.warning} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.noTripCardTitle}>No active trip</Text>
+            <Text style={styles.noTripCardSub}>
+              Tap here to see your assignments and start one before recording deliveries.
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
+        </Pressable>
+      )}
 
       <CycleFilter selected={cycle} onSelect={setCycle} counts={countByCycle} />
       <RouteTabs selected={route} onSelect={setRoute} countByRoute={countByRoute} />
@@ -147,6 +182,35 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+  },
+  noTripText: {
+    fontSize: fontSizes.xs,
+    fontStyle: 'italic',
+    color: colors.textMuted,
+    flex: 1,
+  },
+  noTripCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.warning + '18',
+    padding: spacing.md,
+    marginHorizontal: spacing.md,
+    marginVertical: spacing.sm,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    borderColor: colors.warning,
+  },
+  noTripCardTitle: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  noTripCardSub: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+    lineHeight: 16,
   },
   vanDivider: {
     width: 1,

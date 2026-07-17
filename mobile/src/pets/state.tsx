@@ -22,9 +22,10 @@ import React, {
   type PropsWithChildren,
 } from 'react';
 
-import { demoPetCustomers, initialPetVanLoad, petProducts } from './demoData';
+import { initialPetVanLoad, petProducts } from './demoData';
 import { usePricing } from '../pricing/state';
 import { useAuth } from '../auth/AuthContext';
+import { useTrip } from '../trips/state';
 import {
   createPetCustomer,
   listPetCustomers,
@@ -117,8 +118,10 @@ function nextId(prefix: string) {
 
 export function PetsSalesmanProvider({ children }: PropsWithChildren) {
   const { prices } = usePricing();
-  const { user } = useAuth();
-  const [customers, setCustomers] = useState<PetCustomer[]>(demoPetCustomers);
+  const { user, isImpersonating, effectiveBranch } = useAuth();
+  const { activeTrip } = useTrip();
+  // Boot empty; the real customer list comes from /pets/customers on mount.
+  const [customers, setCustomers] = useState<PetCustomer[]>([]);
   const [loading, setLoading] = useState(false);
   const [vanLoad, setVanLoad] = useState<PetVanLoad>(initialPetVanLoad);
   const [bills, setBills] = useState<BillEntry[]>([]);
@@ -130,10 +133,15 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
     setLoading(true);
     try {
       const date = todayLocal();
+      const customersFilter =
+        isImpersonating && effectiveBranch ? { branchSlug: effectiveBranch } : {};
+      const activityFilter = isImpersonating
+        ? { date, branchSlug: effectiveBranch }
+        : { date, salesmanId: user.id };
       const [freshCustomers, todayBills, todayReturns] = await Promise.all([
-        listPetCustomers(),
-        listPetBills({ date, salesmanId: user.id }),
-        listPetReturns({ date, salesmanId: user.id }),
+        listPetCustomers(customersFilter),
+        listPetBills(activityFilter),
+        listPetReturns(activityFilter),
       ]);
       setCustomers(freshCustomers);
       // Server returns most-recent-first; keep oldest-first for the UI.
@@ -144,9 +152,9 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, isImpersonating, effectiveBranch]);
 
-  // Re-fetch on user change.
+  // Re-fetch on user change or when owner switches branch impersonation.
   useEffect(() => {
     if (user) refresh();
   }, [user, refresh]);
@@ -198,8 +206,18 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
   );
 
   const recordBill = useCallback<State['recordBill']>((input) => {
+    if (isImpersonating) {
+      throw new Error(
+        'Read-only view. Exit impersonation (top banner) to record bills.',
+      );
+    }
     const customer = customers.find((c) => c.id === input.customerId);
     if (!customer) return null;
+    if (!activeTrip) {
+      throw new Error(
+        'You must start a trip before recording a bill. Tap "Start trip" on the home screen.',
+      );
+    }
 
     const unit600 = input.pricePet600 ?? priceFor(customer, 'pet600');
     const unit1500 = input.pricePet1500 ?? priceFor(customer, 'pet1500');
@@ -255,6 +273,7 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
       bankCollected,
       paymentReference: input.paymentReference,
       tripNumber: currentTripNumber,
+      tripId: activeTrip.id,
     })
       .then((real) => {
         setBills((prev) => prev.map((b) => (b.id === tempId ? real : b)));
@@ -264,7 +283,7 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
       });
 
     return entry;
-  }, [customers, priceFor, currentTripNumber, refresh]);
+  }, [customers, priceFor, currentTripNumber, activeTrip, isImpersonating, refresh]);
 
   const undoLastBill = useCallback<State['undoLastBill']>(() => {
     if (bills.length === 0) return null;
@@ -299,8 +318,18 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
   }, [bills, refresh]);
 
   const recordReturn = useCallback<State['recordReturn']>((input) => {
+    if (isImpersonating) {
+      throw new Error(
+        'Read-only view. Exit impersonation (top banner) to record returns.',
+      );
+    }
     const customer = customers.find((c) => c.id === input.customerId);
     if (!customer) return null;
+    if (!activeTrip) {
+      throw new Error(
+        'You must start a trip before recording a return. Tap "Start trip" on the home screen.',
+      );
+    }
 
     const unit600 = priceFor(customer, 'pet600');
     const unit1500 = priceFor(customer, 'pet1500');
@@ -340,6 +369,7 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
       pricePet1500: unit1500,
       reason: input.reason,
       tripNumber: currentTripNumber,
+      tripId: activeTrip.id,
     })
       .then((real) => {
         setReturns((prev) => prev.map((r) => (r.id === tempId ? real : r)));
@@ -349,7 +379,7 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
       });
 
     return entry;
-  }, [customers, priceFor, currentTripNumber, refresh]);
+  }, [customers, priceFor, currentTripNumber, activeTrip, isImpersonating, refresh]);
 
   const undoLastReturn = useCallback<State['undoLastReturn']>(() => {
     if (returns.length === 0) return null;
@@ -393,12 +423,13 @@ export function PetsSalesmanProvider({ children }: PropsWithChildren) {
   }, []);
 
   const resetDay = useCallback(() => {
-    setCustomers(demoPetCustomers);
+    setCustomers([]);
     setVanLoad(initialPetVanLoad);
     setBills([]);
     setReturns([]);
     setCurrentTripNumber(1);
-  }, []);
+    refresh();
+  }, [refresh]);
 
   const value = useMemo<State>(
     () => ({

@@ -2,11 +2,13 @@
  * Owner domain types — branch-summary shapes used across the Owner screens.
  *
  * The Owner sees aggregated numbers for each branch and a comparison view.
- * Real per-branch data comes from the live providers (Timergara) plus
- * synthetic stats for Shergarh until the backend lands.
+ * All branch data is fetched from the backend; branches themselves come
+ * from the /branches endpoint (owner can add/edit via Manage Branches).
  */
 
-export type BranchKey = 'timergara' | 'shergarh';
+/** Branch identifier — slug from the backend `branches` table. Was a
+ *  hardcoded union pre-B-5; now any string the server accepts. */
+export type BranchKey = string;
 
 export type BranchSummary = {
   key: BranchKey;
@@ -39,7 +41,14 @@ export type BranchSummary = {
   expensesApproved: number;
   expensesRejected: number;
   forwardedToOwner: number;
+  /** Legacy: all approved expenses summed (kept for backwards display). */
   expenseTotalApproved: number;
+  /** Approved expenses in plant categories (fuel, salary, repairs, etc.).
+   *  These are true operational costs — deducted to compute plant profit. */
+  plantExpenseTotal: number;
+  /** Approved expenses in the "other" category — treated as owner
+   *  withdrawals, not plant costs. Shown separately from plant profit. */
+  ownerWithdrawalTotal: number;
 };
 
 export type AuditLogKind =

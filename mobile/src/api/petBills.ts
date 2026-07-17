@@ -78,6 +78,7 @@ export type RecordBillInput = {
   bankCollected?: number;
   paymentReference?: string;
   tripNumber?: number;
+  tripId: string;
 };
 
 export async function recordPetBill(input: RecordBillInput) {

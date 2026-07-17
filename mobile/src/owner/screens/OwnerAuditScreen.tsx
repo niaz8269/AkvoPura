@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
-import { useOwnerData } from '../computed';
+import { useOwnerAuditLog } from '../computed';
 import type { AuditLogItem, AuditLogKind } from '../types';
 
 type Filter = 'all' | 'sales' | 'expenses';
@@ -25,7 +25,7 @@ const EXPENSE_KINDS: AuditLogKind[] = [
 ];
 
 export function OwnerAuditScreen() {
-  const { auditLog } = useOwnerData();
+  const auditLog = useOwnerAuditLog();
   const [filter, setFilter] = useState<Filter>('all');
 
   const visible = useMemo(() => {

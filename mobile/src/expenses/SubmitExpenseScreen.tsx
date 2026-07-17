@@ -36,15 +36,28 @@ const CATEGORY_ICONS: Record<ExpenseCategory, keyof typeof Ionicons.glyphMap> = 
   utilities: 'flash-outline',
   salary: 'cash-outline',
   raw_material: 'cube-outline',
+  vehicle_maintenance: 'car-sport-outline',
+  plant_maintenance: 'construct-outline',
+  marketing: 'megaphone-outline',
+  rent: 'home-outline',
+  insurance: 'shield-checkmark-outline',
+  refreshments: 'cafe-outline',
   other: 'ellipsis-horizontal-outline',
 };
 
 const CATEGORIES: ExpenseCategory[] = [
   'fuel',
   'food',
-  'repairs',
+  'refreshments',
   'utilities',
+  'repairs',
+  'vehicle_maintenance',
+  'plant_maintenance',
   'raw_material',
+  'salary',
+  'marketing',
+  'rent',
+  'insurance',
   'other',
 ];
 

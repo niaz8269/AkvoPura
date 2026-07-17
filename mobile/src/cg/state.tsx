@@ -18,12 +18,14 @@ import React, {
   type PropsWithChildren,
 } from 'react';
 
-import { demoCustomers, initialVanLoad } from './demoData';
+import { initialVanLoad } from './demoData';
 import { useAuth } from '../auth/AuthContext';
+import { useTrip } from '../trips/state';
 import {
   chargeCGCustomerLoss,
   createCGCustomer,
   listCGCustomers,
+  setCGCustomerNextVisit,
   updateCGCustomer,
 } from '../api/cgCustomers';
 import {
@@ -115,6 +117,19 @@ type CGSalesmanState = {
     gallons: number,
     totalCharge: number
   ) => void;
+  /** Salesman captures the customer's intent for the next visit during a
+   *  collection round. Pass `null` for a field to clear it. Auto-cleared
+   *  server-side when a delivery is recorded. */
+  setNextVisit: (
+    customerId: string,
+    input: {
+      nextVisitDate?: string | null;
+      nextVisitSkip?: boolean | null;
+      nextVisitCans?: number | null;
+      nextVisitGallons?: number | null;
+      nextVisitNote?: string | null;
+    },
+  ) => Promise<void>;
   resetDay: () => void;
 };
 
@@ -125,8 +140,13 @@ function nextId(prefix: string) {
 }
 
 export function CGSalesmanProvider({ children }: PropsWithChildren) {
-  const { user } = useAuth();
-  const [customers, setCustomers] = useState<CGCustomer[]>(demoCustomers);
+  const { user, viewAs, effectiveBranch, isImpersonating } = useAuth();
+  const { activeTrip } = useTrip();
+  // Boot empty; the real customer list comes from /cg/customers on mount.
+  // Baked demoCustomers were only useful pre-B-8 when the backend wasn't
+  // wired — now they masqueraded as real Timergara customers and confused
+  // owners impersonating a fresh branch.
+  const [customers, setCustomers] = useState<CGCustomer[]>([]);
   const [loading, setLoading] = useState(false);
   const [vanLoad, setVanLoad] = useState<VanLoad>(initialVanLoad);
   const [deliveries, setDeliveries] = useState<DeliveryEntry[]>([]);
@@ -135,24 +155,33 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
   const refreshCustomers = useCallback(async () => {
     setLoading(true);
     try {
-      const fresh = await listCGCustomers();
+      // Owner-impersonating: scope to the impersonated branch. Regular
+      // staff: server filters by their JWT branch, no arg needed.
+      const fresh = await listCGCustomers(
+        isImpersonating && effectiveBranch ? { branchSlug: effectiveBranch } : {},
+      );
       setCustomers(fresh);
     } catch {
       // Network down — keep current in-memory list (works offline).
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isImpersonating, effectiveBranch]);
 
   /** Load today's deliveries + collections from the server so a salesman
-   *  who switches devices mid-day sees their previous activity. */
+   *  who switches devices mid-day sees their previous activity. When the
+   *  owner is impersonating a salesman role, we don't have a specific
+   *  salesmanId — show the whole branch's activity for the day instead. */
   const refreshTodaysActivity = useCallback(async () => {
     if (!user) return;
     const date = todayLocal();
     try {
+      const filter = isImpersonating
+        ? { date, branchSlug: effectiveBranch }
+        : { date, salesmanId: user.id };
       const [todayDeliveries, todayCollections] = await Promise.all([
-        listCGDeliveries({ date, salesmanId: user.id }),
-        listCGCollections({ date, salesmanId: user.id }),
+        listCGDeliveries(filter),
+        listCGCollections(filter),
       ]);
       // Server returns most-recent-first; keep oldest-first order
       // the rest of the app expects.
@@ -161,7 +190,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
     } catch {
       // offline — leave whatever's in memory
     }
-  }, [user]);
+  }, [user, isImpersonating, effectiveBranch]);
 
   // Re-fetch customers + today's activity whenever the user changes.
   useEffect(() => {
@@ -215,8 +244,18 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
   );
 
   const recordDelivery = useCallback<CGSalesmanState['recordDelivery']>((input) => {
+    if (isImpersonating) {
+      throw new Error(
+        'Read-only view. Exit impersonation (top banner) to record deliveries.',
+      );
+    }
     const customer = customers.find((c) => c.id === input.customerId);
     if (!customer) return null;
+    if (!activeTrip) {
+      throw new Error(
+        'You must start a trip before recording a delivery. Tap "Start trip" on the home screen.',
+      );
+    }
 
     const billed =
       input.cansDelivered * customer.pricePerCan +
@@ -281,6 +320,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       bankCollected,
       paymentReference: input.paymentReference,
       tripNumber: currentTripNumber,
+      tripId: activeTrip.id,
     })
       .then((real) => {
         setDeliveries((prev) => prev.map((d) => (d.id === tempId ? real : d)));
@@ -291,7 +331,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       });
 
     return entry;
-  }, [customers, currentTripNumber, refreshCustomers, refreshTodaysActivity]);
+  }, [customers, currentTripNumber, activeTrip, isImpersonating, refreshCustomers, refreshTodaysActivity]);
 
   const undoLastDelivery = useCallback<CGSalesmanState['undoLastDelivery']>(() => {
     if (deliveries.length === 0) return null;
@@ -336,6 +376,16 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
   }, [deliveries, refreshCustomers, refreshTodaysActivity]);
 
   const recordCollection = useCallback((input: CollectionInput) => {
+    if (isImpersonating) {
+      throw new Error(
+        'Read-only view. Exit impersonation (top banner) to record collections.',
+      );
+    }
+    if (!activeTrip) {
+      throw new Error(
+        'You must start a trip before recording a collection. Tap "Start trip" on the home screen.',
+      );
+    }
     const tempId = nextId('c-pending');
     const cashCollected = Math.max(0, input.cashCollected ?? 0);
     const bankCollected = Math.max(0, input.bankCollected ?? 0);
@@ -379,6 +429,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       bankCollected,
       paymentReference: input.paymentReference,
       tripNumber: currentTripNumber,
+      tripId: activeTrip.id,
     })
       .then((real) => {
         setCollections((prev) => prev.map((c) => (c.id === tempId ? real : c)));
@@ -387,7 +438,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
         refreshCustomers();
         refreshTodaysActivity();
       });
-  }, [currentTripNumber, refreshCustomers, refreshTodaysActivity]);
+  }, [currentTripNumber, activeTrip, isImpersonating, refreshCustomers, refreshTodaysActivity]);
 
   const undoLastCollection = useCallback<CGSalesmanState['undoLastCollection']>(() => {
     if (collections.length === 0) return null;
@@ -446,6 +497,34 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
     [refreshCustomers]
   );
 
+  const setNextVisit = useCallback<CGSalesmanState['setNextVisit']>(
+    async (customerId, input) => {
+      // Optimistic local update so the chip appears instantly on the next
+      // screen render — reconciled with the server response.
+      setCustomers((prev) =>
+        prev.map((c) =>
+          c.id === customerId
+            ? {
+                ...c,
+                nextVisitDate: input.nextVisitDate ?? undefined,
+                nextVisitSkip: input.nextVisitSkip ?? undefined,
+                nextVisitCans: input.nextVisitCans ?? undefined,
+                nextVisitGallons: input.nextVisitGallons ?? undefined,
+                nextVisitNote: input.nextVisitNote ?? undefined,
+              }
+            : c,
+        ),
+      );
+      try {
+        await setCGCustomerNextVisit(customerId, input);
+      } catch {
+        // Server rejected — reconcile with the truth.
+        refreshCustomers();
+      }
+    },
+    [refreshCustomers],
+  );
+
   const chargeContainerLoss = useCallback<CGSalesmanState['chargeContainerLoss']>(
     (customerId, cans, gallons, totalCharge) => {
       // Optimistic; if the server rejects we re-fetch to recover.
@@ -483,12 +562,14 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
   );
 
   const resetDay = useCallback(() => {
-    setCustomers(demoCustomers);
+    setCustomers([]);
     setVanLoad(initialVanLoad);
     setDeliveries([]);
     setCollections([]);
     setCurrentTripNumber(1);
-  }, []);
+    refreshCustomers();
+    refreshTodaysActivity();
+  }, [refreshCustomers, refreshTodaysActivity]);
 
   const value = useMemo<CGSalesmanState>(
     () => ({
@@ -512,6 +593,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       startNewTrip,
       setPaymentCycle,
       chargeContainerLoss,
+      setNextVisit,
       resetDay,
     }),
     [
@@ -535,6 +617,7 @@ export function CGSalesmanProvider({ children }: PropsWithChildren) {
       startNewTrip,
       setPaymentCycle,
       chargeContainerLoss,
+      setNextVisit,
       resetDay,
     ]
   );

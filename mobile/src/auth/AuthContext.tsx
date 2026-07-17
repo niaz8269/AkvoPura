@@ -32,6 +32,19 @@ type LoginResponse = {
   };
 };
 
+/** Roles the owner may temporarily "view as" (act like a manager or a
+ *  salesman without logging out). Owner only — not persisted. */
+export type ViewAsRole = 'manager' | 'pets_salesman' | 'cans_gallons_salesman';
+
+/** Full impersonation payload: role AND branch. Owner picks both from
+ *  the Manage Branches / Branch Overview screen so they see exactly what
+ *  that role in that branch sees. */
+export type ViewAsPayload = {
+  role: ViewAsRole;
+  branchSlug: string;
+  branchName: string;
+};
+
 type AuthContextValue = {
   user: User | null;
   isLoading: boolean;
@@ -40,6 +53,17 @@ type AuthContextValue = {
     password: string,
   ) => Promise<{ ok: true } | { ok: false; reason: string }>;
   logout: () => Promise<void>;
+  /** Non-null only when the owner is impersonating a role for this session. */
+  viewAs: ViewAsPayload | null;
+  setViewAs: (payload: ViewAsPayload | null) => void;
+  /** Effective branch slug for data fetches. For staff = their own branch.
+   *  For owner = viewAs.branchSlug when impersonating, otherwise undefined
+   *  (owner without impersonation sees cross-branch or requires explicit
+   *  branchSlug on each call). */
+  effectiveBranch: string | undefined;
+  /** True when owner is impersonating a role and should be READ-ONLY
+   *  (cannot record deliveries / bills / etc. on someone else's behalf). */
+  isImpersonating: boolean;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -61,6 +85,11 @@ function normaliseUser(raw: LoginResponse['user']): User {
 export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewAs, setViewAsState] = useState<ViewAsPayload | null>(null);
+
+  const setViewAs = useCallback((payload: ViewAsPayload | null) => {
+    setViewAsState(payload);
+  }, []);
 
   // Restore session on app startup.
   useEffect(() => {
@@ -139,11 +168,24 @@ export function AuthProvider({ children }: PropsWithChildren) {
     await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
     setAuthToken(null);
     setUser(null);
+    setViewAsState(null);
   }, []);
 
+  const effectiveBranch = viewAs?.branchSlug ?? user?.branch;
+  const isImpersonating = !!viewAs && user?.role === 'owner';
+
   const value = useMemo<AuthContextValue>(
-    () => ({ user, isLoading, login, logout }),
-    [user, isLoading, login, logout],
+    () => ({
+      user,
+      isLoading,
+      login,
+      logout,
+      viewAs,
+      setViewAs,
+      effectiveBranch,
+      isImpersonating,
+    }),
+    [user, isLoading, login, logout, viewAs, setViewAs, effectiveBranch, isImpersonating],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

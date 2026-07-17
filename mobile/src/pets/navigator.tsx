@@ -1,23 +1,19 @@
 /**
- * Pets Salesman navigator.
+ * Pets Salesman navigator — left drawer.
  *
- *   PetsStack (native stack)
- *   ├── Tabs (bottom tab navigator)
- *   │     ├── Customers
- *   │     ├── Sell
- *   │     ├── Returns
- *   │     └── EndOfDay
- *   └── PetCustomerDetail
+ *   Customers / Sell / Returns / Orders / Expenses / End Day
+ *
+ * Each drawer entry wraps its own Stack; shared push screens
+ * (PetCustomerDetail, AddCustomer, SubmitExpense, OrderFulfillment) live
+ * inside the stack they're reached from.
  */
 
 import React from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors, fontSizes, spacing } from '../theme';
-import { useAuth } from '../auth/AuthContext';
+import { colors } from '../theme';
 import { PetsCustomersScreen } from './screens/PetsCustomersScreen';
 import { PetsSellScreen } from './screens/PetsSellScreen';
 import { PetsReturnsScreen } from './screens/PetsReturnsScreen';
@@ -28,103 +24,29 @@ import { SubmitExpenseScreen } from '../expenses/SubmitExpenseScreen';
 import { SalesmanExpensesScreen } from '../expenses/SalesmanExpensesScreen';
 import { SalesmanOrdersScreen } from '../orders/SalesmanOrdersScreen';
 import { OrderFulfillmentScreen } from '../orders/OrderFulfillmentScreen';
+import { RoleDrawerContent } from '../drawer/RoleDrawerContent';
+import { roleStackScreenOptions, roleRootHeader } from '../drawer/headerOptions';
+import { EndTripScreen } from '../trips/EndTripScreen';
+import { SalesmanAssignmentsScreen } from '../trips/SalesmanAssignmentsScreen';
 
 export type PetsStackParamList = {
-  Tabs: undefined;
+  Landing: undefined;
   PetCustomerDetail: { customerId: string };
   AddCustomer: undefined;
   SubmitExpense: undefined;
   OrderFulfillment: { orderId: string };
 };
 
+const Drawer = createDrawerNavigator();
 const Stack = createNativeStackNavigator<PetsStackParamList>();
-const Tab = createBottomTabNavigator();
 
-function HeaderRight() {
-  const { logout } = useAuth();
+function CustomersStack() {
   return (
-    <Pressable
-      onPress={logout}
-      style={({ pressed }) => [styles.logoutBtn, pressed ? styles.logoutPressed : null]}
-      accessibilityLabel="Logout"
-    >
-      <Ionicons name="log-out-outline" size={20} color={colors.primaryDark} />
-      <Text style={styles.logoutText}>Logout</Text>
-    </Pressable>
-  );
-}
-
-function Tabs() {
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerStyle: { backgroundColor: colors.surface },
-        headerTitleStyle: { color: colors.primaryDark, fontWeight: '800' },
-        headerRight: () => <HeaderRight />,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: { borderTopColor: colors.border, height: 64, paddingBottom: 8, paddingTop: 6 },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
-        tabBarIcon: ({ color, size }) => {
-          const map: Record<string, keyof typeof Ionicons.glyphMap> = {
-            Customers: 'people-outline',
-            Sell: 'cash-outline',
-            Returns: 'return-down-back-outline',
-            Orders: 'clipboard-outline',
-            Expenses: 'wallet-outline',
-            EndOfDay: 'checkmark-done-outline',
-          };
-          return <Ionicons name={map[route.name] ?? 'ellipse-outline'} size={size} color={color} />;
-        },
-      })}
-    >
-      <Tab.Screen
-        name="Customers"
-        component={PetsCustomersScreen}
-        options={{ title: 'Customers', headerTitle: 'Customers' }}
-      />
-      <Tab.Screen
-        name="Sell"
-        component={PetsSellScreen}
-        options={{ title: 'Sell', headerTitle: 'Generate bill' }}
-      />
-      <Tab.Screen
-        name="Returns"
-        component={PetsReturnsScreen}
-        options={{ title: 'Returns', headerTitle: 'Customer returns' }}
-      />
-      <Tab.Screen
-        name="Orders"
-        component={SalesmanOrdersScreen}
-        options={{ title: 'Orders', headerTitle: 'My orders' }}
-      />
-      <Tab.Screen
-        name="Expenses"
-        component={SalesmanExpensesScreen}
-        options={{ title: 'Expenses', headerTitle: 'My expenses' }}
-      />
-      <Tab.Screen
-        name="EndOfDay"
-        component={PetsEndOfDayScreen}
-        options={{ title: 'End Day', headerTitle: 'End of day' }}
-      />
-    </Tab.Navigator>
-  );
-}
-
-export function PetsSalesmanNavigator() {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.surface },
-        headerTitleStyle: { color: colors.primaryDark, fontWeight: '800' },
-        headerTintColor: colors.primaryDark,
-      }}
-    >
+    <Stack.Navigator screenOptions={roleStackScreenOptions}>
       <Stack.Screen
-        name="Tabs"
-        component={Tabs}
-        options={{ headerShown: false }}
+        name="Landing"
+        component={PetsCustomersScreen}
+        options={{ title: 'Customers', ...roleRootHeader }}
       />
       <Stack.Screen
         name="PetCustomerDetail"
@@ -136,10 +58,46 @@ export function PetsSalesmanNavigator() {
         component={PetsAddCustomerScreen}
         options={{ title: 'New customer' }}
       />
+    </Stack.Navigator>
+  );
+}
+
+function SellStack() {
+  return (
+    <Stack.Navigator screenOptions={roleStackScreenOptions}>
       <Stack.Screen
-        name="SubmitExpense"
-        component={SubmitExpenseScreen}
-        options={{ title: 'New expense' }}
+        name="Landing"
+        component={PetsSellScreen}
+        options={{ title: 'Generate bill', ...roleRootHeader }}
+      />
+      <Stack.Screen
+        name="PetCustomerDetail"
+        component={PetsCustomerDetailScreen}
+        options={{ title: 'Customer' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function ReturnsStack() {
+  return (
+    <Stack.Navigator screenOptions={roleStackScreenOptions}>
+      <Stack.Screen
+        name="Landing"
+        component={PetsReturnsScreen}
+        options={{ title: 'Customer returns', ...roleRootHeader }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function OrdersStack() {
+  return (
+    <Stack.Navigator screenOptions={roleStackScreenOptions}>
+      <Stack.Screen
+        name="Landing"
+        component={SalesmanOrdersScreen}
+        options={{ title: 'My orders', ...roleRootHeader }}
       />
       <Stack.Screen
         name="OrderFulfillment"
@@ -150,19 +108,140 @@ export function PetsSalesmanNavigator() {
   );
 }
 
-const styles = StyleSheet.create({
-  logoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    marginRight: spacing.sm,
-  },
-  logoutPressed: { opacity: 0.6 },
-  logoutText: {
-    fontSize: fontSizes.sm,
-    fontWeight: '700',
-    color: colors.primaryDark,
-  },
-});
+function ExpensesStack() {
+  return (
+    <Stack.Navigator screenOptions={roleStackScreenOptions}>
+      <Stack.Screen
+        name="Landing"
+        component={SalesmanExpensesScreen}
+        options={{ title: 'My expenses', ...roleRootHeader }}
+      />
+      <Stack.Screen
+        name="SubmitExpense"
+        component={SubmitExpenseScreen}
+        options={{ title: 'New expense' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function EndOfDayStack() {
+  return (
+    <Stack.Navigator screenOptions={roleStackScreenOptions}>
+      <Stack.Screen
+        name="Landing"
+        component={PetsEndOfDayScreen}
+        options={{ title: 'End of day', ...roleRootHeader }}
+      />
+      <Stack.Screen
+        name="SubmitExpense"
+        component={SubmitExpenseScreen}
+        options={{ title: 'New expense' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function AssignmentsStack() {
+  return (
+    <Stack.Navigator screenOptions={roleStackScreenOptions}>
+      <Stack.Screen
+        name="Landing"
+        component={SalesmanAssignmentsScreen}
+        options={{ title: 'My trips', ...roleRootHeader }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+export function PetsSalesmanNavigator() {
+  return (
+    <Drawer.Navigator
+      screenOptions={{
+        headerShown: false,
+        drawerActiveTintColor: colors.primary,
+        drawerInactiveTintColor: colors.textMuted,
+        drawerActiveBackgroundColor: colors.primary + '15',
+        drawerLabelStyle: { fontWeight: '700' },
+        drawerType: 'front',
+      }}
+      drawerContent={(props) => <RoleDrawerContent {...props} roleLabel="Pets Salesman" />}
+    >
+      <Drawer.Screen
+        name="Customers"
+        component={CustomersStack}
+        options={{
+          title: 'Customers',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="people-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Sell"
+        component={SellStack}
+        options={{
+          title: 'Sell',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="cash-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Returns"
+        component={ReturnsStack}
+        options={{
+          title: 'Returns',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="return-down-back-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Orders"
+        component={OrdersStack}
+        options={{
+          title: 'Orders',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="clipboard-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Expenses"
+        component={ExpensesStack}
+        options={{
+          title: 'Expenses',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="wallet-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="EndOfDay"
+        component={EndOfDayStack}
+        options={{
+          title: 'End Day',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="checkmark-done-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Assignments"
+        component={AssignmentsStack}
+        options={{
+          title: 'My trips',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="clipboard-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="EndTrip"
+        component={EndTripScreen}
+        options={{ title: 'End trip', drawerItemStyle: { display: 'none' } }}
+      />
+    </Drawer.Navigator>
+  );
+}

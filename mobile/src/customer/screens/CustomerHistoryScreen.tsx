@@ -25,6 +25,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
 import { useAuth } from '../../auth/AuthContext';
+import { useBranchName } from '../../branches/useBranchNames';
 import { useCustomerPortal } from '../state';
 import type { CustomerOrder, CustomerOrderStatus } from '../types';
 import { generateAndShareBill, type BillItem } from '../../billing/pdf';
@@ -139,6 +140,7 @@ function CGBillRow({
   branch?: string;
 }) {
   const [sharing, setSharing] = useState(false);
+  const nameForBranch = useBranchName();
 
   const onShare = async () => {
     if (!customer) return;
@@ -165,7 +167,7 @@ function CGBillRow({
         customerName: customer.name,
         customerAddress: customer.address,
         customerPhone: customer.phone,
-        branchName: branch === 'shergarh' ? 'Shergarh' : 'Timergara',
+        branchName: nameForBranch(branch),
         items,
         paid: delivery.cashCollected,
         credit: delivery.amountBilled - delivery.cashCollected,
@@ -174,7 +176,7 @@ function CGBillRow({
         Alert.alert('Sharing unavailable', 'This device does not support sharing files.');
       }
     } catch (err) {
-      Alert.alert('Could not generate PDF', String(err));
+      Alert.alert('Could not generate PDF', err instanceof Error ? err.message : 'Something went wrong.');
     } finally {
       setSharing(false);
     }
@@ -223,6 +225,7 @@ function PetBillRow({
   branch?: string;
 }) {
   const [sharing, setSharing] = useState(false);
+  const nameForBranch = useBranchName();
   const credit = bill.amountBilled - bill.cashCollected - bill.bankCollected;
 
   const onShare = async () => {
@@ -257,7 +260,7 @@ function PetBillRow({
         customerName: customer.name,
         customerAddress: customer.address,
         customerPhone: customer.phone,
-        branchName: branch === 'shergarh' ? 'Shergarh' : 'Timergara',
+        branchName: nameForBranch(branch),
         items,
         paid: bill.cashCollected + bill.bankCollected,
         credit: Math.max(0, credit),
@@ -266,7 +269,7 @@ function PetBillRow({
         Alert.alert('Sharing unavailable', 'This device does not support sharing files.');
       }
     } catch (err) {
-      Alert.alert('Could not generate PDF', String(err));
+      Alert.alert('Could not generate PDF', err instanceof Error ? err.message : 'Something went wrong.');
     } finally {
       setSharing(false);
     }

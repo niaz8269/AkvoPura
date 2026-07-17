@@ -21,7 +21,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Screen } from '../components';
 import { colors, fontSizes, radii, spacing } from '../theme';
@@ -55,7 +55,8 @@ const STATUS_LABEL: Record<ExpenseStatus, string> = {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function SalesmanExpensesScreen({ navigation }: any) {
-  const tabBarHeight = useBottomTabBarHeight();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = insets.bottom + 24;
   const [expenses, setExpenses] = useState<Expense[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);

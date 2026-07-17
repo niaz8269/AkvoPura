@@ -67,6 +67,28 @@ export function OwnerSettingsScreen({ navigation }: { navigation: any }) {
         <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
       </Pressable>
 
+      <Pressable
+        onPress={() => navigation.navigate('ExpenseAnalytics')}
+        style={({ pressed }) => [
+          styles.linkCard,
+          pressed ? { opacity: 0.85 } : null,
+        ]}
+      >
+        <Ionicons name="stats-chart-outline" size={20} color={colors.primary} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.linkTitle}>Expense analytics</Text>
+          <Text style={styles.linkSub}>Daily / weekly / monthly / yearly breakdown by category</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
+      </Pressable>
+
+      <View style={styles.switchHint}>
+        <Ionicons name="information-circle-outline" size={16} color={colors.textMuted} />
+        <Text style={styles.switchHintText}>
+          To view a branch as its Manager or Salesman, open <Text style={{ fontWeight: '800' }}>Branches</Text> and tap a branch card.
+        </Text>
+      </View>
+
       <Text style={styles.sectionTitle}>Default product prices</Text>
       <Text style={styles.sectionSub}>  </Text>
 
@@ -129,6 +151,7 @@ export function OwnerSettingsScreen({ navigation }: { navigation: any }) {
     </Screen>
   );
 }
+
 
 function RunCronButton() {
   const [busy, setBusy] = useState(false);
@@ -369,5 +392,21 @@ const styles = StyleSheet.create({
     color: colors.text,
     lineHeight: 20,
     marginTop: 4,
+  },
+  switchHint: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: colors.surfaceMuted,
+    padding: spacing.md,
+    borderRadius: radii.md,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  switchHintText: {
+    flex: 1,
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    lineHeight: 18,
   },
 });

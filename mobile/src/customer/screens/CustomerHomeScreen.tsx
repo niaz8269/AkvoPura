@@ -41,6 +41,11 @@ export function CustomerHomeScreen({ navigation }: { navigation: Nav }) {
   const heldCans = cgRecord?.emptyCansHeld ?? 0;
   const heldGallons = cgRecord?.emptyGallonsHeld ?? 0;
 
+  const myComplaints = user ? portal.complaintsForUser(user.id) : [];
+  const openComplaints = myComplaints.filter((c) => c.status === 'open' || c.status === 'in_review');
+  const inReviewCount = myComplaints.filter((c) => c.status === 'in_review').length;
+  const awaitingRating = myComplaints.filter((c) => c.status === 'resolved' && !c.rating).length;
+
   return (
     <Screen scroll>
       <View style={styles.brandRow}>
@@ -133,15 +138,46 @@ export function CustomerHomeScreen({ navigation }: { navigation: Nav }) {
         </View>
       ) : null}
 
-      <View style={styles.contactCard}>
-        <Ionicons name="call-outline" size={22} color={colors.primaryDark} />
+      <Pressable
+        onPress={() => navigation.navigate('Complaints')}
+        style={({ pressed }) => [
+          styles.complaintsCard,
+          openComplaints.length > 0 || awaitingRating > 0 ? styles.complaintsCardActive : null,
+          pressed ? { opacity: 0.9 } : null,
+        ]}
+      >
+        <View style={styles.complaintsIconWrap}>
+          <Ionicons
+            name="chatbubble-ellipses-outline"
+            size={22}
+            color={openComplaints.length > 0 ? colors.warning : colors.primaryDark}
+          />
+          {openComplaints.length > 0 ? (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{openComplaints.length}</Text>
+            </View>
+          ) : null}
+        </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.contactTitle}>Need help?</Text>
-          <Text style={styles.contactSub}>
-            File a complaint or chat with your salesman in the Complaints tab.
+          <Text style={styles.complaintsTitle}>
+            {openComplaints.length > 0
+              ? `${openComplaints.length} open complaint${openComplaints.length === 1 ? '' : 's'}`
+              : awaitingRating > 0
+                ? `${awaitingRating} resolved — rate the service`
+                : 'Complaints & feedback'}
+          </Text>
+          <Text style={styles.complaintsSub}>
+            {openComplaints.length > 0
+              ? inReviewCount > 0
+                ? `${inReviewCount} in review · tap to see updates`
+                : 'Waiting on manager — tap to check status'
+              : awaitingRating > 0
+                ? 'Your rating helps us improve the team.'
+                : 'File a new complaint or chat with your salesman.'}
           </Text>
         </View>
-      </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+      </Pressable>
     </Screen>
   );
 }
@@ -354,4 +390,50 @@ const styles = StyleSheet.create({
   },
   contactTitle: { fontSize: fontSizes.sm, fontWeight: '800', color: colors.primaryDark },
   contactSub: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 2 },
+
+  complaintsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginTop: spacing.lg,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.border,
+  },
+  complaintsCardActive: {
+    borderLeftColor: colors.warning,
+    backgroundColor: colors.warning + '10',
+  },
+  complaintsIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceMuted,
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.warning,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: colors.surface,
+  },
+  badgeText: {
+    color: colors.textInverse,
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  complaintsTitle: { fontSize: fontSizes.body, fontWeight: '800', color: colors.primaryDark },
+  complaintsSub: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 2 },
 });

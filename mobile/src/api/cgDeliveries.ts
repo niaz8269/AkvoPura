@@ -82,6 +82,8 @@ export type RecordDeliveryInput = {
   bankCollected?: number;
   paymentReference?: string;
   tripNumber?: number;
+  /** Required. The salesman's currently-open trip. */
+  tripId: string;
 };
 
 export async function recordCGDelivery(input: RecordDeliveryInput) {

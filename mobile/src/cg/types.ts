@@ -37,6 +37,15 @@ export type CGCustomer = {
   lastActivityAt?: number;
 
   notes?: string;
+
+  /** Next-visit intent captured during a collection visit. All fields are
+   *  cleared automatically when a delivery is recorded. `nextVisitDate` is
+   *  a YYYY-MM-DD local date; UI treats intent as stale once today > date. */
+  nextVisitDate?: string;
+  nextVisitSkip?: boolean;
+  nextVisitCans?: number;
+  nextVisitGallons?: number;
+  nextVisitNote?: string;
 };
 
 export type DeliveryEntry = {

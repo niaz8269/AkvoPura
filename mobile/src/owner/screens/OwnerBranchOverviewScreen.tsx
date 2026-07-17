@@ -6,37 +6,51 @@
  */
 
 import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
-import { useOwnerData } from '../computed';
+import { useOneBranchStats } from '../useBranchList';
 import { useProduction } from '../../production/state';
 import { useCGSalesman } from '../../cg/state';
 import { usePetsSalesman } from '../../pets/state';
 import { useManager } from '../../manager/state';
 import { generateAndShareDailyReport } from '../../analytics/dailyExport';
-import type { BranchKey, BranchSummary } from '../types';
+import { useAuth, type ViewAsRole } from '../../auth/AuthContext';
+import type { BranchKey } from '../types';
 
-type Route = { params: { branch: BranchKey } };
+type Route = { params: { branch: BranchKey; name?: string } };
 type Nav = { navigate: (screen: string, params?: object) => void };
 
 export function OwnerBranchOverviewScreen({ route, navigation }: { route: Route; navigation: Nav }) {
-  const { timergara, shergarh } = useOwnerData();
-  const summary = route.params.branch === 'timergara' ? timergara : shergarh;
-  const isLive = route.params.branch === 'timergara';
+  const slug = route.params.branch;
+  const displayName = route.params.name ?? slug;
+  const { summary, loading, refreshing, error, refresh } = useOneBranchStats(slug, displayName);
+  const { setViewAs } = useAuth();
 
   const cg = useCGSalesman();
   const pets = usePetsSalesman();
   const manager = useManager();
   const [exporting, setExporting] = useState(false);
 
+  const switchTo = (role: ViewAsRole, roleLabel: string) => {
+    Alert.alert(
+      `View as ${roleLabel}`,
+      `You'll see ${displayName}'s dashboard exactly as its ${roleLabel} sees it. A banner at the top lets you exit back to Owner. Read-only for salesman roles.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Switch',
+          onPress: () =>
+            setViewAs({ role, branchSlug: slug, branchName: displayName }),
+        },
+      ],
+    );
+  };
+
   const exportDay = async () => {
-    if (!isLive) {
-      Alert.alert('Not available', 'Day export only works on the live branch (Timergara).');
-      return;
-    }
+    if (!summary) return;
     setExporting(true);
     try {
       const ok = await generateAndShareDailyReport({
@@ -60,49 +74,119 @@ export function OwnerBranchOverviewScreen({ route, navigation }: { route: Route;
     }
   };
 
-  // Production / raw materials are app-wide (not yet branch-scoped) — only
-  // show real numbers on the live branch.
+  // Production / raw materials are still app-wide (not yet branch-scoped).
   const { batches, rawMaterials } = useProduction();
-  const isLiveBranch = isLive;
-  const todaysBatches = isLiveBranch
-    ? batches.filter((b) => {
-        const d = new Date(b.loggedAt);
-        const today = new Date();
-        return (
-          d.getFullYear() === today.getFullYear() &&
-          d.getMonth() === today.getMonth() &&
-          d.getDate() === today.getDate()
-        );
-      }).length
-    : 0;
-  const lowStockMaterials = isLiveBranch
-    ? rawMaterials.filter((r) => r.currentStock <= r.reorderThreshold)
-    : [];
+  const todaysBatches = batches.filter((b) => {
+    const d = new Date(b.loggedAt);
+    const today = new Date();
+    return (
+      d.getFullYear() === today.getFullYear() &&
+      d.getMonth() === today.getMonth() &&
+      d.getDate() === today.getDate()
+    );
+  }).length;
+  const lowStockMaterials = rawMaterials.filter((r) => r.currentStock <= r.reorderThreshold);
+
+  if (loading && !summary) {
+    return (
+      <Screen>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={{ marginTop: spacing.md, color: colors.textMuted }}>
+            Loading {displayName}…
+          </Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (!summary) {
+    return (
+      <Screen>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl }}>
+          <Ionicons name="warning" size={40} color={colors.danger} />
+          <Text style={{ marginTop: spacing.md, color: colors.danger, fontWeight: '700', textAlign: 'center' }}>
+            {error ?? 'Could not load branch data.'}
+          </Text>
+          <Pressable onPress={refresh} style={styles.retryBtn}>
+            <Text style={styles.retryBtnText}>Retry</Text>
+          </Pressable>
+        </View>
+      </Screen>
+    );
+  }
+
+  const hasActivity = summary.cashCollectedToday > 0 || summary.cgDeliveries > 0 || summary.petsBills > 0;
 
   return (
-    <Screen scroll>
+    <Screen padded={false}>
+      <ScrollView
+        contentContainerStyle={{ padding: spacing.lg }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+      >
       <View style={styles.headerCard}>
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.branchName}>{summary.name.en} Branch</Text>
           </View>
-          {isLive ? (
+          {hasActivity ? (
             <View style={styles.liveBadge}>
               <View style={styles.liveDot} />
               <Text style={styles.liveText}>LIVE</Text>
             </View>
           ) : (
             <View style={styles.demoBadge}>
-              <Text style={styles.demoText}>DEMO</Text>
+              <Text style={styles.demoText}>NO ACTIVITY</Text>
             </View>
           )}
         </View>
-        {!isLive ? (
+        {!hasActivity ? (
           <Text style={styles.demoNote}>
-            Synthetic numbers — real Shergarh data lights up once a Shergarh
-            salesman starts logging activity.
+            No activity logged for {summary.name.en} today. Numbers will light
+            up as soon as a salesman here logs a delivery or bill.
           </Text>
         ) : null}
+      </View>
+
+      <View style={styles.switchCard}>
+        <Text style={styles.switchTitle}>View {summary.name.en} as…</Text>
+        <Text style={styles.switchSub}>
+          Open this branch through the eyes of one of its staff. Read-only for
+          salesman views (you can't record a delivery on someone else's van).
+        </Text>
+        <Pressable
+          onPress={() => switchTo('manager', 'Manager')}
+          style={({ pressed }) => [styles.switchBtn, pressed ? { opacity: 0.85 } : null]}
+        >
+          <Ionicons name="briefcase-outline" size={20} color={colors.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.switchBtnTitle}>Manager</Text>
+            <Text style={styles.switchBtnSub}>Approvals, staff, orders, complaints</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
+        </Pressable>
+        <Pressable
+          onPress={() => switchTo('cans_gallons_salesman', 'Cans/Gallons Salesman')}
+          style={({ pressed }) => [styles.switchBtn, pressed ? { opacity: 0.85 } : null]}
+        >
+          <Ionicons name="water-outline" size={20} color={colors.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.switchBtnTitle}>Cans/Gallons Salesman</Text>
+            <Text style={styles.switchBtnSub}>Deliveries, collections, day summary</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
+        </Pressable>
+        <Pressable
+          onPress={() => switchTo('pets_salesman', 'Pets Salesman')}
+          style={({ pressed }) => [styles.switchBtn, pressed ? { opacity: 0.85 } : null]}
+        >
+          <Ionicons name="cube-outline" size={20} color={colors.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.switchBtnTitle}>Pets Salesman</Text>
+            <Text style={styles.switchBtnSub}>Bills, returns, end-of-day</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
+        </Pressable>
       </View>
 
       <View style={styles.cashCard}>
@@ -116,43 +200,39 @@ export function OwnerBranchOverviewScreen({ route, navigation }: { route: Route;
             {(summary.amountBilledToday - summary.cashCollectedToday).toLocaleString()}
           </Text>
         ) : null}
-        {isLive ? (
-          <Pressable
-            onPress={exporting ? undefined : exportDay}
-            style={({ pressed }) => [
-              styles.exportBtn,
-              pressed ? { opacity: 0.85 } : null,
-            ]}
-            accessibilityLabel="Export day report"
-          >
-            <Ionicons
-              name={exporting ? 'hourglass-outline' : 'share-outline'}
-              size={16}
-              color={colors.primaryDark}
-            />
-            <Text style={styles.exportBtnText}>
-              {exporting ? 'Generating PDF…' : 'Export day as PDF'}
-            </Text>
-          </Pressable>
-        ) : null}
-      </View>
-
-      {isLive ? (
         <Pressable
-          onPress={() => navigation.navigate('Leaderboard')}
+          onPress={exporting ? undefined : exportDay}
           style={({ pressed }) => [
-            styles.leaderboardLink,
+            styles.exportBtn,
             pressed ? { opacity: 0.85 } : null,
           ]}
+          accessibilityLabel="Export day report"
         >
-          <Ionicons name="trophy" size={20} color="#B58200" />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.leaderboardTitle}>Salesman leaderboard</Text>
-            <Text style={styles.leaderboardSub}>Today's ranking by cash collected</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
+          <Ionicons
+            name={exporting ? 'hourglass-outline' : 'share-outline'}
+            size={16}
+            color={colors.primaryDark}
+          />
+          <Text style={styles.exportBtnText}>
+            {exporting ? 'Generating PDF…' : 'Export day as PDF'}
+          </Text>
         </Pressable>
-      ) : null}
+      </View>
+
+      <Pressable
+        onPress={() => navigation.navigate('Leaderboard')}
+        style={({ pressed }) => [
+          styles.leaderboardLink,
+          pressed ? { opacity: 0.85 } : null,
+        ]}
+      >
+        <Ionicons name="trophy" size={20} color="#B58200" />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.leaderboardTitle}>Salesman leaderboard</Text>
+          <Text style={styles.leaderboardSub}>Today's ranking by cash collected</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
+      </Pressable>
 
       <Section title="Pets sales" subtitle=" ">
         <Row label="Bills today" value={summary.petsBills} />
@@ -186,19 +266,17 @@ export function OwnerBranchOverviewScreen({ route, navigation }: { route: Route;
           warn={summary.totalDebt > 0}
           last
         />
-        {isLive ? (
-          <Pressable
-            onPress={() => navigation.navigate('AgingReport')}
-            style={({ pressed }) => [
-              styles.agingLink,
-              pressed ? { opacity: 0.85 } : null,
-            ]}
-          >
-            <Ionicons name="stats-chart" size={18} color={colors.danger} />
-            <Text style={styles.agingLinkText}>View aging report</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.primaryDark} />
-          </Pressable>
-        ) : null}
+        <Pressable
+          onPress={() => navigation.navigate('AgingReport')}
+          style={({ pressed }) => [
+            styles.agingLink,
+            pressed ? { opacity: 0.85 } : null,
+          ]}
+        >
+          <Ionicons name="stats-chart" size={18} color={colors.danger} />
+          <Text style={styles.agingLinkText}>View aging report</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.primaryDark} />
+        </Pressable>
       </Section>
 
       <Section title="Production & inventory" subtitle="  ">
@@ -232,11 +310,51 @@ export function OwnerBranchOverviewScreen({ route, navigation }: { route: Route;
           warn={summary.forwardedToOwner > 0}
         />
         <Row
-          label="Approved total"
-          value={`Rs ${summary.expenseTotalApproved.toLocaleString()}`}
+          label="Plant expenses (operational)"
+          value={`Rs ${summary.plantExpenseTotal.toLocaleString()}`}
+        />
+        <Row
+          label="Owner withdrawals ('other')"
+          value={`Rs ${summary.ownerWithdrawalTotal.toLocaleString()}`}
           last
         />
       </Section>
+
+      <Section title="Profit snapshot (today)" subtitle="">
+        <Row
+          label="Cash collected"
+          value={`Rs ${summary.cashCollectedToday.toLocaleString()}`}
+        />
+        <Row
+          label="− Plant expenses"
+          value={`Rs ${summary.plantExpenseTotal.toLocaleString()}`}
+        />
+        <Row
+          label="= Plant profit"
+          value={`Rs ${(summary.cashCollectedToday - summary.plantExpenseTotal).toLocaleString()}`}
+          success={summary.cashCollectedToday - summary.plantExpenseTotal > 0}
+        />
+        <Row
+          label="− Owner withdrawals"
+          value={`Rs ${summary.ownerWithdrawalTotal.toLocaleString()}`}
+        />
+        <Row
+          label="= Net retained profit"
+          value={`Rs ${(
+            summary.cashCollectedToday -
+            summary.plantExpenseTotal -
+            summary.ownerWithdrawalTotal
+          ).toLocaleString()}`}
+          last
+          success={
+            summary.cashCollectedToday -
+              summary.plantExpenseTotal -
+              summary.ownerWithdrawalTotal >
+            0
+          }
+        />
+      </Section>
+      </ScrollView>
     </Screen>
   );
 }
@@ -424,4 +542,37 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.primaryDark,
   },
+  retryBtn: {
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.primary,
+    borderRadius: radii.pill,
+  },
+  retryBtnText: {
+    color: colors.textInverse,
+    fontWeight: '800',
+    fontSize: fontSizes.body,
+  },
+  switchCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.primaryLight,
+  },
+  switchTitle: { fontSize: fontSizes.body, fontWeight: '800', color: colors.primaryDark },
+  switchSub: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 2, marginBottom: spacing.sm, lineHeight: 16 },
+  switchBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surfaceMuted,
+    padding: spacing.md,
+    borderRadius: radii.md,
+    marginTop: 6,
+  },
+  switchBtnTitle: { fontSize: fontSizes.body, fontWeight: '800', color: colors.primaryDark },
+  switchBtnSub: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 2 },
 });

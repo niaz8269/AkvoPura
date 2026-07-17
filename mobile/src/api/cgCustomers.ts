@@ -27,6 +27,11 @@ export type ApiCGCustomer = {
   lastActivityAt: string | null;
   active: boolean;
   notes: string | null;
+  nextVisitDate: string | null;
+  nextVisitSkip: boolean | null;
+  nextVisitCans: number | null;
+  nextVisitGallons: number | null;
+  nextVisitNote: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -50,6 +55,11 @@ export function toCGCustomer(api: ApiCGCustomer): CGCustomer {
     pricePerGallon: api.pricePerGallon,
     lastActivityAt: api.lastActivityAt ? Date.parse(api.lastActivityAt) : undefined,
     notes: api.notes ?? undefined,
+    nextVisitDate: api.nextVisitDate ?? undefined,
+    nextVisitSkip: api.nextVisitSkip ?? undefined,
+    nextVisitCans: api.nextVisitCans ?? undefined,
+    nextVisitGallons: api.nextVisitGallons ?? undefined,
+    nextVisitNote: api.nextVisitNote ?? undefined,
   };
 }
 
@@ -120,6 +130,39 @@ export async function updateCGCustomer(
     body: input,
   });
   return toCGCustomer(row);
+}
+
+export type SetNextVisitInput = {
+  /** YYYY-MM-DD. Pass null to clear. */
+  nextVisitDate?: string | null;
+  nextVisitSkip?: boolean | null;
+  nextVisitCans?: number | null;
+  nextVisitGallons?: number | null;
+  nextVisitNote?: string | null;
+};
+
+export async function setCGCustomerNextVisit(
+  id: string,
+  input: SetNextVisitInput,
+): Promise<CGCustomer> {
+  const row = await apiRequest<ApiCGCustomer>(`/cg/customers/${id}/next-visit`, {
+    method: 'PATCH',
+    body: input,
+  });
+  return toCGCustomer(row);
+}
+
+/** Local YYYY-MM-DD for "today" — matches the format used server-side. */
+export function todayLocalDate(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Local YYYY-MM-DD for "tomorrow". */
+export function tomorrowLocalDate(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 export async function chargeCGCustomerLoss(

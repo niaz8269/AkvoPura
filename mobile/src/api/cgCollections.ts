@@ -64,6 +64,7 @@ export type RecordCollectionInput = {
   bankCollected?: number;
   paymentReference?: string;
   tripNumber?: number;
+  tripId: string;
 };
 
 export async function recordCGCollection(input: RecordCollectionInput) {

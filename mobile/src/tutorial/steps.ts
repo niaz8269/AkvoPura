@@ -21,7 +21,7 @@ export const TUTORIAL_STEPS: Partial<Record<Role, TutorialStep[]>> = {
       titleEn: 'Welcome, Owner',
       titleUr: '  ',
       bodyEn:
-        'You can see both branches (Timergara and Shergarh) and compare them side by side. Tap a branch on the Branches tab to drill in.',
+        'You can see every branch you have and compare them side by side. Tap a branch on the Branches tab to drill in.',
       bodyUr:
         '   (   )                  ',
     },

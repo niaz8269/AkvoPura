@@ -1,16 +1,19 @@
 /**
- * Owner navigator — bottom tabs (Branches / Combined / Forwarded / Audit)
- * with Branch overview pushed on top of the Branches tab.
+ * Owner navigator — left drawer.
+ *
+ *   Branches / Compare / Forwarded / Audit / Settings
+ *
+ * Each entry wraps its own Stack so pushed screens keep working. Forwarded
+ * shows a red badge when there are approvals waiting on the owner.
  */
 
 import React from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { StyleSheet, Text, View } from 'react-native';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors, fontSizes, spacing } from '../theme';
-import { useAuth } from '../auth/AuthContext';
+import { colors, fontSizes } from '../theme';
 import { OwnerLandingScreen } from './screens/OwnerLandingScreen';
 import { OwnerBranchOverviewScreen } from './screens/OwnerBranchOverviewScreen';
 import { OwnerCombinedScreen } from './screens/OwnerCombinedScreen';
@@ -22,11 +25,14 @@ import { OwnerManageBranchesScreen } from './screens/OwnerManageBranchesScreen';
 import { OwnerAddBranchScreen } from './screens/OwnerAddBranchScreen';
 import { OwnerEditBranchScreen } from './screens/OwnerEditBranchScreen';
 import { OwnerManageManagersScreen } from './screens/OwnerManageManagersScreen';
+import { OwnerExpenseAnalyticsScreen } from './screens/OwnerExpenseAnalyticsScreen';
 import { ManagerStaffAccountDetailScreen } from '../manager/screens/ManagerStaffAccountDetailScreen';
 import { ManagerAddStaffAccountScreen } from '../manager/screens/ManagerAddStaffAccountScreen';
 import { ChangeMyPasswordScreen } from '../screens/ChangeMyPasswordScreen';
 import { AgingReportScreen } from '../analytics/screens/AgingReportScreen';
 import { useManager } from '../manager/state';
+import { RoleDrawerContent } from '../drawer/RoleDrawerContent';
+import { roleStackScreenOptions, roleRootHeader } from '../drawer/headerOptions';
 import type { BranchKey } from './types';
 
 export type OwnerStackParamList = {
@@ -42,36 +48,15 @@ export type OwnerStackParamList = {
 
 const Stack = createNativeStackNavigator<OwnerStackParamList>();
 const SettingsStack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
-
-function HeaderRight() {
-  const { logout } = useAuth();
-  return (
-    <Pressable
-      onPress={logout}
-      style={({ pressed }) => [styles.logoutBtn, pressed ? styles.logoutPressed : null]}
-      accessibilityLabel="Logout"
-    >
-      <Ionicons name="log-out-outline" size={20} color={colors.primaryDark} />
-      <Text style={styles.logoutText}>Logout</Text>
-    </Pressable>
-  );
-}
+const Drawer = createDrawerNavigator();
 
 function BranchesStack() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.surface },
-        headerTitleStyle: { color: colors.primaryDark, fontWeight: '800' },
-        headerTintColor: colors.primaryDark,
-        headerRight: () => <HeaderRight />,
-      }}
-    >
+    <Stack.Navigator screenOptions={roleStackScreenOptions}>
       <Stack.Screen
         name="Landing"
         component={OwnerLandingScreen}
-        options={{ title: 'Owner' }}
+        options={{ title: 'Owner', ...roleRootHeader }}
       />
       <Stack.Screen
         name="BranchOverview"
@@ -112,90 +97,13 @@ function BranchesStack() {
   );
 }
 
-function ForwardedTabBadge() {
-  const { expenses } = useManager();
-  const count = expenses.filter((e) => e.status === 'forwarded').length;
-  if (count === 0) return null;
-  return <Text style={styles.badge}>{count}</Text>;
-}
-
-export function OwnerNavigator() {
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: { borderTopColor: colors.border, height: 64, paddingBottom: 8, paddingTop: 6 },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
-        tabBarIcon: ({ color, size, focused }) => {
-          const map: Record<string, keyof typeof Ionicons.glyphMap> = {
-            Branches: focused ? 'business' : 'business-outline',
-            CombinedTab: focused ? 'git-compare' : 'git-compare-outline',
-            Forwarded: focused ? 'arrow-up-circle' : 'arrow-up-circle-outline',
-            Audit: focused ? 'list' : 'list-outline',
-            Settings: focused ? 'settings' : 'settings-outline',
-          };
-          if (route.name === 'Forwarded') {
-            return (
-              <>
-                <Ionicons
-                  name={map[route.name] ?? 'ellipse-outline'}
-                  size={size}
-                  color={color}
-                />
-                <ForwardedTabBadge />
-              </>
-            );
-          }
-          return <Ionicons name={map[route.name] ?? 'ellipse-outline'} size={size} color={color} />;
-        },
-      })}
-    >
-      <Tab.Screen
-        name="Branches"
-        component={BranchesStack}
-        options={{ title: 'Branches' }}
-      />
-      <Tab.Screen
-        name="CombinedTab"
-        component={WrappedCombined}
-        options={{ title: 'Compare' }}
-      />
-      <Tab.Screen
-        name="Forwarded"
-        component={WrappedForwarded}
-        options={{ title: 'Forwarded' }}
-      />
-      <Tab.Screen
-        name="Audit"
-        component={WrappedAudit}
-        options={{ title: 'Audit' }}
-      />
-      <Tab.Screen
-        name="Settings"
-        component={WrappedSettings}
-        options={{ title: 'Settings' }}
-      />
-    </Tab.Navigator>
-  );
-}
-
-// Tabs need a header when entered directly (not via stack), so wrap each one.
 function WrappedCombined() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.surface },
-        headerTitleStyle: { color: colors.primaryDark, fontWeight: '800' },
-        headerTintColor: colors.primaryDark,
-        headerRight: () => <HeaderRight />,
-      }}
-    >
+    <Stack.Navigator screenOptions={roleStackScreenOptions}>
       <Stack.Screen
         name="Combined"
         component={OwnerCombinedScreen}
-        options={{ title: 'Branch comparison' }}
+        options={{ title: 'Branch comparison', ...roleRootHeader }}
       />
     </Stack.Navigator>
   );
@@ -203,18 +111,11 @@ function WrappedCombined() {
 
 function WrappedForwarded() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.surface },
-        headerTitleStyle: { color: colors.primaryDark, fontWeight: '800' },
-        headerTintColor: colors.primaryDark,
-        headerRight: () => <HeaderRight />,
-      }}
-    >
+    <Stack.Navigator screenOptions={roleStackScreenOptions}>
       <Stack.Screen
         name="Landing"
         component={OwnerForwardedScreen}
-        options={{ title: 'Forwarded approvals' }}
+        options={{ title: 'Forwarded approvals', ...roleRootHeader }}
       />
     </Stack.Navigator>
   );
@@ -222,18 +123,11 @@ function WrappedForwarded() {
 
 function WrappedAudit() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.surface },
-        headerTitleStyle: { color: colors.primaryDark, fontWeight: '800' },
-        headerTintColor: colors.primaryDark,
-        headerRight: () => <HeaderRight />,
-      }}
-    >
+    <Stack.Navigator screenOptions={roleStackScreenOptions}>
       <Stack.Screen
         name="Landing"
         component={OwnerAuditScreen}
-        options={{ title: 'Audit log' }}
+        options={{ title: 'Audit log', ...roleRootHeader }}
       />
     </Stack.Navigator>
   );
@@ -241,18 +135,11 @@ function WrappedAudit() {
 
 function WrappedSettings() {
   return (
-    <SettingsStack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.surface },
-        headerTitleStyle: { color: colors.primaryDark, fontWeight: '800' },
-        headerTintColor: colors.primaryDark,
-        headerRight: () => <HeaderRight />,
-      }}
-    >
+    <SettingsStack.Navigator screenOptions={roleStackScreenOptions}>
       <SettingsStack.Screen
         name="Landing"
         component={OwnerSettingsScreen}
-        options={{ title: 'Settings' }}
+        options={{ title: 'Settings', ...roleRootHeader }}
       />
       <SettingsStack.Screen
         name="ChangeMyPassword"
@@ -274,38 +161,112 @@ function WrappedSettings() {
         component={ManagerAddStaffAccountScreen}
         options={{ title: 'New manager' }}
       />
+      <SettingsStack.Screen
+        name="ExpenseAnalytics"
+        component={OwnerExpenseAnalyticsScreen}
+        options={{ title: 'Expense analytics' }}
+      />
     </SettingsStack.Navigator>
   );
 }
 
+function ForwardedDrawerLabel({ color, focused }: { color: string; focused: boolean }) {
+  const { expenses } = useManager();
+  const count = expenses.filter((e) => e.status === 'forwarded').length;
+  return (
+    <View style={styles.labelRow}>
+      <Text style={[styles.labelText, { color }, focused ? styles.labelTextFocused : null]}>
+        Forwarded
+      </Text>
+      {count > 0 ? (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{count}</Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+export function OwnerNavigator() {
+  return (
+    <Drawer.Navigator
+      screenOptions={{
+        headerShown: false,
+        drawerActiveTintColor: colors.primary,
+        drawerInactiveTintColor: colors.textMuted,
+        drawerActiveBackgroundColor: colors.primary + '15',
+        drawerLabelStyle: { fontWeight: '700' },
+        drawerType: 'front',
+      }}
+      drawerContent={(props) => <RoleDrawerContent {...props} roleLabel="Owner" />}
+    >
+      <Drawer.Screen
+        name="Branches"
+        component={BranchesStack}
+        options={{
+          title: 'Branches',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="business-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="CombinedTab"
+        component={WrappedCombined}
+        options={{
+          title: 'Compare',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="git-compare-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Forwarded"
+        component={WrappedForwarded}
+        options={{
+          title: 'Forwarded',
+          drawerLabel: (p) => <ForwardedDrawerLabel {...p} />,
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="arrow-up-circle-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Audit"
+        component={WrappedAudit}
+        options={{
+          title: 'Audit',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="list-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Settings"
+        component={WrappedSettings}
+        options={{
+          title: 'Settings',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="settings-outline" size={size} color={color} />
+          ),
+        }}
+      />
+    </Drawer.Navigator>
+  );
+}
+
 const styles = StyleSheet.create({
-  logoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    marginRight: spacing.sm,
-  },
-  logoutPressed: { opacity: 0.6 },
-  logoutText: {
-    fontSize: fontSizes.sm,
-    fontWeight: '700',
-    color: colors.primaryDark,
-  },
+  labelRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  labelText: { fontSize: fontSizes.body, fontWeight: '700' },
+  labelTextFocused: { fontWeight: '800' },
   badge: {
-    position: 'absolute',
-    top: -4,
-    right: -10,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: colors.danger,
-    color: colors.textInverse,
-    fontSize: 10,
-    fontWeight: '900',
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 10,
-    minWidth: 18,
-    textAlign: 'center',
-    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
   },
+  badgeText: { color: colors.textInverse, fontSize: 11, fontWeight: '900' },
 });

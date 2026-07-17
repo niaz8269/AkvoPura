@@ -1,10 +1,10 @@
 /**
- * useOwnerData — derive Owner-facing data from the existing providers.
+ * useOwnerAuditLog — derives the cross-branch audit feed from the shared
+ * providers (CG / Pets / Manager) that the logged-in owner sees.
  *
- * No new state — Timergara stats are computed live from CGSalesman + Pets +
- * Manager providers. Shergarh stats come from baked demo data until backend
- * lands. The audit log is recomputed each render from raw deliveries / bills /
- * returns / expenses; cheap because Slice 5 has hundreds of rows at most.
+ * NOTE: pre-B-5 this hook also returned per-branch summaries. Those are
+ * now fetched fresh per branch via `useAllBranchStats` / `useOneBranchStats`
+ * in `useBranchList.ts`, so this module only owns the audit-log derivation.
  */
 
 import { useMemo } from 'react';
@@ -12,72 +12,14 @@ import { useMemo } from 'react';
 import { useCGSalesman } from '../cg/state';
 import { usePetsSalesman } from '../pets/state';
 import { useManager } from '../manager/state';
-import { classifyChurn } from '../analytics/churn';
-import { shergarhDemoSummary } from './demoData';
-import type { AuditLogItem, BranchKey, BranchSummary } from './types';
+import type { AuditLogItem, BranchKey } from './types';
 
-export function useOwnerData() {
+export function useOwnerAuditLog(defaultBranch: BranchKey = 'timergara') {
   const cg = useCGSalesman();
   const pets = usePetsSalesman();
   const manager = useManager();
 
-  const timergara = useMemo<BranchSummary>(() => {
-    const cgCash = cg.deliveries.reduce((s, d) => s + d.cashCollected, 0);
-    const petsCash = pets.bills.reduce((s, b) => s + b.cashCollected, 0);
-    const cgBilled = cg.deliveries.reduce((s, d) => s + d.amountBilled, 0);
-    const petsBilled = pets.bills.reduce((s, b) => s + b.amountBilled, 0);
-
-    const cgDebt = cg.customers.reduce((s, c) => s + c.outstandingDebt, 0);
-    const petsDebt = pets.customers.reduce((s, c) => s + c.outstandingDebt, 0);
-
-    const cgInDebt = cg.customers.filter((c) => c.outstandingDebt > 0).length;
-    const petsInDebt = pets.customers.filter((c) => c.outstandingDebt > 0).length;
-
-    const isAtRisk = (lastActivityAt: number | undefined) => {
-      const r = classifyChurn(lastActivityAt);
-      return r === 'at_risk' || r === 'never';
-    };
-    const atRisk =
-      cg.customers.filter((c) => isAtRisk(c.lastActivityAt)).length +
-      pets.customers.filter((c) => isAtRisk(c.lastActivityAt)).length;
-
-    const expenses = manager.expenses;
-    const approved = expenses.filter((e) => e.status === 'approved');
-
-    return {
-      key: 'timergara',
-      name: { en: 'Timergara' },
-
-      cashCollectedToday: cgCash + petsCash,
-      amountBilledToday: cgBilled + petsBilled,
-
-      petsBills: pets.bills.length,
-      pet600PacksSold: pets.bills.reduce((s, b) => s + b.pet600Packs, 0),
-      pet1500PacksSold: pets.bills.reduce((s, b) => s + b.pet1500Packs, 0),
-
-      cgDeliveries: cg.deliveries.length,
-      cansDelivered: cg.deliveries.reduce((s, d) => s + d.cansDelivered, 0),
-      gallonsDelivered: cg.deliveries.reduce((s, d) => s + d.gallonsDelivered, 0),
-      emptyCansCollected: cg.collections.reduce((s, c) => s + c.cansCollected, 0),
-      emptyGallonsCollected: cg.collections.reduce((s, c) => s + c.gallonsCollected, 0),
-
-      customerCount: cg.customers.length + pets.customers.length,
-      customersInDebt: cgInDebt + petsInDebt,
-      customersAtRisk: atRisk,
-      totalDebt: cgDebt + petsDebt,
-
-      pendingExpenses: expenses.filter((e) => e.status === 'pending').length,
-      expensesApproved: approved.length,
-      expensesRejected: expenses.filter((e) => e.status === 'rejected').length,
-      forwardedToOwner: expenses.filter((e) => e.status === 'forwarded').length,
-      expenseTotalApproved: approved.reduce((s, e) => s + e.amount, 0),
-    };
-  }, [cg, pets, manager]);
-
-  const shergarh = shergarhDemoSummary;
-
-  // Audit log — derived from live + decided records.
-  const auditLog = useMemo<AuditLogItem[]>(() => {
+  return useMemo<AuditLogItem[]>(() => {
     const items: AuditLogItem[] = [];
 
     cg.deliveries.forEach((d) => {
@@ -85,7 +27,7 @@ export function useOwnerData() {
       items.push({
         id: 'al-cgd-' + d.id,
         ts: d.timestamp,
-        branch: 'timergara',
+        branch: defaultBranch,
         kind: 'cg_delivery',
         actor: 'Cans/Gallons Salesman',
         summary: `Delivered ${d.cansDelivered} cans + ${d.gallonsDelivered} gallons → ${cust?.name ?? 'customer'}`,
@@ -98,7 +40,7 @@ export function useOwnerData() {
       items.push({
         id: 'al-cgc-' + c.id,
         ts: c.timestamp,
-        branch: 'timergara',
+        branch: defaultBranch,
         kind: 'cg_collection',
         actor: 'Cans/Gallons Salesman',
         summary: `Collected ${c.cansCollected} cans + ${c.gallonsCollected} gallons ← ${cust?.name ?? 'customer'}`,
@@ -110,7 +52,7 @@ export function useOwnerData() {
       items.push({
         id: 'al-pb-' + b.id,
         ts: b.timestamp,
-        branch: 'timergara',
+        branch: defaultBranch,
         kind: 'pets_bill',
         actor: 'Pets Salesman',
         summary: `Sold ${b.pet600Packs} × 600ml + ${b.pet1500Packs} × 1.5L → ${cust?.name ?? 'customer'}`,
@@ -123,7 +65,7 @@ export function useOwnerData() {
       items.push({
         id: 'al-pr-' + r.id,
         ts: r.timestamp,
-        branch: 'timergara',
+        branch: defaultBranch,
         kind: 'pets_return',
         actor: 'Pets Salesman',
         summary: `Refunded ${r.pet600Packs} × 600ml + ${r.pet1500Packs} × 1.5L ← ${cust?.name ?? 'customer'}`,
@@ -132,18 +74,16 @@ export function useOwnerData() {
     });
 
     manager.expenses.forEach((e) => {
-      // Submission event
       items.push({
         id: 'al-es-' + e.id,
         ts: e.submittedAt,
-        branch: 'timergara',
+        branch: defaultBranch,
         kind: 'expense_submitted',
         actor: e.submittedBy,
         summary: `Submitted ${e.category} expense: ${e.notes ?? '(no note)'}`,
         amount: e.amount,
       });
 
-      // Decision event (if any)
       if (e.decidedAt && e.status !== 'pending') {
         const verb =
           e.status === 'approved' ? 'Approved' : e.status === 'rejected' ? 'Rejected' : 'Forwarded';
@@ -156,7 +96,7 @@ export function useOwnerData() {
         items.push({
           id: 'al-ed-' + e.id,
           ts: e.decidedAt,
-          branch: 'timergara',
+          branch: defaultBranch,
           kind,
           actor: 'Manager',
           summary: `${verb} ${e.category} expense from ${e.submittedBy}`,
@@ -166,12 +106,13 @@ export function useOwnerData() {
     });
 
     return items.sort((a, b) => b.ts - a.ts);
-  }, [cg, pets, manager]);
-
-  return { timergara, shergarh, auditLog, manager };
+  }, [cg, pets, manager, defaultBranch]);
 }
 
-/** Branch-key resolver for things like backgrounds / labels. */
-export function branchLabel(key: BranchKey) {
-  return key === 'timergara' ? 'Timergara' : 'Shergarh';
+/** Human-readable label for a branch slug. Prefer the actual display name
+ *  from the /branches API when you have it; falls back to a title-cased
+ *  slug. */
+export function branchLabel(key: BranchKey, fallback?: string) {
+  if (fallback) return fallback;
+  return key.charAt(0).toUpperCase() + key.slice(1);
 }

@@ -16,12 +16,12 @@ import { useAuth } from '../../auth/AuthContext';
 import { useCGSalesman } from '../../cg/state';
 import { usePetsSalesman } from '../../pets/state';
 import { useManager } from '../state';
-import { useAssignments } from '../../assignments/state';
 import { useCustomerPortal } from '../../customer/state';
 import { useProduction } from '../../production/state';
 import { generateAndShareDailyReport } from '../../analytics/dailyExport';
 import { runningOutSoon } from '../../analytics/inventoryForecast';
 import { strings } from '../../i18n/strings';
+import { useBranchName } from '../../branches/useBranchNames';
 import { HIGH_VALUE_THRESHOLD } from '../demoData';
 
 const brandLogo = require('../../../assets/brand/akvopura-brand.png');
@@ -35,9 +35,6 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
   const manager = useManager();
   const { pendingExpenses } = manager;
   const [exporting, setExporting] = useState(false);
-  const assignments = useAssignments();
-  const todayPets = assignments.petsSalesman();
-  const todayCg = assignments.cgSalesman();
   const { orders, complaints } = useCustomerPortal();
   const pendingOrders = orders.filter((o) => o.status === 'pending').length;
   const activeOrders = orders.filter(
@@ -73,17 +70,14 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
 
   const highValueExpenses = pendingExpenses.filter((e) => e.amount >= HIGH_VALUE_THRESHOLD).length;
 
-  const branchLabel = user?.branch
-    ? user.branch === 'timergara'
-      ? strings.branchTimergara
-      : strings.branchShergarh
-    : null;
+  const nameForBranch = useBranchName();
+  const branchName = nameForBranch(user?.branch);
 
   const exportDay = async () => {
     setExporting(true);
     try {
       const ok = await generateAndShareDailyReport({
-        branchName: user?.branch === 'shergarh' ? 'Shergarh' : 'Timergara',
+        branchName,
         cgCustomers: cg.customers,
         petCustomers: pets.customers,
         deliveries: cg.deliveries,
@@ -134,7 +128,7 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
           <Image source={brandLogo} style={styles.logo} resizeMode="contain" />
           <View style={{ flex: 1 }}>
             <Text style={styles.branchTitle}>
-              {branchLabel ? branchLabel.en : 'Branch'} Branch
+              {branchName || 'Branch'} Branch
             </Text>
             <Text style={styles.branchSub}>
               Manager: {user?.name}
@@ -176,37 +170,19 @@ export function ManagerHomeScreen({ navigation }: { navigation: Nav }) {
       </View>
 
       <Pressable
-        onPress={() => navigation.navigate('VanLoad')}
+        onPress={() => navigation.navigate('Trips')}
         style={({ pressed }) => [
           styles.assignmentsCard,
           pressed ? { opacity: 0.85 } : null,
         ]}
       >
         <View style={styles.assignmentsHeader}>
-          <Text style={styles.assignmentsTitle}>Today's assignments</Text>
+          <Text style={styles.assignmentsTitle}>Trips & assignments</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
         </View>
-        <View style={styles.assignmentsRow}>
-          <View style={styles.assignmentItem}>
-            <Ionicons name="cube-outline" size={16} color={colors.primary} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.assignmentLabel}>Pets van</Text>
-              <Text style={styles.assignmentName} numberOfLines={1}>
-                {todayPets ? todayPets.name : 'Unassigned'}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.assignmentDivider} />
-          <View style={styles.assignmentItem}>
-            <Ionicons name="water-outline" size={16} color={colors.accent} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.assignmentLabel}>C/G van</Text>
-              <Text style={styles.assignmentName} numberOfLines={1}>
-                {todayCg ? todayCg.name : 'Unassigned'}
-              </Text>
-            </View>
-          </View>
-        </View>
+        <Text style={styles.assignmentsSub}>
+          Assign trips to salesmen, see who's on the road, review closed trips.
+        </Text>
       </Pressable>
 
       <Pressable
@@ -664,6 +640,11 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.body,
     fontWeight: '800',
     color: colors.primaryDark,
+  },
+  assignmentsSub: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    marginTop: 4,
   },
   assignmentsRow: {
     flexDirection: 'row',

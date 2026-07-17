@@ -9,7 +9,7 @@
 import React, { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Screen } from '../../components';
 import { colors, fontSizes, radii, spacing } from '../../theme';
@@ -36,7 +36,8 @@ type UnifiedCustomer = {
 type Nav = { navigate: (screen: string) => void };
 
 export function ManagerCustomersScreen({ navigation }: { navigation: Nav }) {
-  const tabBarHeight = useBottomTabBarHeight();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = insets.bottom + 24;
   const cg = useCGSalesman();
   const pets = usePetsSalesman();
 

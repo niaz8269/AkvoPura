@@ -38,6 +38,7 @@ import type { CGCustomer, CGRoute } from '../types';
 import { generateAndShareBill, generateBillPdfBase64, type BillItem } from '../../billing/pdf';
 import { archiveBillEmail } from '../../api/billArchive';
 import { useAuth } from '../../auth/AuthContext';
+import { useBranchName } from '../../branches/useBranchNames';
 
 const canIcon = require('../../../assets/brand/14ltr-can.webp');
 const gallonIcon = require('../../../assets/brand/19ltr-gallon.webp');
@@ -146,6 +147,8 @@ function DeliveryRow({
   onRecord: (input: DeliveryInput) => DeliveryEntry | null;
 }) {
   const { user } = useAuth();
+  const nameForBranch = useBranchName();
+  const branchName = nameForBranch(user?.branch);
   const [cans, setCans] = useState(customer.usualCans);
   const [gallons, setGallons] = useState(customer.usualGallons);
   const [confirmed, setConfirmed] = useState(false);
@@ -197,7 +200,6 @@ function DeliveryRow({
           if (entry.gallonsDelivered > 0) {
             items.push({ name: '19 L gallon', qty: entry.gallonsDelivered, unitPrice: customer.pricePerGallon });
           }
-          const branchName = user?.branch === 'shergarh' ? 'Shergarh' : 'Timergara';
           const pdfBase64 = await generateBillPdfBase64({
             billNumber: entry.id.slice(-6).toUpperCase(),
             dateTime: entry.timestamp,
@@ -256,7 +258,7 @@ function DeliveryRow({
         customerName: customer.name,
         customerAddress: customer.address,
         customerPhone: customer.phone,
-        branchName: user?.branch === 'shergarh' ? 'Shergarh' : 'Timergara',
+        branchName,
         salesmanName: user?.name,
         items,
         paid: lastEntry.cashCollected,
@@ -266,7 +268,8 @@ function DeliveryRow({
         Alert.alert('Sharing unavailable', 'This device does not support sharing files.');
       }
     } catch (err) {
-      Alert.alert('Could not generate PDF', String(err));
+      const msg = err instanceof Error ? err.message : 'Something went wrong while making the receipt.';
+      Alert.alert('Could not generate PDF', msg);
     } finally {
       setSharing(false);
     }

@@ -6,8 +6,9 @@
  * manager has to approve before the customer can log in.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -21,17 +22,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { BilingualButton, Screen, TextField } from '../components';
 import { colors, fontSizes, radii, spacing } from '../theme';
 import { registerCustomer } from '../api/users';
+import { listBranches, type ApiBranch } from '../api/branches';
 import { ApiError } from '../api/client';
 
 type Nav = { goBack: () => void };
 
 type CustomerKind = 'cg' | 'pets';
-type Branch = 'timergara' | 'shergarh';
-
-const BRANCH_LABELS: Record<Branch, string> = {
-  timergara: 'Timergara',
-  shergarh: 'Shergarh',
-};
 
 const KIND_LABELS: Record<CustomerKind, { en: string; desc: string }> = {
   cg: {
@@ -49,8 +45,23 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
   const [identifier, setIdentifier] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [branch, setBranch] = useState<Branch>('timergara');
+  const [branch, setBranch] = useState<string>('');
+  const [branches, setBranches] = useState<ApiBranch[]>([]);
   const [kind, setKind] = useState<CustomerKind>('cg');
+
+  useEffect(() => {
+    listBranches()
+      .then((rows) => {
+        const active = rows.filter((b) => b.active);
+        setBranches(active);
+        if (active.length > 0 && !branch) setBranch(active[0].slug);
+      })
+      .catch(() => {
+        // Silent; user can still submit their identifier — server will
+        // reject and show a friendly error if no branch selected.
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [submitting, setSubmitting] = useState(false);
 
   const valid =
@@ -148,26 +159,30 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
         />
 
         <Text style={styles.sectionLabel}>BRANCH *</Text>
-        <View style={styles.pillRow}>
-          {(['timergara', 'shergarh'] as Branch[]).map((b) => {
-            const active = b === branch;
-            return (
-              <Pressable
-                key={b}
-                onPress={() => setBranch(b)}
-                style={({ pressed }) => [
-                  styles.pill,
-                  active ? styles.pillActive : null,
-                  pressed && !active ? { opacity: 0.7 } : null,
-                ]}
-              >
-                <Text style={[styles.pillText, active ? styles.pillTextActive : null]}>
-                  {BRANCH_LABELS[b]}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        {branches.length === 0 ? (
+          <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
+        ) : (
+          <View style={styles.pillRow}>
+            {branches.map((b) => {
+              const active = b.slug === branch;
+              return (
+                <Pressable
+                  key={b.slug}
+                  onPress={() => setBranch(b.slug)}
+                  style={({ pressed }) => [
+                    styles.pill,
+                    active ? styles.pillActive : null,
+                    pressed && !active ? { opacity: 0.7 } : null,
+                  ]}
+                >
+                  <Text style={[styles.pillText, active ? styles.pillTextActive : null]}>
+                    {b.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
 
         <Text style={styles.sectionLabel}>CUSTOMER TYPE *</Text>
         <View style={{ gap: spacing.sm }}>

@@ -55,22 +55,27 @@ function nextId(prefix: string) {
 }
 
 export function ManagerProvider({ children }: PropsWithChildren) {
-  const { user } = useAuth();
-  const [expenses, setExpenses] = useState<Expense[]>(demoExpenses);
+  const { user, isImpersonating, effectiveBranch } = useAuth();
+  // Boot empty; the real expense list comes from /expenses on mount.
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
-      const fresh = await listExpenses();
+      // Owner-impersonating-manager: scope expenses to the impersonated
+      // branch. Regular managers: server filters by their JWT branch.
+      const fresh = await listExpenses(
+        isImpersonating && effectiveBranch ? { branchSlug: effectiveBranch } : {},
+      );
       setExpenses(fresh);
     } catch {
       // offline — keep current in-memory state
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, isImpersonating, effectiveBranch]);
 
   useEffect(() => {
     if (user) refresh();

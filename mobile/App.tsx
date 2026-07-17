@@ -11,6 +11,7 @@ import { PricingProvider } from './src/pricing/state';
 import { AssignmentsProvider } from './src/assignments/state';
 import { ProductionProvider } from './src/production/state';
 import { TutorialProvider } from './src/tutorial/state';
+import { TripProvider } from './src/trips/state';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 export default function App() {
@@ -18,23 +19,25 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
-          <PricingProvider>
-            <PetsSalesmanProvider>
-              <CGSalesmanProvider>
-                <AssignmentsProvider>
-                  <ProductionProvider>
-                    <ManagerProvider>
-                      <CustomerProvider>
-                        <TutorialProvider>
-                          <RootNavigator />
-                        </TutorialProvider>
-                      </CustomerProvider>
-                    </ManagerProvider>
-                  </ProductionProvider>
-                </AssignmentsProvider>
-              </CGSalesmanProvider>
-            </PetsSalesmanProvider>
-          </PricingProvider>
+          <TripProvider>
+            <PricingProvider>
+              <PetsSalesmanProvider>
+                <CGSalesmanProvider>
+                  <AssignmentsProvider>
+                    <ProductionProvider>
+                      <ManagerProvider>
+                        <CustomerProvider>
+                          <TutorialProvider>
+                            <RootNavigator />
+                          </TutorialProvider>
+                        </CustomerProvider>
+                      </ManagerProvider>
+                    </ProductionProvider>
+                  </AssignmentsProvider>
+                </CGSalesmanProvider>
+              </PetsSalesmanProvider>
+            </PricingProvider>
+          </TripProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

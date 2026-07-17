@@ -32,6 +32,7 @@ import { usePetsSalesman } from '../state';
 import type { PetCustomer } from '../types';
 import { generateAndShareBill, generateBillPdfBase64, type BillItem } from '../../billing/pdf';
 import { useAuth } from '../../auth/AuthContext';
+import { useBranchName } from '../../branches/useBranchNames';
 import { archiveBillEmail } from '../../api/billArchive';
 
 export function PetsSellScreen() {
@@ -44,6 +45,8 @@ export function PetsSellScreen() {
     undoLastBill,
   } = usePetsSalesman();
   const { user } = useAuth();
+  const nameForBranch = useBranchName();
+  const branchName = nameForBranch(user?.branch);
 
   const [selected, setSelected] = useState<PetCustomer | null>(null);
   const [pet600, setPet600] = useState(0);
@@ -143,7 +146,7 @@ export function PetsSellScreen() {
         customerName: r.customer.name,
         customerAddress: r.customer.address,
         customerPhone: r.customer.phone,
-        branchName: user?.branch === 'shergarh' ? 'Shergarh' : 'Timergara',
+        branchName,
         salesmanName: user?.name,
         items,
         discount: r.discount,
@@ -153,7 +156,7 @@ export function PetsSellScreen() {
       await archiveBillEmail({
         customerName: r.customer.name,
         customerType: 'Pets',
-        branchName: user?.branch === 'shergarh' ? 'Shergarh' : 'Timergara',
+        branchName,
         salesmanName: user?.name,
         totalRs: r.amount,
         paidRs: r.cash,
@@ -233,7 +236,7 @@ export function PetsSellScreen() {
         customerName: lastReceipt.customer.name,
         customerAddress: lastReceipt.customer.address,
         customerPhone: lastReceipt.customer.phone,
-        branchName: user?.branch === 'shergarh' ? 'Shergarh' : 'Timergara',
+        branchName,
         salesmanName: user?.name,
         items,
         discount: lastReceipt.discount,
@@ -244,7 +247,8 @@ export function PetsSellScreen() {
         Alert.alert('Sharing unavailable', 'This device does not support sharing files.');
       }
     } catch (err) {
-      Alert.alert('Could not generate PDF', String(err));
+      const msg = err instanceof Error ? err.message : 'Something went wrong while making the receipt.';
+      Alert.alert('Could not generate PDF', msg);
     } finally {
       setSharing(false);
     }

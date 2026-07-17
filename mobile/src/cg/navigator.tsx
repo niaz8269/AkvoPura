@@ -1,23 +1,19 @@
 /**
- * Cans/Gallons Salesman navigator.
+ * Cans/Gallons Salesman navigator — left drawer.
  *
- *   CGStack (native stack)
- *   ├── Tabs (bottom tab navigator)
- *   │     ├── Today
- *   │     ├── Deliver
- *   │     ├── Collect
- *   │     └── EndOfDay
- *   └── CustomerDetail (pushed on top with back button)
+ *   Today / Deliver / Collect / Orders / Expenses / End Day
+ *
+ * Each drawer entry wraps its own Stack; shared push screens
+ * (CustomerDetail, AddCustomer, SubmitExpense, OrderFulfillment) live
+ * inside the stack they're reached from.
  */
 
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors, fontSizes, spacing } from '../theme';
-import { useAuth } from '../auth/AuthContext';
+import { colors } from '../theme';
 import { CGTodayScreen } from './screens/CGTodayScreen';
 import { CGDeliveryScreen } from './screens/CGDeliveryScreen';
 import { CGCollectionScreen } from './screens/CGCollectionScreen';
@@ -28,103 +24,29 @@ import { SubmitExpenseScreen } from '../expenses/SubmitExpenseScreen';
 import { SalesmanExpensesScreen } from '../expenses/SalesmanExpensesScreen';
 import { SalesmanOrdersScreen } from '../orders/SalesmanOrdersScreen';
 import { OrderFulfillmentScreen } from '../orders/OrderFulfillmentScreen';
+import { RoleDrawerContent } from '../drawer/RoleDrawerContent';
+import { roleStackScreenOptions, roleRootHeader } from '../drawer/headerOptions';
+import { EndTripScreen } from '../trips/EndTripScreen';
+import { SalesmanAssignmentsScreen } from '../trips/SalesmanAssignmentsScreen';
 
 export type CGStackParamList = {
-  Tabs: undefined;
+  Landing: undefined;
   CustomerDetail: { customerId: string };
   AddCustomer: undefined;
   SubmitExpense: undefined;
   OrderFulfillment: { orderId: string };
 };
 
+const Drawer = createDrawerNavigator();
 const Stack = createNativeStackNavigator<CGStackParamList>();
-const Tab = createBottomTabNavigator();
 
-function HeaderRight() {
-  const { logout } = useAuth();
+function TodayStack() {
   return (
-    <Pressable
-      onPress={logout}
-      style={({ pressed }) => [styles.logoutBtn, pressed ? styles.logoutPressed : null]}
-      accessibilityLabel="Logout"
-    >
-      <Ionicons name="log-out-outline" size={20} color={colors.primaryDark} />
-      <Text style={styles.logoutText}>Logout</Text>
-    </Pressable>
-  );
-}
-
-function Tabs() {
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerStyle: { backgroundColor: colors.surface },
-        headerTitleStyle: { color: colors.primaryDark, fontWeight: '800' },
-        headerRight: () => <HeaderRight />,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: { borderTopColor: colors.border, height: 64, paddingBottom: 8, paddingTop: 6 },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
-        tabBarIcon: ({ color, size }) => {
-          const map: Record<string, keyof typeof Ionicons.glyphMap> = {
-            Today: 'today-outline',
-            Deliver: 'cube-outline',
-            Collect: 'archive-outline',
-            Orders: 'clipboard-outline',
-            Expenses: 'wallet-outline',
-            EndOfDay: 'checkmark-done-outline',
-          };
-          return <Ionicons name={map[route.name] ?? 'ellipse-outline'} size={size} color={color} />;
-        },
-      })}
-    >
-      <Tab.Screen
-        name="Today"
-        component={CGTodayScreen}
-        options={{ title: 'Today', headerTitle: "Today's Trip" }}
-      />
-      <Tab.Screen
-        name="Deliver"
-        component={CGDeliveryScreen}
-        options={{ title: 'Deliver', headerTitle: 'Delivery sheet' }}
-      />
-      <Tab.Screen
-        name="Collect"
-        component={CGCollectionScreen}
-        options={{ title: 'Collect', headerTitle: 'Empty collection' }}
-      />
-      <Tab.Screen
-        name="Orders"
-        component={SalesmanOrdersScreen}
-        options={{ title: 'Orders', headerTitle: 'My orders' }}
-      />
-      <Tab.Screen
-        name="Expenses"
-        component={SalesmanExpensesScreen}
-        options={{ title: 'Expenses', headerTitle: 'My expenses' }}
-      />
-      <Tab.Screen
-        name="EndOfDay"
-        component={CGEndOfDayScreen}
-        options={{ title: 'End Day', headerTitle: 'End of day' }}
-      />
-    </Tab.Navigator>
-  );
-}
-
-export function CGSalesmanNavigator() {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.surface },
-        headerTitleStyle: { color: colors.primaryDark, fontWeight: '800' },
-        headerTintColor: colors.primaryDark,
-      }}
-    >
+    <Stack.Navigator screenOptions={roleStackScreenOptions}>
       <Stack.Screen
-        name="Tabs"
-        component={Tabs}
-        options={{ headerShown: false }}
+        name="Landing"
+        component={CGTodayScreen}
+        options={{ title: "Today's Trip", ...roleRootHeader }}
       />
       <Stack.Screen
         name="CustomerDetail"
@@ -136,10 +58,51 @@ export function CGSalesmanNavigator() {
         component={CGAddCustomerScreen}
         options={{ title: 'New customer' }}
       />
+    </Stack.Navigator>
+  );
+}
+
+function DeliverStack() {
+  return (
+    <Stack.Navigator screenOptions={roleStackScreenOptions}>
       <Stack.Screen
-        name="SubmitExpense"
-        component={SubmitExpenseScreen}
-        options={{ title: 'New expense' }}
+        name="Landing"
+        component={CGDeliveryScreen}
+        options={{ title: 'Delivery sheet', ...roleRootHeader }}
+      />
+      <Stack.Screen
+        name="CustomerDetail"
+        component={CGCustomerDetailScreen}
+        options={{ title: 'Customer' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function CollectStack() {
+  return (
+    <Stack.Navigator screenOptions={roleStackScreenOptions}>
+      <Stack.Screen
+        name="Landing"
+        component={CGCollectionScreen}
+        options={{ title: 'Empty collection', ...roleRootHeader }}
+      />
+      <Stack.Screen
+        name="CustomerDetail"
+        component={CGCustomerDetailScreen}
+        options={{ title: 'Customer' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function OrdersStack() {
+  return (
+    <Stack.Navigator screenOptions={roleStackScreenOptions}>
+      <Stack.Screen
+        name="Landing"
+        component={SalesmanOrdersScreen}
+        options={{ title: 'My orders', ...roleRootHeader }}
       />
       <Stack.Screen
         name="OrderFulfillment"
@@ -150,19 +113,140 @@ export function CGSalesmanNavigator() {
   );
 }
 
-const styles = StyleSheet.create({
-  logoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    marginRight: spacing.sm,
-  },
-  logoutPressed: { opacity: 0.6 },
-  logoutText: {
-    fontSize: fontSizes.sm,
-    fontWeight: '700',
-    color: colors.primaryDark,
-  },
-});
+function ExpensesStack() {
+  return (
+    <Stack.Navigator screenOptions={roleStackScreenOptions}>
+      <Stack.Screen
+        name="Landing"
+        component={SalesmanExpensesScreen}
+        options={{ title: 'My expenses', ...roleRootHeader }}
+      />
+      <Stack.Screen
+        name="SubmitExpense"
+        component={SubmitExpenseScreen}
+        options={{ title: 'New expense' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function EndOfDayStack() {
+  return (
+    <Stack.Navigator screenOptions={roleStackScreenOptions}>
+      <Stack.Screen
+        name="Landing"
+        component={CGEndOfDayScreen}
+        options={{ title: 'End of day', ...roleRootHeader }}
+      />
+      <Stack.Screen
+        name="SubmitExpense"
+        component={SubmitExpenseScreen}
+        options={{ title: 'New expense' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function AssignmentsStack() {
+  return (
+    <Stack.Navigator screenOptions={roleStackScreenOptions}>
+      <Stack.Screen
+        name="Landing"
+        component={SalesmanAssignmentsScreen}
+        options={{ title: 'My trips', ...roleRootHeader }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+export function CGSalesmanNavigator() {
+  return (
+    <Drawer.Navigator
+      screenOptions={{
+        headerShown: false,
+        drawerActiveTintColor: colors.primary,
+        drawerInactiveTintColor: colors.textMuted,
+        drawerActiveBackgroundColor: colors.primary + '15',
+        drawerLabelStyle: { fontWeight: '700' },
+        drawerType: 'front',
+      }}
+      drawerContent={(props) => <RoleDrawerContent {...props} roleLabel="Cans/Gallons Salesman" />}
+    >
+      <Drawer.Screen
+        name="Today"
+        component={TodayStack}
+        options={{
+          title: 'Today',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="today-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Deliver"
+        component={DeliverStack}
+        options={{
+          title: 'Deliver',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="cube-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Collect"
+        component={CollectStack}
+        options={{
+          title: 'Collect',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="archive-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Orders"
+        component={OrdersStack}
+        options={{
+          title: 'Orders',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="clipboard-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Expenses"
+        component={ExpensesStack}
+        options={{
+          title: 'Expenses',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="wallet-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="EndOfDay"
+        component={EndOfDayStack}
+        options={{
+          title: 'End Day',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="checkmark-done-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Assignments"
+        component={AssignmentsStack}
+        options={{
+          title: 'My trips',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="clipboard-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="EndTrip"
+        component={EndTripScreen}
+        options={{ title: 'End trip', drawerItemStyle: { display: 'none' } }}
+      />
+    </Drawer.Navigator>
+  );
+}

@@ -62,6 +62,7 @@ export type RecordReturnInput = {
   pricePet1500: number;
   reason?: string;
   tripNumber?: number;
+  tripId: string;
 };
 
 export async function recordPetReturn(input: RecordReturnInput) {

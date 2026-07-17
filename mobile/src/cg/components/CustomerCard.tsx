@@ -9,6 +9,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, fontSizes, radii, spacing } from '../../theme';
+import { todayLocalDate } from '../../api/cgCustomers';
 import type { CGCardStatus, CGCustomer } from '../types';
 
 type Props = {
@@ -34,6 +35,17 @@ export function CustomerCard({
   const showDeliveredRow =
     status === 'green' &&
     ((todaysCansDelivered ?? 0) > 0 || (todaysGallonsDelivered ?? 0) > 0);
+
+  // Next-visit intent applies only when the stored date is today. Anything
+  // older is stale — the salesman skipped a day or the customer never got
+  // visited and we don't want to act on outdated instructions.
+  const nvFresh = customer.nextVisitDate === todayLocalDate();
+  const nvSkip = nvFresh && customer.nextVisitSkip === true;
+  const nvCustom =
+    nvFresh &&
+    !nvSkip &&
+    (customer.nextVisitCans != null || customer.nextVisitGallons != null);
+  const nvNoteOnly = nvFresh && !nvSkip && !nvCustom && (customer.nextVisitNote?.length ?? 0) > 0;
 
   return (
     <Pressable
@@ -69,6 +81,29 @@ export function CustomerCard({
         </View>
         <View style={[styles.dot, { backgroundColor: palette.dot }]} />
       </View>
+
+      {nvSkip ? (
+        <View style={styles.nvChipSkip}>
+          <Text style={styles.nvChipSkipText}>SKIP TODAY</Text>
+          {customer.nextVisitNote ? (
+            <Text style={styles.nvNote}>{customer.nextVisitNote}</Text>
+          ) : null}
+        </View>
+      ) : nvCustom ? (
+        <View style={styles.nvChipCustom}>
+          <Text style={styles.nvChipCustomText}>
+            Wants {customer.nextVisitCans ?? customer.usualCans} cans ·{' '}
+            {customer.nextVisitGallons ?? customer.usualGallons} gallons
+          </Text>
+          {customer.nextVisitNote ? (
+            <Text style={styles.nvNote}>{customer.nextVisitNote}</Text>
+          ) : null}
+        </View>
+      ) : nvNoteOnly ? (
+        <View style={styles.nvChipNote}>
+          <Text style={styles.nvChipNoteText}>Note: {customer.nextVisitNote}</Text>
+        </View>
+      ) : null}
 
       {showDeliveredRow ? (
         <View style={styles.statusRow}>
@@ -213,5 +248,54 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.sm,
     fontStyle: 'italic',
     marginTop: spacing.sm,
+  },
+  nvChipSkip: {
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radii.md,
+    backgroundColor: colors.danger,
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+  },
+  nvChipSkipText: {
+    color: colors.textInverse,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  nvChipCustom: {
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radii.md,
+    backgroundColor: colors.warning,
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+  },
+  nvChipCustomText: {
+    color: colors.textInverse,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  nvChipNote: {
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+  },
+  nvChipNoteText: {
+    color: '#000',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  nvNote: {
+    color: colors.textInverse,
+    fontSize: 11,
+    fontStyle: 'italic',
+    marginTop: 2,
   },
 });

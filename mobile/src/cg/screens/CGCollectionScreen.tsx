@@ -27,6 +27,7 @@ import { SwipeToConfirm } from '../../components/SwipeToConfirm';
 import { colors, fontSizes, radii, spacing } from '../../theme';
 import { useCGSalesman } from '../state';
 import { CycleFilter, type CycleFilterValue } from '../components/CycleFilter';
+import { tomorrowLocalDate } from '../../api/cgCustomers';
 import type { CGCustomer } from '../types';
 
 const canIcon = require('../../../assets/brand/14ltr-can.webp');
@@ -39,6 +40,7 @@ export function CGCollectionScreen() {
     recordCollection,
     undoLastCollection,
     vanLoad,
+    setNextVisit,
   } = useCGSalesman();
 
   const [cycle, setCycle] = useState<CycleFilterValue>('all');
@@ -129,7 +131,7 @@ export function CGCollectionScreen() {
             <CollectionRow
               key={c.id}
               customer={c}
-              onRecord={(input) =>
+              onRecord={(input, nextVisit) => {
                 recordCollection({
                   customerId: c.id,
                   cansCollected: input.cans,
@@ -137,8 +139,24 @@ export function CGCollectionScreen() {
                   cashCollected: input.cash,
                   bankCollected: input.bank,
                   paymentReference: input.ref,
-                })
-              }
+                });
+                // Fire-and-forget: if the customer said anything about the
+                // next visit, persist it so tomorrow's route sheet knows.
+                const hasIntent =
+                  nextVisit.skip ||
+                  nextVisit.cans !== null ||
+                  nextVisit.gallons !== null ||
+                  nextVisit.note.trim().length > 0;
+                if (hasIntent) {
+                  void setNextVisit(c.id, {
+                    nextVisitDate: tomorrowLocalDate(),
+                    nextVisitSkip: nextVisit.skip || null,
+                    nextVisitCans: nextVisit.cans,
+                    nextVisitGallons: nextVisit.gallons,
+                    nextVisitNote: nextVisit.note.trim() || null,
+                  });
+                }
+              }}
             />
           ))
         )}
@@ -155,12 +173,19 @@ type CollectionPayload = {
   ref?: string;
 };
 
+type NextVisitPayload = {
+  skip: boolean;
+  cans: number | null;
+  gallons: number | null;
+  note: string;
+};
+
 function CollectionRow({
   customer,
   onRecord,
 }: {
   customer: CGCustomer;
-  onRecord: (input: CollectionPayload) => void;
+  onRecord: (input: CollectionPayload, nextVisit: NextVisitPayload) => void;
 }) {
   // Both cans + gallons default to 0. Salesman MUST actively bump them
   // up as they physically pick up empties — auto-defaulting to "all held"
@@ -173,6 +198,15 @@ function CollectionRow({
   const [confirmed, setConfirmed] = useState(false);
   const [resetKey, setResetKey] = useState(0);
 
+  // "Next visit" intent — what did the customer say about tomorrow?
+  //   nvMode = 'none' → usual quantities tomorrow
+  //   nvMode = 'skip' → customer said skip
+  //   nvMode = 'custom' → override tomorrow's cans/gallons
+  const [nvMode, setNvMode] = useState<'none' | 'skip' | 'custom'>('none');
+  const [nvCans, setNvCans] = useState(customer.usualCans);
+  const [nvGallons, setNvGallons] = useState(customer.usualGallons);
+  const [nvNote, setNvNote] = useState('');
+
   // Auto-reset after a successful confirmation — back to all-zero so the
   // next visit starts fresh.
   useEffect(() => {
@@ -184,10 +218,14 @@ function CollectionRow({
       setCashStr(null);
       setBankStr('');
       setPaymentRef('');
+      setNvMode('none');
+      setNvCans(customer.usualCans);
+      setNvGallons(customer.usualGallons);
+      setNvNote('');
       setResetKey((k) => k + 1);
     }, 1400);
     return () => clearTimeout(t);
-  }, [confirmed]);
+  }, [confirmed, customer.usualCans, customer.usualGallons]);
 
   const debt = customer.outstandingDebt;
   // Both cash + bank default to 0. Salesman MUST type any amount they
@@ -360,6 +398,44 @@ function CollectionRow({
         </View>
       ) : null}
 
+      <View style={styles.nvBox}>
+        <Text style={styles.nvTitle}>Next visit (tomorrow)</Text>
+        <View style={styles.nvToggleRow}>
+          <NvToggle label="Usual" active={nvMode === 'none'} onPress={() => setNvMode('none')} />
+          <NvToggle
+            label="Skip"
+            active={nvMode === 'skip'}
+            danger
+            onPress={() => setNvMode('skip')}
+          />
+          <NvToggle
+            label="Custom"
+            active={nvMode === 'custom'}
+            warn
+            onPress={() => setNvMode('custom')}
+          />
+        </View>
+        {nvMode === 'custom' ? (
+          <>
+            <QuantityStepper label="Cans tomorrow" value={nvCans} onChange={setNvCans} max={99} />
+            <QuantityStepper
+              label="Gallons tomorrow"
+              value={nvGallons}
+              onChange={setNvGallons}
+              max={99}
+            />
+          </>
+        ) : null}
+        <TextInput
+          value={nvNote}
+          onChangeText={setNvNote}
+          placeholder="Note (optional) — e.g. vacation until Friday"
+          placeholderTextColor={colors.textMuted}
+          style={styles.nvNoteInput}
+          maxLength={200}
+        />
+      </View>
+
       <View style={styles.swipeWrap}>
         <SwipeToConfirm
           key={resetKey}
@@ -370,18 +446,61 @@ function CollectionRow({
           done={confirmed}
           disabled={!canSwipe}
           onConfirm={() => {
-            onRecord({
-              cans,
-              gallons,
-              cash: cashAmt,
-              bank: bankAmt,
-              ref: paymentRef.trim() || undefined,
-            });
+            onRecord(
+              {
+                cans,
+                gallons,
+                cash: cashAmt,
+                bank: bankAmt,
+                ref: paymentRef.trim() || undefined,
+              },
+              {
+                skip: nvMode === 'skip',
+                cans: nvMode === 'custom' ? nvCans : null,
+                gallons: nvMode === 'custom' ? nvGallons : null,
+                note: nvNote,
+              },
+            );
             setConfirmed(true);
           }}
         />
       </View>
     </View>
+  );
+}
+
+function NvToggle({
+  label,
+  active,
+  danger,
+  warn,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  danger?: boolean;
+  warn?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.nvToggle,
+        active
+          ? danger
+            ? styles.nvToggleDangerActive
+            : warn
+              ? styles.nvToggleWarnActive
+              : styles.nvToggleOkActive
+          : null,
+        pressed && !active ? { opacity: 0.85 } : null,
+      ]}
+    >
+      <Text style={[styles.nvToggleText, active ? styles.nvToggleTextActive : null]}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -573,4 +692,58 @@ const styles = StyleSheet.create({
   headerStatMoney: { color: colors.success, fontWeight: '900' },
 
   swipeWrap: { marginTop: spacing.md },
+
+  nvBox: {
+    marginTop: spacing.md,
+    padding: spacing.md,
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  nvTitle: {
+    fontSize: fontSizes.sm,
+    fontWeight: '800',
+    color: colors.primaryDark,
+    marginBottom: spacing.sm,
+  },
+  nvToggleRow: { flexDirection: 'row', gap: 6 },
+  nvToggle: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.pill,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+  },
+  nvToggleOkActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primaryDark,
+  },
+  nvToggleDangerActive: {
+    backgroundColor: colors.danger,
+    borderColor: colors.danger,
+  },
+  nvToggleWarnActive: {
+    backgroundColor: colors.warning,
+    borderColor: colors.warning,
+  },
+  nvToggleText: {
+    fontSize: fontSizes.sm,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  nvToggleTextActive: { color: colors.textInverse },
+  nvNoteInput: {
+    marginTop: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    fontSize: fontSizes.sm,
+    color: colors.text,
+    backgroundColor: colors.surface,
+  },
 });
