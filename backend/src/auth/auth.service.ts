@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -101,5 +102,45 @@ export class AuthService {
       data: { passwordHash },
     });
     return { ok: true };
+  }
+
+  /**
+   * Self-service username (identifier) change. Requires the current
+   * password so a stolen-phone attacker can't rewrite the login. Rejects
+   * if the requested identifier is already in use.
+   */
+  async changeMyIdentifier(
+    userId: string,
+    currentPassword: string,
+    newIdentifier: string,
+  ) {
+    const trimmed = newIdentifier.trim();
+    if (trimmed.length < 3) {
+      throw new BadRequestException('Username must be at least 3 characters');
+    }
+    if (trimmed.length > 60) {
+      throw new BadRequestException('Username must be under 60 characters');
+    }
+    const user = await this.users.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    if (trimmed === user.identifier) {
+      // No-op — return current record without touching DB.
+      return { ok: true, identifier: user.identifier };
+    }
+    const ok = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!ok) throw new UnauthorizedException('Current password is wrong');
+    const existing = await this.prisma.user.findUnique({
+      where: { identifier: trimmed },
+      select: { id: true },
+    });
+    if (existing) {
+      throw new ConflictException('That username is already taken. Try a different one.');
+    }
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { identifier: trimmed },
+      select: { identifier: true },
+    });
+    return { ok: true, identifier: updated.identifier };
   }
 }

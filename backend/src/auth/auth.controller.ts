@@ -14,6 +14,7 @@ import { AuthService, type AuthenticatedUser } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ChangeIdentifierDto } from './dto/change-identifier.dto';
 import { UsersService } from '../users/users.service';
 
 @Controller('auth')
@@ -48,6 +49,19 @@ export class AuthController {
   async changePassword(@Req() req: Request, @Body() body: ChangePasswordDto) {
     const jwtUser = req.user as { sub: string };
     return this.auth.changeMyPassword(jwtUser.sub, body.currentPassword, body.newPassword);
+  }
+
+  /** Self-service username (identifier) change. Requires current password
+   *  so a stolen phone can't lock the real owner out of their account. */
+  @Post('change-identifier')
+  @UseGuards(AuthGuard('jwt'))
+  async changeIdentifier(@Req() req: Request, @Body() body: ChangeIdentifierDto) {
+    const jwtUser = req.user as { sub: string };
+    return this.auth.changeMyIdentifier(
+      jwtUser.sub,
+      body.currentPassword,
+      body.newIdentifier,
+    );
   }
 
   @Get('me')
