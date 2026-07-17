@@ -295,8 +295,15 @@ model Expense {
   decidedAt       DateTime?
   updatedAt       DateTime        @updatedAt
 
+  /// Auto-linked to the salesman's currently-open trip at submit time.
+  /// Enables per-trip reconciliation (Trip X spent Rs Y on fuel).
+  /// Null for expenses submitted outside an active trip.
+  tripId          String?
+  trip            Trip?           @relation(fields: [tripId], references: [id])
+
   @@index([branchSlug, status])
   @@index([branchSlug, submittedAt])
+  @@index([tripId])
   @@map("expenses")
 }
 
@@ -378,16 +385,30 @@ model Trip {
 
   notes               String?
 
-  openedAt            DateTime  @default(now())
+  /// When the MANAGER assigned this trip to the salesman. Set at creation
+  /// via POST /trips/prepare. Distinct from openedAt so we can show
+  /// "assignment queue" vs "actively driving" trips separately.
+  preparedAt          DateTime  @default(now())
+  /// User id of the manager who prepared it. Null for salesman-self-started
+  /// trips (legacy pre-refactor, or ad-hoc trips if we ever allow them).
+  preparedById        String?
+  /// When the SALESMAN actually started the trip. Null = still queued,
+  /// waiting for the salesman to tap "Start" from their Assignments list.
+  openedAt            DateTime?
   closedAt            DateTime?
+  /// Set when the manager cancels a prepared trip before it was started.
+  /// Terminal state alongside closedAt.
+  cancelledAt         DateTime?
 
   deliveries          CGDelivery[]
   collections         CGCollection[]
   bills               PetBill[]
   returns             PetReturn[]
+  expenses            Expense[]
 
-  @@index([branchSlug, openedAt])
-  @@index([salesmanId, openedAt])
+  @@index([branchSlug, preparedAt])
+  @@index([salesmanId, preparedAt])
+  @@index([openedAt])
   @@index([closedAt])
   @@map("trips")
 }

@@ -9,9 +9,11 @@ import { TripRole } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 
-export type StartTripParams = {
+export type PrepareTripParams = {
   salesmanId: string;
-  branchSlug: string;
+  /** Optional gate — if set (manager), rejects prepping into another
+   *  branch. Owner leaves this null to allow cross-branch prep. */
+  gateBranchSlug?: string;
   role: TripRole;
   vehicleLabel: string;
   initialCansLoaded?: number;
@@ -19,6 +21,7 @@ export type StartTripParams = {
   initialPet600Packs?: number;
   initialPet1500Packs?: number;
   notes?: string;
+  preparedById: string;
 };
 
 export type EndTripParams = {
@@ -38,47 +41,81 @@ export type EndTripParams = {
 export class TripsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Returns the currently-open trip for a salesman, or null. */
+  /** Currently-open trip for a salesman (started, not yet closed). */
   activeForSalesman(salesmanId: string) {
     return this.prisma.trip.findFirst({
-      where: { salesmanId, closedAt: null },
+      where: {
+        salesmanId,
+        openedAt: { not: null },
+        closedAt: null,
+        cancelledAt: null,
+      },
       orderBy: { openedAt: 'desc' },
     });
   }
 
+  /** Prepared trips waiting for this salesman to start. Sorted oldest-first
+   *  so the salesman naturally picks up the earliest assignment first. */
+  assignedForSalesman(salesmanId: string) {
+    return this.prisma.trip.findMany({
+      where: {
+        salesmanId,
+        openedAt: null,
+        cancelledAt: null,
+      },
+      include: {
+        salesman: { select: { id: true, name: true, role: true } },
+      },
+      orderBy: { preparedAt: 'asc' },
+    });
+  }
+
   /** Guard used by delivery/collection/bill/return record endpoints:
-   *  loads the trip, throws if closed or not owned by the salesman. */
+   *  loads the trip, throws if not started / closed / not owned. */
   async requireOpenTripForSalesman(tripId: string, salesmanId: string) {
     const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
     if (!trip) throw new NotFoundException('Trip not found');
     if (trip.salesmanId !== salesmanId) {
       throw new ForbiddenException('Trip belongs to another salesman');
     }
-    if (trip.closedAt) {
-      throw new BadRequestException('Trip is already closed');
-    }
+    if (trip.cancelledAt) throw new BadRequestException('Trip was cancelled');
+    if (!trip.openedAt) throw new BadRequestException('Trip has not been started yet');
+    if (trip.closedAt) throw new BadRequestException('Trip is already closed');
     return trip;
   }
 
-  async start(params: StartTripParams) {
+  /** MANAGER: prepare a trip assignment for a salesman. Creates the trip
+   *  in "waiting" state (openedAt = null). Salesman activates it later. */
+  async prepare(params: PrepareTripParams) {
     const label = params.vehicleLabel.trim();
     if (label.length < 2) {
       throw new BadRequestException('Vehicle label is required (min 2 chars)');
     }
-
-    // Guard: refuse a second open trip for the same salesman. They must
-    // end the current one before starting a new one.
-    const active = await this.activeForSalesman(params.salesmanId);
-    if (active) {
-      throw new ConflictException(
-        `Salesman already has an active trip (${active.vehicleLabel}). End it before starting a new one.`,
-      );
+    // Sanity: does the salesman exist and match the role?
+    const salesman = await this.prisma.user.findUnique({
+      where: { id: params.salesmanId },
+      select: { id: true, role: true, branchSlug: true, active: true },
+    });
+    if (!salesman) throw new NotFoundException('Salesman not found');
+    if (!salesman.active) throw new BadRequestException('Salesman account is inactive');
+    if (!salesman.branchSlug) {
+      throw new BadRequestException('Salesman has no branch assigned');
+    }
+    // Manager can only prep in their own branch; owner has no gate.
+    if (params.gateBranchSlug && salesman.branchSlug !== params.gateBranchSlug) {
+      throw new BadRequestException('Cannot prepare trip for salesman in another branch');
+    }
+    if (params.role === 'cg' && salesman.role !== 'cans_gallons_salesman') {
+      throw new BadRequestException('This salesman is not a CG salesman');
+    }
+    if (params.role === 'pets' && salesman.role !== 'pets_salesman') {
+      throw new BadRequestException('This salesman is not a Pets salesman');
     }
 
     return this.prisma.trip.create({
       data: {
         salesmanId: params.salesmanId,
-        branchSlug: params.branchSlug,
+        branchSlug: salesman.branchSlug,
         role: params.role,
         vehicleLabel: label,
         initialCansLoaded: params.initialCansLoaded ?? 0,
@@ -86,6 +123,52 @@ export class TripsService {
         initialPet600Packs: params.initialPet600Packs ?? 0,
         initialPet1500Packs: params.initialPet1500Packs ?? 0,
         notes: params.notes,
+        preparedById: params.preparedById,
+        // preparedAt defaults to now; openedAt stays null until salesman starts.
+      },
+    });
+  }
+
+  /** SALESMAN: activate a prepared trip. Guard: no other open trip. */
+  async start(tripId: string, salesmanId: string) {
+    const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
+    if (!trip) throw new NotFoundException('Trip not found');
+    if (trip.salesmanId !== salesmanId) {
+      throw new ForbiddenException('Trip belongs to another salesman');
+    }
+    if (trip.cancelledAt) throw new BadRequestException('Trip was cancelled');
+    if (trip.closedAt) throw new BadRequestException('Trip already closed');
+    if (trip.openedAt) return trip; // idempotent — already started
+
+    const active = await this.activeForSalesman(salesmanId);
+    if (active) {
+      throw new ConflictException(
+        `You already have an active trip (${active.vehicleLabel}). End it before starting the next one.`,
+      );
+    }
+
+    return this.prisma.trip.update({
+      where: { id: tripId },
+      data: { openedAt: new Date() },
+    });
+  }
+
+  /** MANAGER: cancel a prepared trip before the salesman starts it. */
+  async cancel(tripId: string, actorId: string, note?: string) {
+    const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
+    if (!trip) throw new NotFoundException('Trip not found');
+    if (trip.openedAt) {
+      throw new BadRequestException(
+        'Trip is already in progress — the salesman must end it via reconciliation',
+      );
+    }
+    if (trip.closedAt) throw new BadRequestException('Trip already closed');
+    if (trip.cancelledAt) return trip; // idempotent
+    return this.prisma.trip.update({
+      where: { id: tripId },
+      data: {
+        cancelledAt: new Date(),
+        notes: note ? `${trip.notes ?? ''}\nCancelled by ${actorId}: ${note}`.trim() : trip.notes,
       },
     });
   }
@@ -93,7 +176,9 @@ export class TripsService {
   async end(params: EndTripParams) {
     const trip = await this.prisma.trip.findUnique({ where: { id: params.tripId } });
     if (!trip) throw new NotFoundException('Trip not found');
+    if (trip.cancelledAt) throw new BadRequestException('Trip was cancelled');
     if (trip.closedAt) throw new BadRequestException('Trip already closed');
+    if (!trip.openedAt) throw new BadRequestException('Trip has not been started yet');
     if (trip.salesmanId !== params.actorId) {
       throw new ForbiddenException('Only the trip owner can close it');
     }
@@ -113,12 +198,12 @@ export class TripsService {
     });
   }
 
-  /** List trips, optionally scoped by branch / salesman / date. */
+  /** List trips, optionally scoped by branch / salesman / date / state. */
   list(params: {
     branchSlug?: string;
     salesmanId?: string;
-    date?: string; // yyyy-mm-dd
-    openOnly?: boolean;
+    date?: string; // yyyy-mm-dd — filters on preparedAt
+    state?: 'prepared' | 'active' | 'closed' | 'cancelled';
   } = {}) {
     let dateRange: { gte: Date; lt: Date } | undefined;
     if (params.date) {
@@ -127,21 +212,32 @@ export class TripsService {
       const end = new Date(start.getTime() + 24 * 60 * 60_000);
       dateRange = { gte: start, lt: end };
     }
+    const stateWhere =
+      params.state === 'prepared'
+        ? { openedAt: null, cancelledAt: null }
+        : params.state === 'active'
+          ? { openedAt: { not: null }, closedAt: null, cancelledAt: null }
+          : params.state === 'closed'
+            ? { closedAt: { not: null } }
+            : params.state === 'cancelled'
+              ? { cancelledAt: { not: null } }
+              : {};
+
     return this.prisma.trip.findMany({
       where: {
         ...(params.branchSlug ? { branchSlug: params.branchSlug } : {}),
         ...(params.salesmanId ? { salesmanId: params.salesmanId } : {}),
-        ...(dateRange ? { openedAt: dateRange } : {}),
-        ...(params.openOnly ? { closedAt: null } : {}),
+        ...(dateRange ? { preparedAt: dateRange } : {}),
+        ...stateWhere,
       },
       include: {
         salesman: { select: { id: true, name: true, role: true } },
       },
-      orderBy: { openedAt: 'desc' },
+      orderBy: { preparedAt: 'desc' },
     });
   }
 
-  /** Detail view: trip + all its activity, in one shot. */
+  /** Detail view: trip + all its activity + linked expenses, in one shot. */
   async detail(tripId: string) {
     const trip = await this.prisma.trip.findUnique({
       where: { id: tripId },
@@ -162,6 +258,9 @@ export class TripsService {
         returns: {
           include: { customer: { select: { id: true, name: true } } },
           orderBy: { loggedAt: 'asc' },
+        },
+        expenses: {
+          orderBy: { submittedAt: 'asc' },
         },
       },
     });

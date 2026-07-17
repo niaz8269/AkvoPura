@@ -12,6 +12,7 @@ import {
 } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { TripsService } from '../trips/trips.service';
 
 export type SubmitExpenseParams = {
   branchSlug: string;
@@ -30,7 +31,10 @@ export type ListExpensesParams = {
 
 @Injectable()
 export class ExpensesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly trips: TripsService,
+  ) {}
 
   list(params: ListExpensesParams = {}) {
     const where: Prisma.ExpenseWhereInput = {};
@@ -59,6 +63,10 @@ export class ExpensesService {
       where: { slug: params.branchSlug },
     });
     if (!branchExists) throw new BadRequestException(`Unknown branch: ${params.branchSlug}`);
+    // If a salesman is submitting during an active trip, auto-link so the
+    // manager can see per-trip fuel/food/etc. Managers and owners have no
+    // active trip → tripId stays null.
+    const activeTrip = await this.trips.activeForSalesman(params.submittedById);
     return this.prisma.expense.create({
       data: {
         branchSlug: params.branchSlug,
@@ -69,6 +77,7 @@ export class ExpensesService {
         amount: params.amount,
         notes: params.notes?.trim() || null,
         status: ExpenseStatus.pending,
+        tripId: activeTrip?.id ?? null,
       },
     });
   }
