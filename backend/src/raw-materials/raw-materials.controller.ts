@@ -15,6 +15,7 @@ import type { Request } from 'express';
 import { RawMaterialsService } from './raw-materials.service';
 import { ReceiveStockDto } from './dto/receive-stock.dto';
 import { UpdateRawMaterialDto } from './dto/update-raw-material.dto';
+import { CreateRawMaterialDto } from './dto/create-raw-material.dto';
 import type { JwtPayload } from '../auth/jwt.strategy';
 
 @Controller('raw-materials')
@@ -26,6 +27,16 @@ export class RawMaterialsController {
   @Get()
   list() {
     return this.materials.list();
+  }
+
+  /** Manager / owner adds a new raw material to the catalog. */
+  @Post()
+  create(@Req() req: Request, @Body() dto: CreateRawMaterialDto) {
+    const me = req.user as JwtPayload;
+    if (me.role !== 'owner' && me.role !== 'manager') {
+      throw new ForbiddenException('Only manager / owner can add raw materials');
+    }
+    return this.materials.create(dto);
   }
 
   /** Manager / owner can record incoming deliveries. */

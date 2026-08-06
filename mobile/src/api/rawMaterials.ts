@@ -31,6 +31,22 @@ export async function listRawMaterials() {
   return rows.map(toRawMaterial);
 }
 
+export type CreateRawMaterialInput = {
+  name: string;
+  unit: 'pieces' | 'rolls';
+  currentStock?: number;
+  reorderThreshold?: number;
+  nameUr?: string;
+};
+
+export async function createRawMaterial(input: CreateRawMaterialInput) {
+  const row = await apiRequest<ApiRawMaterial>('/raw-materials', {
+    method: 'POST',
+    body: input,
+  });
+  return toRawMaterial(row);
+}
+
 export async function receiveRawMaterial(id: string, units: number) {
   const row = await apiRequest<ApiRawMaterial>(`/raw-materials/${id}/receive`, {
     method: 'POST',

@@ -30,6 +30,7 @@ import {
 } from './types';
 import { useAuth } from '../auth/AuthContext';
 import {
+  createRawMaterial,
   listRawMaterials,
   receiveRawMaterial,
   updateRawMaterial,
@@ -67,6 +68,14 @@ type State = {
   recordBatch: (input: RecordBatchInput) => Promise<ProductionBatch | null>;
   receiveStock: (id: RawMaterialId, units: number) => void;
   setReorderThreshold: (id: RawMaterialId, threshold: number) => void;
+  /** Manager / owner creates a brand-new raw material row. */
+  addRawMaterial: (input: {
+    name: string;
+    unit: 'pieces' | 'rolls';
+    currentStock?: number;
+    reorderThreshold?: number;
+    nameUr?: string;
+  }) => Promise<RawMaterial>;
   refresh: () => Promise<void>;
 };
 
@@ -191,6 +200,12 @@ export function ProductionProvider({ children }: PropsWithChildren) {
     [refresh],
   );
 
+  const addRawMaterial = useCallback<State['addRawMaterial']>(async (input) => {
+    const created = await createRawMaterial(input);
+    setRawMaterials((prev) => [...prev, created]);
+    return created;
+  }, []);
+
   const value = useMemo<State>(
     () => ({
       rawMaterials,
@@ -202,6 +217,7 @@ export function ProductionProvider({ children }: PropsWithChildren) {
       recordBatch,
       receiveStock,
       setReorderThreshold,
+      addRawMaterial,
       refresh,
     }),
     [
@@ -214,6 +230,7 @@ export function ProductionProvider({ children }: PropsWithChildren) {
       recordBatch,
       receiveStock,
       setReorderThreshold,
+      addRawMaterial,
       refresh,
     ],
   );

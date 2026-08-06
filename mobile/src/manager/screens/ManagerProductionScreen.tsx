@@ -325,10 +325,13 @@ function BatchRow({ batch }: { batch: ProductionBatch }) {
 }
 
 function InventoryPanel() {
-  const { rawMaterials, receiveStock, batches, setReorderThreshold } = useProduction();
+  const { rawMaterials, receiveStock, batches, setReorderThreshold, addRawMaterial } =
+    useProduction();
+  const [adding, setAdding] = useState(false);
 
   const lowStock = rawMaterials.filter((r) => r.currentStock <= r.reorderThreshold);
   const okStock = rawMaterials.filter((r) => r.currentStock > r.reorderThreshold);
+  const isEmpty = rawMaterials.length === 0;
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.body}>
@@ -349,7 +352,49 @@ function InventoryPanel() {
         </>
       ) : null}
 
-      <Text style={styles.sectionTitle}>All raw materials</Text>
+      <View style={styles.sectionHeaderRow}>
+        <Text style={styles.sectionTitle}>All raw materials</Text>
+        <Pressable
+          onPress={() => setAdding(true)}
+          style={({ pressed }) => [
+            styles.addMaterialBtn,
+            pressed ? { opacity: 0.85 } : null,
+          ]}
+        >
+          <Text style={styles.addMaterialBtnText}>+ Add</Text>
+        </Pressable>
+      </View>
+
+      {isEmpty && !adding ? (
+        <Pressable
+          onPress={() => setAdding(true)}
+          style={({ pressed }) => [
+            styles.emptyInventoryCard,
+            pressed ? { opacity: 0.85 } : null,
+          ]}
+        >
+          <Text style={styles.emptyInventoryTitle}>No raw materials yet</Text>
+          <Text style={styles.emptyInventorySub}>
+            Tap here to add your first material (e.g. PET Preform 600ml, Label roll).
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {adding ? (
+        <AddMaterialForm
+          onCancel={() => setAdding(false)}
+          onSubmit={async (input) => {
+            try {
+              await addRawMaterial(input);
+              setAdding(false);
+            } catch (e: unknown) {
+              const msg = e instanceof Error ? e.message : 'Could not add material.';
+              Alert.alert('Failed', msg);
+            }
+          }}
+        />
+      ) : null}
+
       {okStock.map((m) => (
         <RawRow
           key={m.id}
@@ -360,6 +405,142 @@ function InventoryPanel() {
         />
       ))}
     </ScrollView>
+  );
+}
+
+/** Inline card for creating a new raw material — name + unit + initial
+ *  stock + low-stock threshold. Owner/Manager only (backend enforces). */
+function AddMaterialForm({
+  onCancel,
+  onSubmit,
+}: {
+  onCancel: () => void;
+  onSubmit: (input: {
+    name: string;
+    unit: 'pieces' | 'rolls';
+    currentStock?: number;
+    reorderThreshold?: number;
+  }) => Promise<void>;
+}) {
+  const [name, setName] = useState('');
+  const [unit, setUnit] = useState<'pieces' | 'rolls'>('pieces');
+  const [initialStock, setInitialStock] = useState('0');
+  const [threshold, setThreshold] = useState('0');
+  const [busy, setBusy] = useState(false);
+
+  const valid = name.trim().length >= 2 && !busy;
+
+  return (
+    <View style={styles.addFormCard}>
+      <Text style={styles.addFormTitle}>Add raw material</Text>
+
+      <Text style={styles.addFormLabel}>Name</Text>
+      <TextInput
+        value={name}
+        onChangeText={setName}
+        placeholder="e.g. PET Preform 600ml"
+        placeholderTextColor={colors.textMuted}
+        style={styles.addFormInput}
+        maxLength={60}
+      />
+
+      <Text style={styles.addFormLabel}>Unit</Text>
+      <View style={styles.unitRow}>
+        <Pressable
+          onPress={() => setUnit('pieces')}
+          style={({ pressed }) => [
+            styles.unitPill,
+            unit === 'pieces' ? styles.unitPillActive : null,
+            pressed && unit !== 'pieces' ? { opacity: 0.85 } : null,
+          ]}
+        >
+          <Text
+            style={[
+              styles.unitPillText,
+              unit === 'pieces' ? styles.unitPillTextActive : null,
+            ]}
+          >
+            Pieces
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setUnit('rolls')}
+          style={({ pressed }) => [
+            styles.unitPill,
+            unit === 'rolls' ? styles.unitPillActive : null,
+            pressed && unit !== 'rolls' ? { opacity: 0.85 } : null,
+          ]}
+        >
+          <Text
+            style={[
+              styles.unitPillText,
+              unit === 'rolls' ? styles.unitPillTextActive : null,
+            ]}
+          >
+            Rolls
+          </Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.addFormRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.addFormLabel}>Starting stock</Text>
+          <TextInput
+            value={initialStock}
+            onChangeText={(t) => setInitialStock(t.replace(/[^0-9]/g, ''))}
+            keyboardType="number-pad"
+            style={styles.addFormInput}
+            maxLength={7}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.addFormLabel}>Low-stock alert at</Text>
+          <TextInput
+            value={threshold}
+            onChangeText={(t) => setThreshold(t.replace(/[^0-9]/g, ''))}
+            keyboardType="number-pad"
+            style={styles.addFormInput}
+            maxLength={7}
+          />
+        </View>
+      </View>
+
+      <View style={styles.addFormBtnRow}>
+        <Pressable
+          onPress={onCancel}
+          disabled={busy}
+          style={({ pressed }) => [
+            styles.addFormBtn,
+            styles.addFormBtnCancel,
+            pressed && !busy ? { opacity: 0.85 } : null,
+          ]}
+        >
+          <Text style={styles.addFormBtnCancelText}>Cancel</Text>
+        </Pressable>
+        <Pressable
+          onPress={async () => {
+            if (!valid) return;
+            setBusy(true);
+            await onSubmit({
+              name: name.trim(),
+              unit,
+              currentStock: parseInt(initialStock, 10) || 0,
+              reorderThreshold: parseInt(threshold, 10) || 0,
+            });
+            setBusy(false);
+          }}
+          disabled={!valid}
+          style={({ pressed }) => [
+            styles.addFormBtn,
+            styles.addFormBtnSave,
+            !valid ? { opacity: 0.5 } : null,
+            pressed && valid ? { opacity: 0.85 } : null,
+          ]}
+        >
+          <Text style={styles.addFormBtnSaveText}>{busy ? 'Saving…' : 'Save'}</Text>
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
@@ -616,6 +797,116 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     marginBottom: spacing.sm,
   },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  addMaterialBtn: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radii.pill,
+  },
+  addMaterialBtnText: {
+    color: colors.textInverse,
+    fontSize: fontSizes.sm,
+    fontWeight: '800',
+  },
+  emptyInventoryCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.xl,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.primaryLight,
+    borderStyle: 'dashed',
+    marginBottom: spacing.md,
+  },
+  emptyInventoryTitle: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  emptyInventorySub: {
+    fontSize: fontSizes.sm,
+    color: colors.textMuted,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  addFormCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+  },
+  addFormTitle: {
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    color: colors.primaryDark,
+    marginBottom: spacing.sm,
+  },
+  addFormLabel: {
+    fontSize: fontSizes.xs,
+    fontWeight: '700',
+    color: colors.textMuted,
+    marginTop: spacing.sm,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  addFormInput: {
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: fontSizes.body,
+    color: colors.text,
+    backgroundColor: colors.surface,
+  },
+  addFormRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  unitRow: { flexDirection: 'row', gap: spacing.sm },
+  unitPill: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.pill,
+    borderWidth: 1.5,
+    borderColor: colors.primaryLight,
+    alignItems: 'center',
+  },
+  unitPillActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primaryDark,
+  },
+  unitPillText: { fontSize: fontSizes.sm, fontWeight: '800', color: colors.primaryDark },
+  unitPillTextActive: { color: colors.textInverse },
+  addFormBtnRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  addFormBtn: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+  },
+  addFormBtnCancel: {
+    backgroundColor: colors.surfaceMuted,
+  },
+  addFormBtnSave: {
+    backgroundColor: colors.primary,
+  },
+  addFormBtnCancelText: { color: colors.primaryDark, fontSize: fontSizes.body, fontWeight: '800' },
+  addFormBtnSaveText: { color: colors.textInverse, fontSize: fontSizes.body, fontWeight: '800' },
   empty: {
     fontStyle: 'italic',
     color: colors.textMuted,
